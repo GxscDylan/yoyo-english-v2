@@ -2,7 +2,9 @@
   <div class="match-game" :class="`phase--${phase}`">
     <!-- 顶部栏 -->
     <header class="game-header">
-      <button class="btn-back" @click="$router.push('/')">← Home</button>
+      <button class="btn-back" @click="$router.push('/playground')">
+        <span class="back-icon">🏠</span>
+      </button>
       <div class="header-title">
         <span class="game-badge">🔍 Find It</span>
         <span class="game-difficulty" :class="`diff-${store.gameDifficulty}`">{{ difficultyConfig[store.gameDifficulty]?.label || 'Medium' }}</span>
@@ -120,7 +122,7 @@
           <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" class="complete-yoyo" />
           <div class="complete-buttons">
             <button class="btn-retry" @click="resetGame">🔄 Play again</button>
-            <button class="btn-home" @click="$router.push('/')">🏠 Home</button>
+            <button class="btn-home" @click="$router.push('/playground')">🏠 Playground</button>
           </div>
         </div>
       </div>
@@ -145,7 +147,7 @@ import ComboDisplay from '@/components/common/ComboDisplay.vue'
 
 const store = useLearningStore()
 const emit = defineEmits(['game-complete'])
-const { speak, isSpeaking, stop, playAudio } = useSpeech()
+const { speak, speakSentence, isSpeaking, stop, playAudio } = useSpeech()
 
 // 自动重读定时器
 let autoReplayTimer = null
@@ -196,7 +198,7 @@ function startCountdown() {
   phase.value = 'countdown'
   countdownNum.value = 3
 
-  // 链式播放：等一个音效播完再切下一个数字
+  // 链式播放：紧凑间隔
   function playNext(num) {
     if (num <= 0) {
       startRound()
@@ -204,8 +206,7 @@ function startCountdown() {
     }
     countdownNum.value = num
     playAudio(`/audio/countdown-${num}.mp3`, () => {
-      // 音频播完后短暂停顿再播下一个
-      countdownTimer = setTimeout(() => playNext(num - 1), 200)
+      countdownTimer = setTimeout(() => playNext(num - 1), 100)
     })
   }
   playNext(3)
@@ -219,11 +220,11 @@ function startRound() {
   feedbackClass.value = ''
   clearAutoReplay()
   setYoyo('thinking', `Which one is ${targetWord.value.en}?`)
-  // 链式播放：Which one is... → 单词音频
+  // TTS 整句合成："Which one is cat?" — 用 speakSentence 直接走 TTS，跳过音频文件查找
   startAutoReplay()
   setTimeout(() => {
-    playAudio('/audio/which-one-is.mp3', () => { playTarget() })
-  }, 400)
+    speakSentence(`Which one is ${targetWord.value.en}?`, { rate: 0.8 })
+  }, 150)
 }
 
 function generateRound() {
@@ -298,7 +299,7 @@ function handleSelect(opt) {
     } else {
       finishGame()
     }
-  }, isCorrect ? 2500 : 1200)
+  }, isCorrect ? 1000 : 600)
 }
 
 // 自动重读：4秒无操作重读单词

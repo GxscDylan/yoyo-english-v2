@@ -6,7 +6,7 @@
         <span class="back-icon">🏠</span>
       </button>
       <div class="header-title">
-        <span class="pg-title"> Playground</span>
+        <span class="pg-title">Playground</span>
         <span class="pg-difficulty" :class="`diff-${store.gameDifficulty}`">{{ difficultyLabel }}</span>
       </div>
       <div class="header-spacer"></div>
@@ -29,7 +29,7 @@
             <span class="pg-card-name">{{ game.name }}</span>
             <span class="pg-card-desc">{{ game.desc }}</span>
             <div class="pg-card-score" v-if="store.gameScores[game.id] > 0">
-               {{ store.gameScores[game.id] }}
+              {{ store.gameScores[game.id] }}
             </div>
             <div class="pg-card-badge" v-else>
               <span class="badge-new">NEW</span>
@@ -54,45 +54,50 @@ import YoyoMascot from '@/components/common/YoyoMascot.vue'
 
 const router = useRouter()
 const store = useLearningStore()
-const yoyoMood = ref('idle')
-const yoyoBubble = ref('')
+const yoyoMood = ref('happy')
+const yoyoBubble = ref('选择一个游戏开始玩吧！🎮')
 
 onMounted(() => {
-  yoyoMood.value = 'happy'
-  yoyoBubble.value = '选择一个游戏开始玩吧！🎮'
-  setTimeout(() => { yoyoMood.value = 'idle'; yoyoBubble.value = '' }, 4000)
+  // 4秒后隐藏气泡，鼠标悬停时重新显示
+  setTimeout(() => { yoyoBubble.value = '' }, 4000)
 })
 
 const GAME_LIST = [
   {
     id: 'match', name: 'Find It', desc: '听音选图，找出正确的单词',
     bgColor: 'linear-gradient(135deg, #FF6B6B, #FF8E53)',
-    icon: '<circle cx="26" cy="26" r="16" stroke-width="4"/><line x1="37" y1="37" x2="52" y2="52" stroke-width="5" stroke-linecap="round"/>'
+    unlocked: true,
+    icon: '<circle cx="32" cy="32" r="20" stroke-width="4"/><line x1="46" y1="46" x2="56" y2="56" stroke-width="5"/>'
   },
   {
     id: 'listen', name: 'Listen & Choose', desc: '听发音，选择正确的单词文字',
     bgColor: 'linear-gradient(135deg, #6C63FF, #8B7FFF)',
-    icon: '<circle cx="32" cy="32" r="20" stroke-width="3"/><circle cx="32" cy="32" r="12" stroke-width="3"/><circle cx="32" cy="32" r="4" fill="white" stroke="none"/>'
+    unlocked: true,
+    icon: '<path d="M32 8 L32 56" stroke-width="4"/><path d="M20 20 C20 20, 12 28, 12 32 C12 36, 20 44, 20 44" stroke-width="4" fill="none"/><path d="M44 20 C44 20, 52 28, 52 32 C52 36, 44 44, 44 44" stroke-width="4" fill="none"/>'
   },
   {
     id: 'memory', name: 'Memory Match', desc: '翻牌配对，锻炼记忆力',
     bgColor: 'linear-gradient(135deg, #FFB74D, #FFD54F)',
-    icon: '<rect x="10" y="14" width="18" height="32" rx="3" stroke-width="3"/><rect x="36" y="14" width="18" height="32" rx="3" stroke-width="3"/><line x1="19" y1="28" x2="19" y2="34" stroke-width="2.5"/><line x1="16" y1="31" x2="22" y2="31" stroke-width="2.5"/>'
+    unlocked: true,
+    icon: '<rect x="10" y="14" width="18" height="32" rx="3"/><rect x="36" y="14" width="18" height="32" rx="3"/><circle cx="19" cy="30" r="4" fill="currentColor"/><circle cx="45" cy="30" r="4" fill="currentColor"/>'
   },
   {
     id: 'balloon', name: 'Balloon Pop', desc: '听音戳气球，趣味练习',
     bgColor: 'linear-gradient(135deg, #4FC3F7, #29B6F6)',
-    icon: '<ellipse cx="32" cy="26" rx="14" ry="18" stroke-width="3"/><path d="M32 44 L28 54" stroke-width="2.5"/><circle cx="26" cy="20" r="3" fill="white" stroke="none"/>'
+    unlocked: true,
+    icon: '<path d="M32 12 C20 12, 16 24, 16 32 C16 40, 22 46, 32 46 C42 46, 48 40, 48 32 C48 24, 44 12, 32 12Z" stroke-width="3"/><path d="M32 46 L28 56" stroke-width="3"/><polygon points="22,18 26,22 20,24" fill="currentColor" stroke="none"/>'
   },
   {
     id: 'speed-rush', name: 'Speed Rush', desc: '限时答题，挑战反应速度',
     bgColor: 'linear-gradient(135deg, #FF6F00, #FFA726)',
-    icon: '<polygon points="36,8 24,30 32,30 28,56 40,32 32,32" stroke-width="3" fill="white"/>'
+    unlocked: false,
+    icon: '<polygon points="38,8 22,32 34,32 30,56 46,30 34,30" stroke-width="3" fill="currentColor" opacity="0.8"/>'
   },
   {
     id: 'sort-it', name: 'Sort It!', desc: '分类单词，整理收纳',
     bgColor: 'linear-gradient(135deg, #66BB6A, #81C784)',
-    icon: '<rect x="12" y="16" width="40" height="32" rx="4" stroke-width="3"/><line x1="12" y1="30" x2="52" y2="30" stroke-width="2.5"/><line x1="28" y1="30" x2="28" y2="48" stroke-width="2.5"/>'
+    unlocked: false,
+    icon: '<rect x="12" y="16" width="40" height="32" rx="4"/><line x1="12" y1="30" x2="52" y2="30" stroke-width="2.5"/><line x1="28" y1="30" x2="28" y2="48" stroke-width="2.5"/>'
   }
 ]
 
@@ -102,15 +107,17 @@ const difficultyLabel = computed(() => {
 })
 
 function playGame(id) {
+  const game = GAME_LIST.find(g => g.id === id)
+  if (!game || !game.unlocked) return
   router.push(`/game/${id}`)
 }
 </script>
 
 <style scoped>
 .playground-view {
-  width: 100vw; height: 100dvh; display: flex; flex-direction: column;
+  width: 100%; min-height: 100vh; display: flex; flex-direction: column;
   background: linear-gradient(180deg, #FFF8E1 0%, var(--bg-main) 60%);
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 /* ===== 顶部栏 ===== */
@@ -134,12 +141,17 @@ function playGame(id) {
   font-size: var(--font-size-xs); font-weight: 600; padding: 2px 10px;
   border-radius: 20px; background: var(--color-primary); color: #fff;
 }
+/* 难度标签颜色 */
+.diff-simple { background: #4CAF50; }
+.diff-medium { background: var(--color-primary); }
+.diff-hard { background: #F44336; }
 .header-spacer { flex: 1; }
 
 /* ===== 主内容 ===== */
 .pg-main {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   padding: var(--space-xl); display: flex; align-items: center; justify-content: center;
+  padding-bottom: 140px;
 }
 .pg-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
@@ -174,7 +186,7 @@ function playGame(id) {
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   margin-bottom: 4px;
-  color: white; /* SVG currentColor */
+  color: #fff;
 }
 .pg-card-svg {
   width: 40px; height: 40px;
@@ -192,6 +204,11 @@ function playGame(id) {
   font-size: 0.7rem; font-weight: 700; color: var(--color-primary);
   background: rgba(var(--color-primary-rgb, 108,99,255), 0.1);
   padding: 3px 10px; border-radius: 10px;
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
 }
 
 /* ===== 响应式 ===== */
@@ -211,11 +228,15 @@ function playGame(id) {
   opacity: 0.5;
   background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
   border-color: #ccc;
-  pointer-events: none;
+  cursor: not-allowed;
+}
+.pg-card-locked:hover .pg-card-inner {
+  transform: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 .pg-card-locked .pg-card-icon-wrap {
   background: #999 !important;
-  color: #ddd !important; /* SVG currentColor for locked state */
+  color: #ddd !important;
 }
 .pg-card-locked .pg-card-name,
 .pg-card-locked .pg-card-desc { color: #999; }
@@ -227,5 +248,10 @@ function playGame(id) {
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
+  animation: yoyo-float 3s ease-in-out infinite;
+}
+@keyframes yoyo-float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-8px); }
 }
 </style>

@@ -411,28 +411,26 @@ const keyWordCount = computed(() =>
 // 方法
 // ============================================================
 
+/** 标准化文件名（与生成脚本保持一致） */
+function sanitizeFilename(text) {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/'/g, '')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 function playSentence() {
   if (!currentSentence.value) return
   isPlaying.value = true
-  // 直接用 Web Speech TTS 播放整个句子（比逐词音频更自然）
-  if (typeof window !== 'undefined' && window.speechSynthesis) {
-    window.speechSynthesis.cancel()
-    const utter = new SpeechSynthesisUtterance(currentSentence.value.en)
-    utter.rate = 0.65
-    utter.lang = 'en-US'
-    utter.volume = 1.0
-    const voices = window.speechSynthesis.getVoices()
-    const enVoice = voices.find(v => v.lang.startsWith('en'))
-    if (enVoice) utter.voice = enVoice
-    utter.onend = () => { isPlaying.value = false }
-    utter.onerror = () => { isPlaying.value = false }
-    window.speechSynthesis.speak(utter)
-  } else {
-    // Fallback to audio file
-    playAudio(`/audio/${currentSentence.value.en.toLowerCase().replace(/\s+/g, '-')}.mp3`, () => {
-      isPlaying.value = false
-    })
-  }
+
+  // 优先播放预录句子音频（AnaNeural 音质更好）
+  const sentencePath = `/audio/${sanitizeFilename(currentSentence.value.en)}.mp3`
+  playAudio(sentencePath, () => {
+    isPlaying.value = false
+  })
 }
 
 function tapWord(index, word) {

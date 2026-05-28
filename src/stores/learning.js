@@ -161,8 +161,8 @@ export const useLearningStore = defineStore('learning', () => {
   function canTriggerCatchStars(categoryIndex) {
     const lastTime = catchStarsCooldown.value[categoryIndex] || 0
     const now = Date.now()
-    // 24 小时冷却：同一分类 24 小时内不再触发
-    return now - lastTime > 24 * 60 * 60 * 1000
+    // 30 分钟冷却：每次触发后 30 分钟可再次触发
+    return now - lastTime > 30 * 60 * 1000
   }
 
   function recordCatchStarsTrigger(categoryIndex) {
@@ -172,8 +172,8 @@ export const useLearningStore = defineStore('learning', () => {
 
   /** 获取 Catch Stars 收集上限 */
   function getCatchStarsLimit() {
-    // L1: 10 个，L2: 15 个
-    return unlockedCategories.value <= 5 ? 10 : 15
+    // L1: 20 个，L2: 30 个
+    return unlockedCategories.value <= 5 ? 20 : 30
   }
 
   function addCombo() {

@@ -6,7 +6,7 @@
       <h1>快分类</h1>
       <p class="lock-desc">先学完 1 个新分类再来玩分类游戏吧！</p>
       <p class="lock-hint">当前解锁：{{ store.unlockedCategories }} / 2</p>
-      <button class="btn-home" @click="$router.push('/')">🏠 返回首页</button>
+      <button class="btn-home" @click="$router.push('/playground')">🏠 游乐场</button>
     </div>
 
     <!-- 准备 -->
@@ -75,7 +75,7 @@
         <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" />
         <div class="complete-buttons">
           <button class="btn-retry" @click="resetGame">🔄 再来一次</button>
-          <button class="btn-home" @click="$router.push('/')">🏠 首页</button>
+          <button class="btn-home" @click="$router.push('/playground')">🏠 游乐场</button>
         </div>
       </div>
     </div>

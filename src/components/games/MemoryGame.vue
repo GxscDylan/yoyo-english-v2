@@ -1,7 +1,9 @@
 <template>
   <div class="memory-game" :class="`phase--${phase}`">
     <header class="game-header">
-      <button class="btn-back" @click="$router.push('/')">← Home</button>
+      <button class="btn-back" @click="$router.push('/playground')">
+        <span class="back-icon">🏠</span>
+      </button>
       <div class="header-title">
         <span class="game-badge">🃏 Memory Match</span>
         <span class="game-difficulty" :class="`diff-${store.gameDifficulty}`">{{ store.gameDifficulty === 'simple' ? 'Easy' : store.gameDifficulty === 'hard' ? 'Hard' : 'Medium' }}</span>
@@ -77,7 +79,7 @@
           <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" class="complete-yoyo" />
           <div class="complete-buttons">
             <button class="btn-retry" @click="resetGame">🔄 Play again</button>
-            <button class="btn-home" @click="$router.push('/')">🏠 Home</button>
+            <button class="btn-home" @click="$router.push('/playground')">🏠 Playground</button>
           </div>
         </div>
       </div>
@@ -167,7 +169,7 @@ function prepareGame() {
     }
     countdownNum.value = num
     playAudio(`/audio/countdown-${num}.mp3`, () => {
-      countdownTimer = setTimeout(() => playNext(num - 1), 200)
+      countdownTimer = setTimeout(() => playNext(num - 1), 100)
     })
   }
   playNext(3)
@@ -267,7 +269,14 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer) })
 <style scoped>
 .memory-game { width: 100vw; height: 100dvh; display: flex; flex-direction: column; background: linear-gradient(180deg, #EDE7F6, var(--bg-main)); overflow: hidden; }
 .game-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md) var(--space-xl); background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); }
-.btn-back { padding: var(--space-xs) var(--space-md); border-radius: var(--radius-full); font-size: var(--font-size-sm); color: var(--text-secondary); font-weight: 600; }
+.btn-back {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); border: 2px solid var(--border-light);
+  border-radius: 50%; font-size: var(--font-size-lg); cursor: pointer;
+  transition: all 0.2s; padding: 0;
+}
+.btn-back:hover { border-color: #7C5CFC; transform: scale(1.08); }
+.btn-back:active { transform: scale(0.95); }
 .header-title { display: flex; align-items: center; gap: var(--space-sm); }
 .game-badge { padding: var(--space-xs) var(--space-lg); background: linear-gradient(135deg, #7C5CFC, #A78BFA); color: #fff; font-size: var(--font-size-sm); font-weight: 700; border-radius: var(--radius-full); }
 .game-difficulty {

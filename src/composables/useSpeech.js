@@ -16,15 +16,23 @@ export function useSpeech() {
   const isSupported = ref(true) // 始终为 true，至少有 audio 回退
   const lastError = ref(null)
 
+  /** 标准化文件名（与生成脚本的 sanitizeFilename 保持一致） */
+  function sanitizeFilename(text) {
+    return text
+      .toLowerCase()
+      .replace(/\s+/g, '-')       // 空格 → -
+      .replace(/'/g, '')          // 撇号 → 删除
+      .replace(/[^a-z0-9-]/g, '') // 仅保留字母数字和 -
+      .replace(/-+/g, '-')        // 多个 - → 单个
+      .replace(/^-|-$/g, '')      // 去除首尾 -
+  }
+
   /** 播放英文单词/句子 */
   function speak(word, options = {}) {
     const { rate = 0.7, onEnd = null } = options
 
     stop()
-    const cleanWord = word.toLowerCase().trim()
-
-    // 优先尝试预录音频
-    const audioPath = `/audio/${cleanWord}.mp3`
+    const audioPath = `/audio/${sanitizeFilename(word)}.mp3`
     tryPlayAudio(audioPath, onEnd)
     return true
   }
@@ -86,18 +94,72 @@ export function useSpeech() {
     audio.load()
   }
 
-  /** TTS 回退 */
+  /** TTS 回退（将文件名还原为可读文本） */
   function fallbackTTS(path, onEnd) {
-    const word = path.split('/').pop()?.replace('.mp3', '') || ''
+    const word = path.split('/').pop()?.replace('.mp3', '').replace(/-/g, ' ') || ''
     _speakTTS(word, 0.7, onEnd)
   }
 
-  /** 直接朗读句子（跳过音频文件查找，适用于童谣/长文本） */
+  /** 直接朗读句子（优先预录音频，回退 TTS） */
   function speakSentence(text, options = {}) {
     const { rate = 0.8, onEnd = null, onError = null } = options
     stop()
-    _speakTTS(text, rate, onEnd, onError)
-    return true
+
+    // 先尝试播放预录句子音频
+    const sentencePath = `/audio/${sanitizeFilename(text)}.mp3`
+    const audio = new Audio()
+    audio.preload = 'auto'
+    audio.volume = 1.0
+
+    let triedTTS = false
+
+    audio.oncanplaythrough = () => {
+      isSpeaking.value = true
+      currentAudio = audio
+      audio.play().catch(() => {
+        if (!triedTTS) {
+          triedTTS = true
+          _speakTTS(text, rate, onEnd, onError)
+        }
+      })
+    }
+
+    audio.onended = () => {
+      isSpeaking.value = false
+      currentAudio = null
+      if (onEnd) onEnd()
+    }
+
+    audio.onerror = () => {
+      if (!triedTTS) {
+        triedTTS = true
+        _speakTTS(text, rate, onEnd, onError)
+      }
+    }
+
+    // 超时回退（300ms）
+    const timeout = setTimeout(() => {
+      if (!isSpeaking.value && !triedTTS) {
+        triedTTS = true
+        _speakTTS(text, rate, onEnd, onError)
+      }
+    }, 300)
+
+    audio.oncanplaythrough = () => {
+      clearTimeout(timeout)
+      audio.oncanplaythrough = null
+      isSpeaking.value = true
+      currentAudio = audio
+      audio.play().catch(() => {
+        if (!triedTTS) {
+          triedTTS = true
+          _speakTTS(text, rate, onEnd, onError)
+        }
+      })
+    }
+
+    audio.src = sentencePath
+    audio.load()
   }
 
   /** 内部 TTS 实现 */
@@ -113,15 +175,28 @@ export function useSpeech() {
     utter.lang = 'en-US'
     utter.volume = 1.0
 
-    // Chrome 中 voices 异步加载，首次调用可能为空
+    // 明确选择美式英语语音（优先 Microsoft/Apple 美式女声）
     const setVoiceAndSpeak = () => {
       const voices = window.speechSynthesis.getVoices()
-      const enVoice = voices.find(v => v.lang.startsWith('en'))
-      if (enVoice) utter.voice = enVoice
-      
+      const enUsVoice = voices.find(v =>
+        v.lang === 'en-US' && (
+          v.name.includes('Microsoft') ||
+          v.name.includes('Samantha') ||
+          v.name.includes('Google') ||
+          v.name.includes('Alex') ||
+          v.name.includes('Female')
+        )
+      ) || voices.find(v => v.lang === 'en-US')
+        || voices.find(v => v.lang.startsWith('en'))
+
+      if (enUsVoice) {
+        utter.voice = enUsVoice
+        utter.lang = enUsVoice.lang // 同步 lang 到实际语音
+      }
+
       utter.onstart = () => { isSpeaking.value = true }
       utter.onend = () => { isSpeaking.value = false; if (onEnd) onEnd() }
-      utter.onerror = (e) => { 
+      utter.onerror = (e) => {
         console.error('[TTS Error]', e)
         isSpeaking.value = false
         if (onError) onError()

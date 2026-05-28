@@ -422,14 +422,11 @@ function handleStepEntry() {
     setTimeout(() => playWord(), 300)
   } else if (currentStep.value === 2) {
     setYoyo('thinking', 'Listen and find!')
-    // 链式播放：Which one is... → 单词音频
+    // TTS 整句合成 — 消除音频文件造成的空白
     startAutoReplayTimer()
     setTimeout(() => {
-      playAudio('/audio/which-one-is.mp3', () => {
-        // "Which one is" 播放完毕后播放单词
-        playWord()
-      })
-    }, 400)
+      speak(`Which one is ${word.value.en}?`, { rate: 0.8 })
+    }, 300)
   } else if (currentStep.value === 3) {
     setYoyo('encourage', 'Repeat after me!')
     // 链式播放：Repeat after me → 单词音频

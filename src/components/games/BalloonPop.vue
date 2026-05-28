@@ -2,7 +2,9 @@
   <div class="balloon-game" :class="`phase--${phase}`">
     <!-- 顶部栏 -->
     <header class="game-header">
-      <button class="btn-back" @click="$router.push('/')">← Home</button>
+      <button class="btn-back" @click="$router.push('/playground')">
+        <span class="back-icon">🏠</span>
+      </button>
       <div class="header-title">
         <span class="game-badge">🎈 Balloon Pop</span>
         <span class="game-difficulty" :class="`diff-${store.gameDifficulty}`">{{ difficultyConfig[store.gameDifficulty]?.label || 'Medium' }}</span>
@@ -29,7 +31,8 @@
       </span>
     </div>
 
-    <!-- 主内容 -->
+    <!-- Combo 连击显示 -->
+    <ComboDisplay :combo="store.gameCombo" guide-key="balloon" />
     <main class="game-main">
       <!-- 背景装饰 -->
       <div class="bg-decorations" aria-hidden="true">
@@ -125,7 +128,7 @@
           <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" class="complete-yoyo" />
           <div class="complete-buttons">
             <button class="btn-retry" @click="resetGame">🔄 Play again</button>
-            <button class="btn-home" @click="$router.push('/')">🏠 Home</button>
+            <button class="btn-home" @click="$router.push('/playground')">🏠 Playground</button>
           </div>
         </div>
       </div>
@@ -145,11 +148,11 @@ import { useSpeech } from '@/composables/useSpeech'
 import { sfxCorrect, sfxWrong, sfxComplete } from '@/composables/useSfx'
 import { ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
-import ResultAvatar from '@/components/common/ResultAvatar.vue'
+import ComboDisplay from '@/components/common/ComboDisplay.vue'
 
 const store = useLearningStore()
 const emit = defineEmits(['game-complete'])
-const { speak, isSpeaking, stop, playAudio } = useSpeech()
+const { speak, speakSentence, isSpeaking, stop, playAudio } = useSpeech()
 
 // 难度配置（选项数 + 回合数）
 const difficultyConfig = {
@@ -178,7 +181,7 @@ const balloons = ref([])
 const feedbackId = ref(null)
 const feedbackText = ref('')
 const feedbackClass = ref('')
-const score = ref({ correct: 0, total: totalRounds.value })
+const score = ref({ correct: 0, total: 5 })
 
 const yoyoMood = ref('idle')
 const yoyoBubble = ref('Are you ready?')
@@ -234,7 +237,7 @@ function startCountdown() {
     }
     countdownNum.value = num
     playAudio(`/audio/countdown-${num}.mp3`, () => {
-      countdownTimer = setTimeout(() => playNext(num - 1), 200)
+      countdownTimer = setTimeout(() => playNext(num - 1), 100)
     })
   }
   playNext(3)
@@ -248,9 +251,11 @@ function startRound() {
   feedbackClass.value = ''
   clearAutoReplay()
   setYoyo('thinking', `Which one is ${targetWord.value.en}?`)
+  // TTS 整句合成 — 用 speakSentence 直接走 TTS，跳过不存在的音频文件查找
+  startAutoReplay()
   setTimeout(() => {
-    playAudio('/audio/which-one-is.mp3', () => { playTarget() })
-  }, 400)
+    speakSentence(`Which one is ${targetWord.value.en}?`, { rate: 0.8 })
+  }, 150)
 }
 
 function generateRound() {
@@ -324,7 +329,7 @@ function handleSelect(b) {
     } else {
       finishGame()
     }
-  }, isCorrect ? 2500 : 1200)
+  }, isCorrect ? 1000 : 600)
 }
 
 function startAutoReplay() {
@@ -402,9 +407,13 @@ onUnmounted(() => {
   z-index: 10;
 }
 .btn-back {
-  padding: var(--space-xs) var(--space-md); border-radius: var(--radius-full);
-  font-size: var(--font-size-sm); color: var(--text-secondary); font-weight: 600;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); border: 2px solid var(--border-light);
+  border-radius: 50%; font-size: var(--font-size-lg); cursor: pointer;
+  transition: all 0.2s; padding: 0;
 }
+.btn-back:hover { border-color: #FF6B6B; transform: scale(1.08); }
+.btn-back:active { transform: scale(0.95); }
 .header-title { display: flex; align-items: center; gap: var(--space-md); }
 .game-badge {
   padding: var(--space-xs) var(--space-lg);
@@ -612,14 +621,24 @@ onUnmounted(() => {
   0% {
     bottom: -140px;
     opacity: 0;
+    transform: translateX(-50%);
   }
   10% {
     opacity: 1;
   }
   100% {
-    bottom: 10%;
+    bottom: 35%;
     opacity: 1;
   }
+}
+
+/* 气球升起后持续左右摇摆（真实气球感） */
+.balloon-field {
+  animation: fieldSway 3s ease-in-out infinite;
+}
+@keyframes fieldSway {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(8px); }
 }
 
 /* 气球状态 */

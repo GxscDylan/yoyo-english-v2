@@ -25,7 +25,7 @@ const router = createRouter({
       path: '/playground',
       name: 'playground',
       component: () => import('@/views/PlaygroundView.vue'),
-      meta: { title: '游乐场' }
+      meta: { title: '游乐场', transition: 'none' }
     },
     {
       path: '/parent',

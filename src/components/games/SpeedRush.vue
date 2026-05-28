@@ -78,7 +78,7 @@
         <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" />
         <div class="complete-buttons">
           <button class="btn-retry" @click="resetGame">🔄 再来一次</button>
-          <button class="btn-home" @click="$router.push('/')">🏠 首页</button>
+          <button class="btn-home" @click="$router.push('/playground')">🏠 游乐场</button>
         </div>
       </div>
     </div>

@@ -1,7 +1,9 @@
 <template>
   <div class="listen-game" :class="`phase--${phase}`">
     <header class="game-header">
-      <button class="btn-back" @click="$router.push('/')">← Home</button>
+      <button class="btn-back" @click="$router.push('/playground')">
+        <span class="back-icon">🏠</span>
+      </button>
       <div class="header-title">
         <span class="game-badge">👂 Listen & Choose</span>
         <span class="game-difficulty" :class="`diff-${store.gameDifficulty}`">{{ store.gameDifficulty === 'simple' ? 'Easy' : store.gameDifficulty === 'hard' ? 'Hard' : 'Medium' }}</span>
@@ -115,7 +117,7 @@
           <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" class="complete-yoyo" />
           <div class="complete-buttons">
             <button class="btn-retry" @click="resetGame">🔄 Play again</button>
-            <button class="btn-home" @click="$router.push('/')">🏠 Home</button>
+            <button class="btn-home" @click="$router.push('/playground')">🏠 Playground</button>
           </div>
         </div>
       </div>
@@ -139,7 +141,7 @@ import ComboDisplay from '@/components/common/ComboDisplay.vue'
 
 const store = useLearningStore()
 const emit = defineEmits(['game-complete'])
-const { speak, isSpeaking, stop, playAudio } = useSpeech()
+const { speak, speakSentence, isSpeaking, stop, playAudio } = useSpeech()
 
 // 自动重读定时器
 let autoReplayTimer = null
@@ -190,8 +192,7 @@ function startCountdown() {
     }
     countdownNum.value = num
     playAudio(`/audio/countdown-${num}.mp3`, () => {
-      // 音频播完后短暂停顿再播下一个
-      countdownTimer = setTimeout(() => playNext(num - 1), 200)
+      countdownTimer = setTimeout(() => playNext(num - 1), 100)
     })
   }
   playNext(3)
@@ -205,11 +206,11 @@ function startRound() {
   feedbackClass.value = ''
   clearAutoReplay()
   setYoyo('thinking', 'Listen carefully...')
-  // 链式播放：Which one is... → 单词音频
+  // TTS 整句合成："Which one is...?" — 用 speakSentence 直接走 TTS，跳过音频文件查找
   startAutoReplay()
   setTimeout(() => {
-    playAudio('/audio/which-one-is.mp3', () => { playTarget() })
-  }, 400)
+    speakSentence(`Which one is ${targetWord.value.en}?`, { rate: 0.8 })
+  }, 150)
 }
 
 function generateRound() {
@@ -279,7 +280,7 @@ function handleSelect(opt) {
   setTimeout(() => {
     if (currentRound.value < totalRounds) { currentRound.value++; startRound() }
     else finishGame()
-  }, isCorrect ? 2500 : 1200)
+  }, isCorrect ? 1000 : 600)
 }
 
 // 自动重读：4秒无操作重读单词
@@ -330,7 +331,14 @@ onUnmounted(() => { stop(); clearAutoReplay(); clearTimeout(countdownTimer) })
   padding: var(--space-md) var(--space-xl);
   background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);
 }
-.btn-back { padding: var(--space-xs) var(--space-md); border-radius: var(--radius-full); font-size: var(--font-size-sm); color: var(--text-secondary); font-weight: 600; }
+.btn-back {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); border: 2px solid var(--border-light);
+  border-radius: 50%; font-size: var(--font-size-lg); cursor: pointer;
+  transition: all 0.2s; padding: 0;
+}
+.btn-back:hover { border-color: #7C5CFC; transform: scale(1.08); }
+.btn-back:active { transform: scale(0.95); }
 .header-title { display: flex; align-items: center; gap: var(--space-sm); }
 .game-badge { padding: var(--space-xs) var(--space-lg); background: linear-gradient(135deg, #7C5CFC, #A78BFA); color: #fff; font-size: var(--font-size-sm); font-weight: 700; border-radius: var(--radius-full); }
 .game-difficulty {
