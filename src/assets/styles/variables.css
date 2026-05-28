@@ -1,0 +1,125 @@
+/* ========================================
+   呦呦英语启蒙 — CSS 设计系统
+   卡通可爱风 · 护眼暖色调 · iPad 横屏优先
+   ======================================== */
+
+:root {
+  /* === 主色调 === */
+  --color-primary: #FF8C42;        /* 暖橙（呦呦主色） */
+  --color-primary-light: #FFB380;
+  --color-primary-dark: #E67320;
+
+  /* === 功能色 === */
+  --color-success: #4CAF50;       /* 正确/完成 */
+  --color-warning: #FFC107;       /* 提示/注意 */
+  --color-danger: #F44336;        /* 锁定/不可用 */
+  --color-info: #2196F3;          /* 中性提示 */
+
+  /* === 场景主题色 === */
+  --scene-forest: #A8D8B9;       /* 动物·森林 */
+  --scene-orchard: #FFD4A3;      /* 水果·果园 */
+  --scene-rainbow: #D4C5F0;      /* 颜色·彩虹 */
+  --scene-mirror: #B5E4E8;       /* 身体·镜子 */
+  --scene-home: #FFF0D4;         /* 家庭·客厅 */
+  --scene-circus: #FFE0EC;       /* 数字·马戏团（L2） */
+  --scene-table: #FFEDCC;        /* 食物·餐桌（L2） */
+  --scene-street: #D4E8F0;       /* 交通·街道（L2） */
+
+  /* === 游戏主题色 === */
+  --game-match: #FF8C42;         /* 找一找 */
+  --game-listen: #7C5CFC;        /* 听音选词 */
+  --game-memory: #7C5CFC;        /* 翻翻乐 */
+
+  /* === 中性色 === */
+  --bg-main: #FFF8F0;
+  --bg-card: #FFFFFF;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
+  --text-primary: #3D2C1E;
+  --text-secondary: #8B7355;
+  --text-hint: #BFAB95;
+  --border-light: #F0E6DA;
+  --shadow-card: 0 4px 16px rgba(139, 115, 85, 0.12);
+
+  /* === 字体 === */
+  --font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-size-3xl: 2.75rem;
+
+  /* === 间距 === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* === 圆角 === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* === 动画 === */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+
+  /* === 触控 === */
+  --touch-min: 64px;
+}
+
+/* ========================================
+   主题色方案（data-theme 驱动）
+   ======================================== */
+
+/* 默认：温暖橙（与 :root 一致） */
+:root[data-theme="orange"] {
+  --color-primary: #FF8C42;
+  --color-primary-light: #FFB380;
+  --color-primary-dark: #E67320;
+  --bg-main: #FFF8F0;
+}
+
+/* 天空蓝 */
+:root[data-theme="blue"] {
+  --color-primary: #4A90D9;
+  --color-primary-light: #8BB8E8;
+  --color-primary-dark: #357ABD;
+  --bg-main: #F0F6FF;
+}
+
+/* 樱花粉 */
+:root[data-theme="pink"] {
+  --color-primary: #F08CAE;
+  --color-primary-light: #F5B8CE;
+  --color-primary-dark: #D47092;
+  --bg-main: #FFF5F8;
+}
+
+/* 森林绿 */
+:root[data-theme="green"] {
+  --color-primary: #5BAA6B;
+  --color-primary-light: #8FC89B;
+  --color-primary-dark: #4A9358;
+  --bg-main: #F2FAF0;
+}
+
+/* 梦幻紫 */
+:root[data-theme="purple"] {
+  --color-primary: #8B6FC0;
+  --color-primary-light: #B49ED8;
+  --color-primary-dark: #7359A8;
+  --bg-main: #F6F0FF;
+}
+
+/* === 横屏优先断点 === */
+/* iPad 横屏 1024×768 → 默认样式 */
+/* 竖屏/手机 (< 768px width) → 缩小间距 */

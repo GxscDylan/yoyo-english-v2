@@ -1,0 +1,89 @@
+/* ========================================
+   呦呦英语启蒙 — 基础样式重置
+   ======================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  background: var(--bg-main);
+  line-height: 1.6;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: inherit;
+  color: inherit;
+  transition: transform 0.15s var(--ease-bounce);
+}
+button:active {
+  transform: scale(0.95);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s var(--ease-bounce);
+}
+a:active {
+  transform: scale(0.97);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* 横屏优先：默认 iPad 横屏 1024×768 */
+#app {
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* 竖屏适配 (< 768px) */
+@media (max-width: 767px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* 小手机适配 (< 400px) */
+@media (max-width: 399px) {
+  html {
+    font-size: 12px;
+  }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-hint);
+  border-radius: var(--radius-full);
+}

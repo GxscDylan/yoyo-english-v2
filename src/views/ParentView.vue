@@ -1,0 +1,437 @@
+<template>
+  <div class="parent-page">
+    <header class="parent-header">
+      <button class="btn-back" @click="$router.push('/')">← 首页</button>
+      <h2>👨‍👩‍👧 家长中心</h2>
+      <div class="header-spacer"></div>
+    </header>
+
+    <div v-if="!authenticated" class="pin-gate">
+      <div class="pin-card anim-fade-up">
+        <span class="pin-icon">🔐</span>
+        <h3>请输入家长密码</h3>
+        <div class="pin-dots">
+          <span v-for="i in 4" :key="i" class="pin-dot" :class="{ filled: pinInput.length >= i }"></span>
+        </div>
+        <p v-if="pinError" class="pin-error">{{ pinError }}</p>
+        <div class="pin-pad">
+          <button v-for="n in 9" :key="n" class="pin-key" @click="appendPin(String(n))">{{ n }}</button>
+          <button class="pin-key pin-key-empty"></button>
+          <button class="pin-key" @click="appendPin('0')">0</button>
+          <button class="pin-key pin-key-del" @click="deletePin">⌫</button>
+        </div>
+      </div>
+    </div>
+
+    <main v-else class="parent-main">
+      <div class="safety-banner">
+        <span>🛡️ 所有数据仅存储在本地设备，不会上传到任何服务器。建议定期导出备份。</span>
+      </div>
+
+      <section class="section-card">
+        <h3>🔐 PIN 管理</h3>
+        <div class="row">
+          <span>当前 PIN</span>
+          <button class="btn-sm" @click="showChangePin = true">修改</button>
+        </div>
+        <div v-if="showChangePin" class="inline-form anim-fade-up">
+          <input v-model="newPin" type="password" maxlength="4" placeholder="4位数字" class="input-pin">
+          <button class="btn-save" @click="savePin">保存</button>
+          <button class="btn-cancel" @click="showChangePin = false; newPin = ''">取消</button>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h3>📋 学习控制</h3>
+        <div class="row">
+          <span>每日限学 1 课</span>
+          <button class="toggle" :class="{ on: store.settings.dailyLessonLimit }" @click="toggle('dailyLessonLimit')">
+            {{ store.settings.dailyLessonLimit ? 'ON' : 'OFF' }}
+          </button>
+        </div>
+        <div class="row">
+          <span>单次时长</span>
+          <div class="stepper">
+            <button @click="adj(-5)">−5</button>
+            <span class="step-val">{{ store.settings.singleSessionMinutes }} 分钟</span>
+            <button @click="adj(5)">+5</button>
+          </div>
+        </div>
+        <div class="row">
+          <span>锁定时间段</span>
+          <div class="time-range">
+            <input type="time" :value="store.settings.lockStartTime" @change="e => set('lockStartTime', e.target.value)">
+            <span>~</span>
+            <input type="time" :value="store.settings.lockEndTime" @change="e => set('lockEndTime', e.target.value)">
+          </div>
+        </div>
+        <div class="row">
+          <span>学习模式</span>
+          <select class="sel" :value="store.settings.learningMode" @change="e => set('learningMode', e.target.value)">
+            <option value="fourStep">🧩 四步科学练</option>
+            <option value="card">🃏 传统卡片</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h3>🖼️ 宝贝头像</h3>
+        <div class="avatar-setup">
+          <div class="avatar-preview" @click="triggerUpload">
+            <img v-if="store.avatar" :src="store.avatar" class="avatar-img" alt="宝贝头像" />
+            <div v-else class="avatar-placeholder">👤</div>
+            <span class="avatar-edit">📷</span>
+          </div>
+          <div class="avatar-info">
+            <p>上传宝贝照片，在首页展示</p>
+            <p class="avatar-hint">照片仅存储在本地，不会上传到云端</p>
+          </div>
+          <input ref="fileInput" type="file" accept="image/*" hidden @change="handleAvatarSelect" />
+          <button v-if="store.avatar" class="btn-sm btn-remove" @click="removeAvatar">移除</button>
+        </div>
+        <!-- 在线裁剪弹窗 -->
+        <AvatarCropper
+          :visible="showCropper"
+          :imageSrc="cropImageSrc"
+          @confirm="handleCropConfirm"
+          @cancel="showCropper = false"
+        />
+      </section>
+
+      <section class="section-card">
+        <h3>🎨 主题色设置</h3>
+        <p class="theme-hint">选择宝贝喜欢的颜色，全局即时生效</p>
+        <div class="theme-grid">
+          <button v-for="t in themes" :key="t.key" class="theme-option"
+            :class="{ active: store.themeColor === t.key }"
+            @click="setTheme(t.key)">
+            <span class="theme-swatch" :style="{ background: t.primary }"></span>
+            <span class="theme-name">{{ t.label }}</span>
+            <span v-if="store.themeColor === t.key" class="theme-check">✓</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h3>🎯 游戏难度</h3>
+        <p class="diff-hint">调整三款游戏的选项数量，适合不同年龄段</p>
+        <div class="diff-grid">
+          <button v-for="d in difficulties" :key="d.key" class="diff-option"
+            :class="{ active: store.gameDifficulty === d.key }"
+            @click="setDifficulty(d.key)">
+            <span class="diff-icon">{{ d.icon }}</span>
+            <span class="diff-name">{{ d.label }}</span>
+            <span class="diff-desc">{{ d.desc }}</span>
+            <span v-if="store.gameDifficulty === d.key" class="diff-check">✓</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h3>📊 学习报告</h3>
+        <div class="stats-grid">
+          <div class="stat"><span class="stat-val">{{ store.masteredWordCount }}</span><span class="stat-lbl">已掌握</span></div>
+          <div class="stat"><span class="stat-val">{{ store.totalStars }}</span><span class="stat-lbl">总星星</span></div>
+          <div class="stat"><span class="stat-val">{{ store.unlockedCategories }}/{{ ALL_CATEGORIES.length }}</span><span class="stat-lbl">分类</span></div>
+        </div>
+        <div class="cat-list">
+          <div class="cat-section-title">L1 基础词汇</div>
+          <div v-for="cat in L1_WORDS" :key="cat.id" class="cat-item">
+            <span>{{ cat.emoji }} {{ cat.name }}</span>
+            <span class="cat-tag" :class="pct(cat.id) >= 100 ? 't-done' : pct(cat.id) > 0 ? 't-ing' : 't-new'">
+              {{ pct(cat.id) >= 100 ? '✅ 掌握' : pct(cat.id) > 0 ? pct(cat.id) + '%' : '未开始' }}
+            </span>
+          </div>
+          <div class="cat-section-title">L2 进阶词汇</div>
+          <div v-for="cat in L2_WORDS" :key="cat.id" class="cat-item">
+            <span>{{ cat.emoji }} {{ cat.name }}</span>
+            <span class="cat-tag" :class="pct(cat.id) >= 100 ? 't-done' : pct(cat.id) > 0 ? 't-ing' : 't-new'">
+              {{ pct(cat.id) >= 100 ? '✅ 掌握' : pct(cat.id) > 0 ? pct(cat.id) + '%' : '未开始' }}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h3>🎮 游戏成绩</h3>
+        <div class="row"><span>🔍 找一找</span><span class="score">{{ gameScoreStars('match') }}</span></div>
+        <div class="row"><span>👂 听音选词</span><span class="score">{{ gameScoreStars('listen') }}</span></div>
+        <div class="row"><span>🃏 翻翻乐</span><span class="score">{{ gameScoreStars('memory') }}</span></div>
+      </section>
+
+      <section class="section-card">
+        <h3>💾 数据管理</h3>
+        <div class="btn-row">
+          <button class="btn-act btn-exp" @click="doExport">📤 导出备份</button>
+          <label class="btn-act btn-imp">📥 导入恢复 <input type="file" accept=".json" hidden @change="doImport"></label>
+        </div>
+      </section>
+
+      <section class="section-card danger-card">
+        <h3 class="danger-title">⚠️ 危险操作</h3>
+        <button class="btn-danger" @click="confirmReset = true">🗑️ 重置所有数据</button>
+        <div v-if="confirmReset" class="reset-box anim-fade-up">
+          <p>⚠️ 此操作不可恢复！所有学习记录将被清除。</p>
+          <div class="btn-row">
+            <button class="btn-danger-solid" @click="doReset">确认重置</button>
+            <button class="btn-cancel" @click="confirmReset = false">取消</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useLearningStore } from '@/stores/learning'
+import { ALL_CATEGORIES, L1_WORDS, L2_WORDS } from '@/data/words'
+import AvatarCropper from '@/components/common/AvatarCropper.vue'
+
+const store = useLearningStore()
+const authenticated = ref(false)
+const pinInput = ref('')
+const pinError = ref('')
+const showChangePin = ref(false)
+const newPin = ref('')
+const confirmReset = ref(false)
+const fileInput = ref(null)
+
+// Avatar cropper state
+const showCropper = ref(false)
+const cropImageSrc = ref('')
+
+// 难度选项
+const difficulties = [
+  { key: 'simple', icon: '🌱', label: '简单', desc: '2~3 选项' },
+  { key: 'medium', icon: '🌟', label: '中等', desc: '3~4 选项' },
+  { key: 'hard', icon: '🔥', label: '困难', desc: '4~8 选项' }
+]
+
+function setDifficulty(key) {
+  store.setGameDifficulty(key)
+}
+
+// 游戏成绩转星级显示
+function gameScoreStars(gameId) {
+  const raw = store.gameScores[gameId]
+  if (!raw) return '-'
+  if (gameId === 'memory') return raw + '星'
+  // match / listen: 5轮正确数 → 星级
+  const stars = raw >= 5 ? 3 : raw >= 3 ? 2 : 1
+  return stars + '星'
+}
+
+const themes = [
+  { key: 'orange', label: '温暖橙', primary: '#FF8C42' },
+  { key: 'blue', label: '天空蓝', primary: '#4A90D9' },
+  { key: 'pink', label: '樱花粉', primary: '#F08CAE' },
+  { key: 'green', label: '森林绿', primary: '#5BAA6B' },
+  { key: 'purple', label: '梦幻紫', primary: '#8B6FC0' }
+]
+
+function setTheme(key) {
+  store.themeColor = key
+  document.documentElement.setAttribute('data-theme', key)
+  store.persistAll()
+}
+
+function appendPin(n) {
+  if (pinInput.value.length >= 4) return
+  pinInput.value += n
+  if (pinInput.value.length === 4) verifyPin()
+}
+function deletePin() { pinInput.value = pinInput.value.slice(0, -1); pinError.value = '' }
+function verifyPin() {
+  if (store.verifyPIN(pinInput.value)) { authenticated.value = true; pinError.value = '' }
+  else { pinError.value = '密码错误'; setTimeout(() => { pinInput.value = ''; pinError.value = '' }, 1500) }
+}
+function savePin() {
+  if (!/^\d{4}$/.test(newPin.value)) return
+  store.updatePIN(newPin.value); showChangePin.value = false; newPin.value = ''
+}
+function toggle(k) { store.updateSettings(k, !store.settings[k]) }
+function set(k, v) { store.updateSettings(k, v) }
+function adj(d) { const v = Math.max(5, Math.min(60, store.settings.singleSessionMinutes + d)); store.updateSettings('singleSessionMinutes', v) }
+function pct(catId) {
+  const cat = ALL_CATEGORIES.find(c => c.id === catId)
+  if (!cat) return 0
+  const m = cat.words.filter(w => store.isWordMastered(w.id)).length
+  return Math.round((m / cat.words.length) * 100)
+}
+function triggerUpload() { fileInput.value?.click() }
+function handleAvatarSelect(e) {
+  const f = e.target.files[0]
+  if (!f) return
+  const r = new FileReader()
+  r.onload = ev => {
+    cropImageSrc.value = ev.target.result
+    showCropper.value = true
+  }
+  r.readAsDataURL(f)
+  e.target.value = ''
+}
+
+function handleCropConfirm(croppedBase64) {
+  store.avatar = croppedBase64
+  store.persistAll()
+  showCropper.value = false
+  cropImageSrc.value = ''
+}
+function removeAvatar() { store.avatar = null; store.persistAll() }
+function doExport() {
+  const data = store.exportData()
+  const b = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const u = URL.createObjectURL(b)
+  const a = document.createElement('a')
+  a.href = u; a.download = `yoyo-backup-${new Date().toISOString().slice(0,10)}.json`
+  a.click(); URL.revokeObjectURL(u)
+}
+function doImport(e) {
+  const f = e.target.files[0]
+  if (!f) return
+  const r = new FileReader()
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result)
+      if (store.importData(d)) { alert('恢复成功！'); window.location.reload() }
+      else alert('格式不兼容')
+    } catch { alert('解析失败') }
+  }
+  r.readAsText(f)
+}
+function doReset() { store.resetAll(); window.location.reload() }
+onMounted(() => store.loadFromDB())
+</script>
+
+<style scoped>
+.parent-page { width: 100vw; height: 100dvh; display: flex; flex-direction: column; background: var(--bg-main); overflow: hidden; }
+.parent-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-md) var(--space-xl); background: rgba(255,255,255,0.9); backdrop-filter: blur(8px);
+}
+.btn-back { padding: var(--space-xs) var(--space-md); border-radius: var(--radius-full); font-size: var(--font-size-sm); color: var(--text-secondary); font-weight: 600; }
+.header-spacer { width: 60px; }
+
+.pin-gate { flex: 1; display: flex; align-items: center; justify-content: center; }
+.pin-card { background: var(--bg-card); border-radius: var(--radius-xl); padding: var(--space-2xl); text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,0.08); }
+.pin-icon { font-size: 3rem; display: block; margin-bottom: var(--space-md); }
+.pin-card h3 { margin-bottom: var(--space-xl); }
+.pin-dots { display: flex; gap: var(--space-md); justify-content: center; margin-bottom: var(--space-xl); }
+.pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-light); transition: all 0.3s; }
+.pin-dot.filled { background: var(--color-primary); border-color: var(--color-primary); }
+.pin-error { color: var(--color-danger); font-size: var(--font-size-sm); margin-bottom: var(--space-md); animation: shake 0.4s ease; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 64px); gap: var(--space-sm); justify-content: center; }
+.pin-key { width: 64px; height: 64px; border-radius: 50%; background: var(--border-light); font-size: var(--font-size-xl); font-weight: 700; color: var(--text-primary); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.pin-key:active { background: var(--color-primary); color: #fff; }
+.pin-key-empty { background: transparent; }
+.pin-key-del { font-size: var(--font-size-lg); }
+
+.parent-main { flex: 1; overflow-y: auto; padding: var(--space-lg) var(--space-xl); }
+.safety-banner { background: #E3F2FD; border: 1px solid #BBDEFB; border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: #1565C0; }
+
+.section-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--space-lg); margin-bottom: var(--space-md); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.section-card h3 { font-size: var(--font-size-base); margin-bottom: var(--space-md); font-weight: 700; }
+.row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: var(--font-size-sm); color: var(--text-secondary); }
+.row + .row { border-top: 1px solid var(--border-light); }
+
+.toggle { padding: 4px 16px; border-radius: var(--radius-full); font-size: 0.7rem; font-weight: 700; background: #E0E0E0; color: #9E9E9E; transition: all 0.3s; }
+.toggle.on { background: var(--color-success); color: #fff; }
+
+.stepper { display: flex; align-items: center; gap: var(--space-sm); }
+.stepper button { width: 32px; height: 32px; border-radius: 50%; background: var(--border-light); font-weight: 700; }
+.step-val { font-weight: 700; color: var(--text-primary); }
+
+.time-range { display: flex; align-items: center; gap: var(--space-xs); }
+.time-range input { padding: 4px 8px; border: 1px solid var(--border-light); border-radius: var(--radius-sm); font-family: inherit; }
+
+.sel { padding: 4px 12px; border: 1px solid var(--border-light); border-radius: var(--radius-sm); font-family: inherit; background: var(--bg-card); }
+
+.inline-form { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); align-items: center; }
+.input-pin { padding: var(--space-xs) var(--space-sm); border: 1px solid var(--border-light); border-radius: var(--radius-sm); width: 100px; }
+.btn-save { padding: var(--space-xs) var(--space-md); background: var(--color-primary); color: #fff; border-radius: var(--radius-sm); font-weight: 600; }
+.btn-cancel { padding: var(--space-xs) var(--space-md); background: var(--border-light); border-radius: var(--radius-sm); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); margin-bottom: var(--space-lg); }
+.stat { background: var(--bg-main); border-radius: var(--radius-md); padding: var(--space-md); text-align: center; }
+.stat-val { font-size: var(--font-size-xl); font-weight: 800; color: var(--color-primary); display: block; }
+.stat-lbl { font-size: 0.6rem; color: var(--text-hint); }
+
+.cat-list { display: flex; flex-direction: column; gap: 4px; }
+.cat-section-title { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); padding: 8px 0 4px; border-bottom: 1px solid var(--border-light); margin-bottom: 4px; }
+.cat-item { display: flex; justify-content: space-between; align-items: center; font-size: var(--font-size-sm); padding: 4px 0; }
+.cat-tag { padding: 2px 10px; border-radius: var(--radius-full); font-size: 0.6rem; font-weight: 700; }
+.t-done { background: #E8F5E9; color: #2E7D32; } .t-ing { background: #FFF3E0; color: #E65100; } .t-new { background: var(--border-light); color: var(--text-hint); }
+
+.score { font-weight: 700; color: var(--text-primary); }
+
+.btn-row { display: flex; gap: var(--space-sm); }
+.btn-act { flex: 1; padding: var(--space-sm); border-radius: var(--radius-md); font-size: var(--font-size-sm); font-weight: 600; text-align: center; cursor: pointer; transition: all 0.2s; }
+.btn-exp { background: #E3F2FD; color: #1565C0; } .btn-imp { background: #E8F5E9; color: #2E7D32; position: relative; }
+.btn-imp input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.danger-card { border: 1px solid #FFCDD2; }
+.danger-title { color: var(--color-danger) !important; }
+.btn-danger { padding: var(--space-sm) var(--space-lg); background: #FFEBEE; color: var(--color-danger); border-radius: var(--radius-md); font-weight: 700; }
+.btn-danger-solid { background: var(--color-danger) !important; color: #fff !important; padding: var(--space-sm) var(--space-lg); border-radius: var(--radius-md); font-weight: 700; }
+.reset-box { margin-top: var(--space-md); }
+.reset-box p { font-size: var(--font-size-xs); color: var(--color-danger); margin-bottom: var(--space-sm); }
+
+.avatar-setup { display: flex; align-items: center; gap: var(--space-lg); }
+.avatar-preview { position: relative; width: 80px; height: 80px; border-radius: 50%; overflow: hidden; background: var(--border-light); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-placeholder { font-size: 2.5rem; line-height: 1; }
+.avatar-edit { position: absolute; bottom: 0; right: 0; background: var(--color-primary); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.avatar-info { flex: 1; }
+.avatar-info p { font-size: var(--font-size-xs); color: var(--text-secondary); }
+.avatar-hint { font-size: 0.55rem !important; color: var(--text-hint) !important; margin-top: 4px; }
+.btn-remove { padding: 4px 12px; border-radius: var(--radius-full); background: #FFEBEE; color: var(--color-danger); font-size: 0.6rem; font-weight: 600; }
+
+/* ===== 游戏难度 ===== */
+.diff-hint { font-size: var(--font-size-xs); color: var(--text-hint); margin-top: -8px; margin-bottom: var(--space-md); }
+.diff-grid { display: flex; gap: var(--space-sm); }
+.diff-option {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: var(--space-md) var(--space-lg); border-radius: var(--radius-lg);
+  background: var(--bg-main); border: 2px solid var(--border-light);
+  cursor: pointer; transition: all 0.25s var(--ease-smooth); position: relative;
+  flex: 1; min-width: 0;
+}
+.diff-option:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+.diff-option.active { border-color: var(--color-primary); background: var(--color-primary-light); transform: scale(1.03); }
+.diff-icon { font-size: 1.5rem; }
+.diff-name { font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary); white-space: nowrap; }
+.diff-desc { font-size: 0.6rem; color: var(--text-hint); white-space: nowrap; }
+.diff-check {
+  position: absolute; top: 6px; right: 6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--color-success); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700;
+  animation: pop 0.3s var(--ease-bounce);
+}
+
+/* ===== 主题色选择 ===== */
+.theme-hint { font-size: var(--font-size-xs); color: var(--text-hint); margin-top: -8px; margin-bottom: var(--space-md); }
+.theme-grid { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.theme-option {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: var(--space-md) var(--space-lg); border-radius: var(--radius-lg);
+  background: var(--bg-main); border: 2px solid var(--border-light);
+  cursor: pointer; transition: all 0.25s var(--ease-smooth); position: relative;
+  min-width: 80px;
+}
+.theme-option:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+.theme-option.active { border-color: var(--color-primary); background: var(--color-primary-light); transform: scale(1.05); }
+.theme-swatch { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.2s; }
+.theme-option:hover .theme-swatch { transform: scale(1.15); }
+.theme-name { font-size: 0.65rem; color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
+.theme-check {
+  position: absolute; top: 6px; right: 6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--color-success); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700;
+  animation: pop 0.3s var(--ease-bounce);
+}
+</style>
