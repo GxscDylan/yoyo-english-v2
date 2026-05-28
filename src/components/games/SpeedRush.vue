@@ -104,18 +104,16 @@ const store = useLearningStore()
 const emit = defineEmits(['game-complete'])
 const { speak, isSpeaking, stop, playAudio } = useSpeech()
 
-const OPTIONS_COUNT = 3 // 固定 3 个选项
-
-// 时间配置（按难度）
-const TIME_CONFIG = {
-  simple: { initial: 45, max: 90 },
-  medium: { initial: 35, max: 90 },
-  hard: { initial: 25, max: 90 }
+// 难度配置（选项数 + 时间 + 时间奖励）
+const DIFFICULTY_CONFIG = {
+  simple: { options: 2, initial: 50, max: 90, bonus: 4 },
+  medium: { options: 3, initial: 35, max: 90, bonus: 3 },
+  hard: { options: 4, initial: 25, max: 90, bonus: 2 }
 }
 
 const config = computed(() => {
   const diff = store.gameDifficulty || 'medium'
-  return TIME_CONFIG[diff] || TIME_CONFIG.medium
+  return DIFFICULTY_CONFIG[diff] || DIFFICULTY_CONFIG.medium
 })
 
 const phase = ref('ready')
@@ -135,8 +133,16 @@ const yoyoBubble = ref('Ready to race?')
 const showStars = ref(false)
 
 const starLevel = computed(() => {
-  if (score.value.correct >= 15) return 3
-  if (score.value.correct >= 8) return 2
+  // 星级阈值按难度适配：simple 更容易拿星，hard 需要更多正确
+  const diff = store.gameDifficulty || 'medium'
+  const thresholds = {
+    simple: { three: 10, two: 5 },
+    medium: { three: 15, two: 8 },
+    hard: { three: 20, two: 12 }
+  }
+  const t = thresholds[diff] || thresholds.medium
+  if (score.value.correct >= t.three) return 3
+  if (score.value.correct >= t.two) return 2
   return 1
 })
 
@@ -154,7 +160,8 @@ let countdownTimer = null
 let gameTimer = null
 
 function getTimeBonus() {
-  const bonus = store.gameCombo >= 3 ? 5 : 3
+  const diffBonus = config.value.bonus || 3
+  const bonus = store.gameCombo >= 3 ? diffBonus + 2 : diffBonus
   return Math.min(timeLeft.value + bonus, maxTime.value)
 }
 
@@ -210,7 +217,7 @@ function generateRound() {
 
   const distractors = effectivePool.filter(w => w.id !== targetWord.value.id)
     .sort(() => Math.random() - 0.5)
-    .slice(0, OPTIONS_COUNT - 1)
+    .slice(0, (config.value.options || 3) - 1)
 
   const opts = [targetWord.value, ...distractors].sort(() => Math.random() - 0.5)
   options.value = opts
@@ -248,7 +255,6 @@ function handleSelect(opt) {
     feedbackText.value = wrongMsgs[Math.floor(Math.random() * wrongMsgs.length)]
     feedbackClass.value = 'feedback-wrong'
     setYoyo('encourage', feedbackText.value)
-    store.addStars(1)
     store.resetCombo()
   }
 
@@ -266,21 +272,30 @@ function handleSelect(opt) {
 
 function finishGame() {
   clearInterval(gameTimer)
-  clearInterval(countdownTimer)
+  clearTimeout(countdownTimer)
   sfxComplete()
   phase.value = 'complete'
   store.updateGameScore('speed-rush', score.value.correct)
 
-  if (score.value.correct >= 15) {
+  // 动态阈值与 starLevel 一致
+  const diff = store.gameDifficulty || 'medium'
+  const thresholds = {
+    simple: { three: 10, two: 5, pass: 4 },
+    medium: { three: 15, two: 8, pass: 6 },
+    hard: { three: 20, two: 12, pass: 8 }
+  }
+  const t = thresholds[diff] || thresholds.medium
+
+  if (score.value.correct >= t.three) {
     setYoyo('celebrate', starMessages[2])
-  } else if (score.value.correct >= 8) {
+  } else if (score.value.correct >= t.two) {
     setYoyo('happy', starMessages[1])
   } else {
     setYoyo('encourage', starMessages[0])
   }
 
-  if (score.value.correct >= 10) {
-    emit('game-complete')
+  if (score.value.correct >= t.pass) {
+    emit('game-complete', { stars: starLevel.value })
   }
 }
 

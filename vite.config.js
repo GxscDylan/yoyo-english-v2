@@ -104,6 +104,8 @@ export default defineConfig(({ mode }) => ({
     }
   },
   server: {
+    port: 5173,
+    strictPort: true,
     allowedHosts: ['.cpolar.top', 'localhost']
   },
   preview: {

@@ -113,16 +113,35 @@ export function useSpeech() {
     utter.lang = 'en-US'
     utter.volume = 1.0
 
+    // Chrome 中 voices 异步加载，首次调用可能为空
+    const setVoiceAndSpeak = () => {
+      const voices = window.speechSynthesis.getVoices()
+      const enVoice = voices.find(v => v.lang.startsWith('en'))
+      if (enVoice) utter.voice = enVoice
+      
+      utter.onstart = () => { isSpeaking.value = true }
+      utter.onend = () => { isSpeaking.value = false; if (onEnd) onEnd() }
+      utter.onerror = (e) => { 
+        console.error('[TTS Error]', e)
+        isSpeaking.value = false
+        if (onError) onError()
+        else lastError.value = 'TTS失败'
+      }
+
+      window.speechSynthesis.cancel()
+      window.speechSynthesis.speak(utter)
+    }
+
     const voices = window.speechSynthesis.getVoices()
-    const enVoice = voices.find(v => v.lang.startsWith('en'))
-    if (enVoice) utter.voice = enVoice
-
-    utter.onstart = () => { isSpeaking.value = true }
-    utter.onend = () => { isSpeaking.value = false; if (onEnd) onEnd() }
-    utter.onerror = () => { isSpeaking.value = false; if (onError) onError(); else lastError.value = 'TTS失败' }
-
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utter)
+    if (voices.length === 0) {
+      // 首次加载，等待 voices 就绪
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null
+        setVoiceAndSpeak()
+      }
+    } else {
+      setVoiceAndSpeak()
+    }
   }
 
   /** 播放倒计时 */

@@ -303,8 +303,8 @@ function finishGame() {
   const msg = score.value.correct >= 4 ? 'Amazing job!' : score.value.correct >= 3 ? 'Well done!' : 'Keep practicing!'
   setYoyo('celebrate', msg, true)
   store.updateGameScore('listen', score.value.correct)
-  if (score.value.correct >= totalRounds) {
-    emit('game-complete')
+  if (score.value.correct >= 3) {
+    emit('game-complete', { stars: starLevel.value })
   }
 }
 

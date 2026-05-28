@@ -3,7 +3,7 @@
     <!-- 顶部导航 -->
     <header class="sentence-header">
       <button class="back-btn" @click="goBack">
-        <span class="back-arrow">←</span>
+        <span class="back-icon">🏠</span>
       </button>
       <div class="header-info">
         <span class="header-emoji">💬</span>
@@ -180,18 +180,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useLearningStore } from '@/stores/learning'
-import { L2_SENTENCES, ALL_WORDS } from '@/data/words'
+import { L2_SENTENCES } from '@/data/words'
 import { useSpeech } from '@/composables/useSpeech'
 import { sfxCorrect, sfxComplete, sfxStar } from '@/composables/useSfx'
+import { triggerConfetti } from '@/composables/useConfetti'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 
 const router = useRouter()
 const route = useRoute()
 const store = useLearningStore()
-const { speak, playAudio, stop, isSpeaking } = useSpeech()
+const { speak, playAudio, stop } = useSpeech()
 
 // ============================================================
 // 状态
@@ -217,45 +218,151 @@ const tappedCount = ref(0)
 /** 根据关键词映射已学单词 */
 const KEYWORD_MAP = {
   // greeting
+  'Hello': { zh: '你好', emoji: '👋' },
+  'Hi': { zh: '嗨', emoji: '👋' },
+  'I': { zh: '我', emoji: '🙋' },
+  'am': { zh: '是', emoji: '📌' },
+  "I'm": { zh: '我是', emoji: '🙋' },
   'YoYo': { zh: '呦呦', emoji: '🐯' },
+  'your': { zh: '你的', emoji: '👤' },
   'name': { zh: '名字', emoji: '📛' },
+  'my': { zh: '我的', emoji: '👤' },
+  'is': { zh: '是', emoji: '📌' },
   'morning': { zh: '早上', emoji: '🌅' },
+  'Good': { zh: '好的', emoji: '👍' },
   'Goodbye': { zh: '再见', emoji: '👋' },
+  'Bye': { zh: '拜拜', emoji: '👋' },
   'Nice': { zh: '好的', emoji: '👍' },
   'meet': { zh: '见面', emoji: '🤝' },
+  'you': { zh: '你', emoji: '👉' },
+  'to': { zh: '到', emoji: '➡️' },
+  'too': { zh: '也', emoji: '➕' },
   // color
+  'What': { zh: '什么', emoji: '❓' },
+  "What's": { zh: '什么是', emoji: '❓' },
   'color': { zh: '颜色', emoji: '🎨' },
   'red': { zh: '红色', emoji: '🔴' },
   'blue': { zh: '蓝色', emoji: '🔵' },
   'green': { zh: '绿色', emoji: '🟢' },
+  'yellow': { zh: '黄色', emoji: '🟡' },
+  'orange': { zh: '橙色', emoji: '🟠' },
+  'purple': { zh: '紫色', emoji: '🟣' },
+  'white': { zh: '白色', emoji: '⚪' },
+  'black': { zh: '黑色', emoji: '⚫' },
+  'pink': { zh: '粉色', emoji: '💗' },
+  'brown': { zh: '棕色', emoji: '🟤' },
+  'It': { zh: '它', emoji: '👆' },
   // number
+  'How': { zh: '多少', emoji: '❓' },
   'many': { zh: '多少', emoji: '❓' },
+  'one': { zh: '一', emoji: '1️⃣' },
+  'two': { zh: '二', emoji: '2️⃣' },
   'three': { zh: '三', emoji: '3️⃣' },
+  'four': { zh: '四', emoji: '4️⃣' },
   'five': { zh: '五', emoji: '5️⃣' },
+  'six': { zh: '六', emoji: '6️⃣' },
+  'seven': { zh: '七', emoji: '7️⃣' },
+  'eight': { zh: '八', emoji: '8️⃣' },
+  'nine': { zh: '九', emoji: '9️⃣' },
+  'ten': { zh: '十', emoji: '🔟' },
   'fingers': { zh: '手指', emoji: '🖐️' },
   'Count': { zh: '数', emoji: '🔢' },
+  'count': { zh: '数', emoji: '🔢' },
+  'me': { zh: '我', emoji: '🙋' },
+  'can': { zh: '能', emoji: '💪' },
+  'see': { zh: '看见', emoji: '👀' },
+  'There': { zh: '有', emoji: '👀' },
+  'are': { zh: '有', emoji: '📌' },
+  'see': { zh: '看见', emoji: '👀' },
   // action
   'run': { zh: '跑', emoji: '🏃' },
   'jump': { zh: '跳', emoji: '🦘' },
   'dance': { zh: '跳舞', emoji: '💃' },
   'swim': { zh: '游泳', emoji: '🏊' },
+  'sing': { zh: '唱歌', emoji: '🎤' },
+  'draw': { zh: '画画', emoji: '🎨' },
+  'read': { zh: '阅读', emoji: '📖' },
+  'write': { zh: '写字', emoji: '✏️' },
+  'Let': { zh: '让', emoji: '💡' },
+  "Let's": { zh: '让我们', emoji: '💡' },
+  'go': { zh: '去', emoji: '🚶' },
   // weather
+  "don't": { zh: '不要', emoji: '🚫' },
   'weather': { zh: '天气', emoji: '🌤️' },
   'sunny': { zh: '晴天', emoji: '☀️' },
   'raining': { zh: '下雨', emoji: '🌧️' },
+  'rainy': { zh: '下雨的', emoji: '🌧️' },
   'snowy': { zh: '下雪', emoji: '🌨️' },
+  'cloudy': { zh: '多云', emoji: '☁️' },
+  'windy': { zh: '刮风', emoji: '🌬️' },
+  'hot': { zh: '热', emoji: '🔥' },
+  'cold': { zh: '冷', emoji: '🧊' },
   // preference
+  'favorite': { zh: '最喜欢的', emoji: '⭐' },
   'like': { zh: '喜欢', emoji: '❤️' },
+  'love': { zh: '爱', emoji: '💕' },
   'apples': { zh: '苹果', emoji: '🍎' },
   'cake': { zh: '蛋糕', emoji: '🎂' },
   'Yes': { zh: '是的', emoji: '✅' },
   'No': { zh: '不', emoji: '❌' },
+  'please': { zh: '请', emoji: '🙏' },
+  'thank': { zh: '谢谢', emoji: '🙏' },
+  'Do': { zh: '做', emoji: '🤔' },
   // body
   'nose': { zh: '鼻子', emoji: '👃' },
   'hand': { zh: '手', emoji: '🖐️' },
+  'hands': { zh: '手', emoji: '🖐️' },
   'eyes': { zh: '眼睛', emoji: '👀' },
+  'ear': { zh: '耳朵', emoji: '👂' },
+  'mouth': { zh: '嘴巴', emoji: '👄' },
+  'head': { zh: '头', emoji: '🧑' },
   'Clap': { zh: '拍', emoji: '👏' },
   'Touch': { zh: '摸', emoji: '👆' },
+  // animal
+  'dog': { zh: '狗', emoji: '🐕' },
+  'cat': { zh: '猫', emoji: '🐈' },
+  'bird': { zh: '鸟', emoji: '🐦' },
+  'fish': { zh: '鱼', emoji: '🐟' },
+  'rabbit': { zh: '兔子', emoji: '🐇' },
+  'duck': { zh: '鸭子', emoji: '🦆' },
+  'lion': { zh: '狮子', emoji: '🦁' },
+  'tiger': { zh: '老虎', emoji: '🐅' },
+  'elephant': { zh: '大象', emoji: '🐘' },
+  'monkey': { zh: '猴子', emoji: '🐒' },
+  // food
+  'eat': { zh: '吃', emoji: '🍽️' },
+  'drink': { zh: '喝', emoji: '🥤' },
+  'water': { zh: '水', emoji: '💧' },
+  'milk': { zh: '牛奶', emoji: '🥛' },
+  'rice': { zh: '米饭', emoji: '🍚' },
+  'bread': { zh: '面包', emoji: '🍞' },
+  'egg': { zh: '鸡蛋', emoji: '🥚' },
+  'meat': { zh: '肉', emoji: '🥩' },
+  'fruit': { zh: '水果', emoji: '🍇' },
+  'vegetable': { zh: '蔬菜', emoji: '🥬' },
+  'Want': { zh: '想要', emoji: '🤩' },
+  // daily
+  'time': { zh: '时间', emoji: '⏰' },
+  'bed': { zh: '床', emoji: '🛏️' },
+  'up': { zh: '上', emoji: '⬆️' },
+  'Get': { zh: '起来', emoji: '🛏️' },
+  'school': { zh: '学校', emoji: '🏫' },
+  'go': { zh: '去', emoji: '🚶' },
+  'sleep': { zh: '睡觉', emoji: '😴' },
+  'night': { zh: '晚上', emoji: '🌙' },
+  'today': { zh: '今天', emoji: '📅' },
+  'day': { zh: '天', emoji: '📅' },
+  "How's": { zh: '怎么样', emoji: '❓' },
+  "It's": { zh: '它是', emoji: '👆' },
+  // family
+  'family': { zh: '家庭', emoji: '👨‍👩‍👧‍👦' },
+  'mom': { zh: '妈妈', emoji: '👩' },
+  'dad': { zh: '爸爸', emoji: '👨' },
+  'sister': { zh: '姐姐/妹妹', emoji: '👧' },
+  'brother': { zh: '哥哥/弟弟', emoji: '👦' },
+  'grandma': { zh: '奶奶', emoji: '👵' },
+  'grandpa': { zh: '爷爷', emoji: '👴' },
+  'This': { zh: '这个', emoji: '👉' },
 }
 
 /** 本轮练习的句型（按分类过滤或全部） */
@@ -272,7 +379,7 @@ const currentSentence = computed(() => roundSentences.value[currentIndex.value])
 
 const progressPercent = computed(() =>
   roundSentences.value.length > 0
-    ? ((currentIndex.value + (step.value - 1) / 3) / roundSentences.value.length) * 100
+    ? ((currentIndex.value + step.value / 3) / roundSentences.value.length) * 100
     : 0
 )
 
@@ -388,6 +495,7 @@ function finishRound() {
   store.addStars(stars)
   sfxComplete()
   sfxStar()
+  triggerConfetti(50)
   setYoyo('celebrate', '你太厉害了！')
 }
 
@@ -449,7 +557,8 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 40%, #DDD6FE 100%);
   display: flex; flex-direction: column;
   position: relative;
-  padding-bottom: 120px;
+  padding-bottom: 80px;
+  overflow-y: auto;
 }
 
 .sentence-header {
@@ -458,12 +567,15 @@ onUnmounted(() => {
   position: relative; z-index: 10;
 }
 .back-btn {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: rgba(255,255,255,0.8); border: none; cursor: pointer;
-  font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
-  transition: transform 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  background: var(--border-light);
+  border: none; border-radius: 50%;
+  cursor: pointer; transition: all 0.2s;
 }
-.back-btn:active { transform: scale(0.9); }
+.back-btn:hover { background: var(--color-primary-light); transform: scale(1.05); }
+.back-btn .back-icon { font-size: 1.3rem; }
+.back-btn:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
 .header-info {
   display: flex; align-items: center; gap: 8px; flex: 1;
 }
@@ -555,10 +667,10 @@ onUnmounted(() => {
    ============================================================ */
 .sentence-card {
   background: white; border-radius: 24px;
-  padding: 32px 24px; min-height: 260px;
+  padding: 24px 20px;
   box-shadow: 0 4px 24px rgba(139, 92, 246, 0.12);
   display: flex; flex-direction: column; align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 /* Step 1: 听 */
@@ -588,6 +700,7 @@ onUnmounted(() => {
   transition: transform 0.2s;
 }
 .play-btn:active { transform: scale(0.9); }
+.play-btn:focus-visible { outline: 3px solid #8B5CF6; outline-offset: 2px; }
 .play-btn.playing { animation: pulse 1s ease-in-out infinite; }
 .playing-wave { animation: wave 0.5s ease-in-out infinite; }
 .play-btn.small {
@@ -645,6 +758,7 @@ onUnmounted(() => {
   cursor: pointer; transition: transform 0.2s;
 }
 .btn-play-full:active { transform: scale(0.95); }
+.btn-play-full:focus-visible { outline: 3px solid #8B5CF6; outline-offset: 2px; }
 
 /* Step 3: 跟读 */
 .speak-sentence {
@@ -672,6 +786,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 .btn-say:active { transform: scale(0.95); }
+.btn-say:focus-visible { outline: 3px solid #10B981; outline-offset: 2px; }
 .btn-icon { font-size: 1.2rem; }
 
 .btn-skip-speak {
@@ -681,6 +796,7 @@ onUnmounted(() => {
   transition: transform 0.2s;
 }
 .btn-skip-speak:active { transform: scale(0.95); }
+.btn-skip-speak:focus-visible { outline: 3px solid #9CA3AF; outline-offset: 2px; }
 
 /* 底部按钮 */
 .bottom-actions {
@@ -694,6 +810,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
 .btn-next:active { transform: scale(0.95); }
+.btn-next:focus-visible { outline: 3px solid #8B5CF6; outline-offset: 2px; }
 
 /* ============================================================
    完成庆祝
@@ -738,6 +855,7 @@ onUnmounted(() => {
   cursor: pointer; transition: transform 0.2s;
 }
 .btn-again:active { transform: scale(0.95); }
+.btn-again:focus-visible { outline: 3px solid #8B5CF6; outline-offset: 2px; }
 .btn-home {
   padding: 14px 32px; border-radius: 20px;
   background: rgba(255,255,255,0.7); border: 2px solid #DDD6FE;
@@ -745,6 +863,7 @@ onUnmounted(() => {
   cursor: pointer; transition: transform 0.2s;
 }
 .btn-home:active { transform: scale(0.95); }
+.btn-home:focus-visible { outline: 3px solid #7C3AED; outline-offset: 2px; }
 
 /* ============================================================
    呦呦位置

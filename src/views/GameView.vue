@@ -41,18 +41,22 @@ const showCatchStars = ref(false)
 const catchCategoryIndex = ref(-1)
 const catchTriggerLabel = ref('')
 
-function onGameComplete() {
+function onGameComplete(payload) {
   // 游戏通关时检查是否触发 Catch Stars
-  if (canTriggerCatchStars()) {
+  if (canTriggerCatchStars(payload)) {
     showCatchStars.value = true
     catchCategoryIndex.value = -1
     catchTriggerLabel.value = 'game-clear'
   }
 }
 
-function canTriggerCatchStars() {
-  // 简化版：每次游戏通关都尝试，Cooldown 由 store 管理
-  return store.gameScores[route.params.gameId] > 0
+function canTriggerCatchStars(payload) {
+  // 只有本次游戏表现达标才触发（三星或分数 >= 阈值）
+  if (payload && typeof payload.stars === 'number') {
+    return payload.stars >= 2 && store.canTriggerCatchStars(-1)
+  }
+  // fallback：无 payload 时依赖 store 的全局冷却检查
+  return store.canTriggerCatchStars(-1)
 }
 
 function closeCatchStars() {

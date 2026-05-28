@@ -2,7 +2,9 @@
   <div class="nursery-page" :style="{ background: pageBg }">
     <!-- 顶部 -->
     <header class="nursery-header">
-      <button class="btn-back" @click="goHome">← Home</button>
+      <button class="btn-back" @click="goHome">
+        <span class="back-icon">🏠</span>
+      </button>
       <div class="nursery-title">
         <span class="nursery-emoji">{{ rhyme?.emoji }}</span>
         <h2>{{ rhyme?.title || 'Nursery Rhymes' }}</h2>
@@ -95,7 +97,8 @@ let autoTimer = null
 
 const rhyme = computed(() => {
   if (!currentRhymeId.value) return null
-  return getRhymeByCategory(currentRhymeId.value) || rhymes.find(r => r.categoryId === currentRhymeId.value)
+  // 优先按 rhyme.id 查找，其次按 categoryId 查找
+  return rhymes.find(r => r.id === currentRhymeId.value) || getRhymeByCategory(currentRhymeId.value)
 })
 
 const pageBg = computed(() => {
@@ -151,10 +154,13 @@ function selectRhyme(id) {
   currentRhymeId.value = id
   activeLine.value = 0
   yoyoMood.value = 'happy'
-  yoyoBubble.value = 'Great choice! Let\'s sing together! 🎵'
+  yoyoBubble.value = 'Great choice! Let\'s sing together! '
   setTimeout(() => { yoyoMood.value = 'idle'; yoyoBubble.value = '' }, 3000)
-  // 自动朗读第一行
-  nextTick(() => readLine(0))
+  // 自动朗读第一行（等待响应式更新完成）
+  setTimeout(() => {
+    console.log('[Nursery] selectRhyme triggered, rhyme:', rhyme.value?.title)
+    readLine(0)
+  }, 50)
 }
 
 function readLine(index) {
@@ -350,9 +356,14 @@ onUnmounted(() => {
 }
 
 .btn-back {
-  background: none; border: none; font-size: var(--font-size-sm);
-  color: var(--text-secondary); cursor: pointer; padding: var(--space-xs) 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  background: var(--border-light);
+  border: none; border-radius: 50%;
+  cursor: pointer; transition: all 0.2s;
 }
+.btn-back:hover { background: var(--color-primary-light); transform: scale(1.05); }
+.btn-back .back-icon { font-size: 1.3rem; }
 
 .nursery-title {
   display: flex; align-items: center; gap: var(--space-sm);

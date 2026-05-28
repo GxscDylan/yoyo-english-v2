@@ -67,7 +67,7 @@
                   <span v-if="catProgress(cat.id) >= 100" class="node-check">✅</span>
                 </div>
                 <span class="node-label" v-if="i < store.unlockedCategories">{{ cat.name }}</span>
-                <span class="node-scene" v-if="i < store.unlockedCategories">{{ sceneName(cat.scene) }}</span>
+                <span class="node-scene" v-if="i === store.unlockedCategories - 1 || catProgress(cat.id) >= 100">{{ sceneName(cat.scene) }}</span>
                 <div v-if="i < store.unlockedCategories" class="node-bar">
                   <div class="node-bar-fill" :style="{ width: catProgress(cat.id) + '%' }"></div>
                 </div>
@@ -87,7 +87,7 @@
       <!-- 每日打卡 streak 徽章 -->
       <section class="streak-card" v-if="!isLocked">
         <div class="streak-main">
-          <span class="streak-flame" :class="{ active: store.currentStreak > 0 }">🔥</span>
+          <span class="streak-flame" :class="{ active: store.currentStreak > 0 }"></span>
           <div class="streak-info">
             <span class="streak-count">连续学习 <strong>{{ store.currentStreak }}</strong> 天</span>
             <span class="streak-hint" v-if="store.currentStreak === 0">今天开始打卡吧！</span>
@@ -163,36 +163,30 @@
 
     <!-- 底部导航（锁屏/学习模式时隐藏） -->
     <nav class="home-nav" v-if="!isLocked && store.settings.learningMode !== 'card'">
-      <button class="nav-btn nav-game" @click="goGame('match')">
-        <span>🔍 Find It</span>
-      </button>
-      <button class="nav-btn nav-game" @click="goGame('listen')">
-        <span>🎧 Listen</span>
-      </button>
-      <button class="nav-btn nav-game" @click="goGame('memory')">
-        <span>🃏 Memory</span>
-      </button>
-      <button class="nav-btn nav-balloon" @click="goGame('balloon')">
-        <span>🎈 Pop!</span>
-      </button>
-      <button class="nav-btn nav-speed" @click="goGame('speed-rush')">
-        <span>⚡ Rush</span>
-      </button>
-      <button class="nav-btn nav-sort" @click="goGame('sort-it')">
-        <span>🗂️ Sort!</span>
+      <button class="nav-btn nav-playground" @click="goPlayground">
+        <span class="nav-icon">🎮</span>
+        <span>游乐场</span>
       </button>
       <button class="nav-btn nav-nursery" @click="goNursery">
-        <span>🎵 Songs</span>
+        <span class="nav-icon">🎵</span>
+        <span>Songs</span>
       </button>
       <button class="nav-btn nav-sentence" @click="goSentence">
-        <span>💬 Sentences</span>
+        <span class="nav-icon">💬</span>
+        <span>Sentences</span>
+      </button>
+      <button class="nav-btn nav-review" @click="goReview">
+        <span class="nav-icon">🔄</span>
+        <span>复习</span>
       </button>
       <button class="nav-btn nav-parent" @click="goParent" title="家长中心">
-        <svg class="nav-parent-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <path d="M9 12l2 2 4-4"/>
-        </svg>
-        <span class="nav-parent-text">家长</span>
+        <span class="nav-icon">
+          <svg class="nav-shield" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </span>
+        <span>家长</span>
       </button>
     </nav>
   </div>
@@ -312,16 +306,27 @@ function catProgress(catId) {
 
 function goLearn(catId) { router.push(`/learn/${catId}`) }
 function goGame(gameId) { router.push(`/game/${gameId}`) }
+function goPlayground() { router.push('/playground') }
 function goParent() { router.push('/parent') }
 function goReview() { router.push('/review') }
 function goNursery() { router.push('/nursery') }
 function goSentence() { router.push('/sentence') }
 
+// 场景名称映射
 const sceneLabels = {
-  forest: '🌲 森林', orchard: '🍎 果园', rainbow: '🌈 彩虹', mirror: '🪞 魔镜', home: '🏠 家',
+  forest: '🌲 森林', orchard: '🍎 果园', rainbow: ' 彩虹', mirror: ' 魔镜', home: '🏠 家',
   kitchen: '🍳 厨房', city: '🏢 城市', outdoor: '☀️ 户外', classroom: '📚 教室',
-  playground: '🛝 游乐场', bedroom: '🛏️ 卧室', heart: '❤️ 心灵'
+  playground: '🛝 游乐场', bedroom: ' 卧室', heart: '❤️ 心灵'
 }
+
+// 底部导航按钮配置 - 5 个主要入口
+const NAV_BUTTONS = [
+  { key: 'playground', label: '游乐场', icon: '🎮', action: () => goGame('match') },
+  { key: 'nursery', label: 'Songs', icon: '🎵', action: goNursery },
+  { key: 'sentence', label: 'Sentences', icon: '💬', action: goSentence },
+  { key: 'review', label: '复习', icon: '🔄', action: goReview },
+  { key: 'parent', label: '家长', icon: '🛡️', action: goParent },
+]
 function sceneName(scene) { return sceneLabels[scene] || scene }
 
 onMounted(async () => {
@@ -378,7 +383,7 @@ onMounted(async () => {
 
 <style scoped>
 .home-page { width: 100vw; height: 100dvh; display: flex; flex-direction: column; background: var(--bg-main); overflow: hidden; }
-.home-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+.home-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: var(--space-lg); }
 
 /* ===== 锁屏 ===== */
 .home-locked .home-main { display: none; }
@@ -415,46 +420,47 @@ onMounted(async () => {
 
 /* ===== 顶部 ===== */
 .home-top {
-  display: flex; gap: var(--space-lg); padding: var(--space-lg) var(--space-xl);
+  display: flex; gap: var(--space-sm); padding: var(--space-sm) var(--space-xl) 0;
   align-items: flex-start;
 }
-.hero-left { flex: 0 0 auto; min-width: 140px; display: flex; align-items: center; gap: var(--space-sm); justify-content: center; }
+.hero-left { flex: 0 0 100px; min-width: 100px; display: flex; align-items: center; gap: var(--space-sm); justify-content: center; }
 .hero-right { flex: 1; min-width: 0; }
 
 /* ===== 冒险地图 ===== */
 .adventure-map {
   background: linear-gradient(135deg, #FFFDF7 0%, #FFF8E1 100%);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg); box-shadow: var(--shadow-card);
+  padding: var(--space-sm) var(--space-md); box-shadow: var(--shadow-card);
   border: 2px solid #FFE082;
 }
-.map-title { font-size: var(--font-size-sm); color: #F57F17; font-weight: 700; margin-bottom: var(--space-md); letter-spacing: 0.5px; }
+.map-title { font-size: var(--font-size-xs); color: #F57F17; font-weight: 700; margin-bottom: var(--space-sm); letter-spacing: 0.5px; }
 .map-path {
   display: flex; align-items: flex-start; gap: 0;
   overflow-x: auto; padding-bottom: var(--space-sm);
 }
 .map-node {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  position: relative; min-width: 72px;
-  padding: 6px var(--space-xs) 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  position: relative; min-width: 48px; flex-shrink: 0;
+  padding: 4px var(--space-xs) 2px;
   transition: background 0.3s;
   border-radius: 12px;
 }
+.map-node.current { min-width: 64px; }
 .map-node.unlocked { background: rgba(255,255,255,0.5); }
 .map-node.unlocked:hover { background: rgba(255,255,255,0.85); }
 .map-node:not(:last-child)::after {
   content: '→';
-  position: absolute; right: -6px; top: 32%;
-  color: #FFB74D; font-size: 0.9rem; opacity: 0.7;
+  position: absolute; right: -8px; top: 28%;
+  color: #FFB74D; font-size: 0.8rem; opacity: 0.6;
   z-index: 1;
 }
-.map-node.locked:not(:last-child)::after { opacity: 0.2; }
+.map-node.locked:not(:last-child)::after { opacity: 0.15; }
 
 .node-icon-wrap {
   position: relative; display: flex; align-items: center; justify-content: center;
-  width: 48px; height: 48px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 50%;
   background: rgba(255,255,255,0.8);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   transition: all 0.3s;
 }
 .map-node.completed .node-icon-wrap {
@@ -465,13 +471,21 @@ onMounted(async () => {
   background: rgba(0,0,0,0.04);
   box-shadow: none;
 }
-.node-icon { font-size: 1.6rem; transition: transform 0.3s; }
+.node-icon { font-size: 1.4rem; transition: transform 0.3s; }
 .node-check {
   position: absolute; top: -4px; right: -4px; font-size: 0.7rem;
   animation: checkPop 0.4s var(--ease-bounce);
 }
 .node-label { font-size: 0.7rem; color: var(--text-primary); font-weight: 600; white-space: nowrap; }
-.node-scene { font-size: 0.55rem; color: var(--text-hint); white-space: nowrap; }
+.map-node:not(.current):not(.completed) .node-label { font-size: 0.6rem; }
+.map-node.locked .node-label { display: none; }
+.map-node.locked .node-scene { display: none; }
+.map-node.locked .node-bar { display: none; }
+.map-node.locked .node-pct { display: none; }
+.map-node:not(.current):not(.completed) .node-bar { width: 36px; height: 4px; }
+.map-node:not(.current):not(.completed) .node-pct { font-size: 0.55rem; }
+.map-node:not(.current):not(.completed) .node-scene { display: none; }
+.node-scene { font-size: 0.5rem; color: var(--text-hint); white-space: nowrap; opacity: 0.7; }
 .node-bar { width: 52px; height: 5px; background: var(--border-light); border-radius: var(--radius-full); overflow: hidden; }
 .node-bar-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), #FFB74D); border-radius: var(--radius-full); transition: width 0.5s; }
 .node-pct { font-size: 0.6rem; color: var(--color-primary); font-weight: 700; }
@@ -491,7 +505,7 @@ onMounted(async () => {
 .map-node.completed .node-pct { color: #4CAF50; }
 .map-node.locked .node-icon { opacity: 0.3; }
 .map-node.locked .node-label { opacity: 0.3; }
-.map-footer { margin-top: var(--space-sm); font-size: var(--font-size-xs); color: var(--text-hint); text-align: right; display: flex; justify-content: space-between; }
+.map-footer { margin-top: var(--space-sm); font-size: var(--font-size-xs); color: var(--text-hint); text-align: right; display: flex; justify-content: space-between; padding-top: var(--space-xs); border-top: 1px solid rgba(0,0,0,0.06); }
 
 @keyframes checkPop {
   0% { transform: scale(0); }
@@ -542,12 +556,12 @@ onMounted(async () => {
 
 /* ===== 每日打卡 streak 徽章 ===== */
 .streak-card {
-  margin: 0 var(--space-xl) var(--space-md);
-  padding: var(--space-md) var(--space-lg);
+  margin: var(--space-xs) var(--space-xl) var(--space-xs);
+  padding: var(--space-xs) var(--space-lg);
   background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
   border-radius: var(--radius-lg);
   border: 2px solid #FFB74D;
-  display: flex; align-items: center; gap: var(--space-lg);
+  display: flex; align-items: center; gap: var(--space-sm);
   box-shadow: var(--shadow-card);
 }
 .streak-main { display: flex; align-items: center; gap: var(--space-md); flex: 1; min-width: 0; }
@@ -597,11 +611,11 @@ onMounted(async () => {
 
 /* ===== 今日推荐 ===== */
 .today-section {
-  padding: 0 var(--space-xl); margin-bottom: var(--space-md);
+  padding: 0 var(--space-xl); margin-bottom: var(--space-sm);
 }
 .section-header {
-  display: flex; align-items: center; gap: var(--space-sm);
-  margin-bottom: var(--space-md);
+  display: flex; align-items: center; gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
 }
 .section-icon { font-size: 1.2rem; }
 .section-header h3 { font-size: var(--font-size-base); color: var(--text-primary); font-weight: 700; }
@@ -656,45 +670,35 @@ onMounted(async () => {
 
 /* ===== 底部导航 ===== */
 .home-nav {
-  display: flex; gap: var(--space-xs); padding: var(--space-md) var(--space-xl);
+  display: flex; gap: var(--space-xs); padding: var(--space-xs) var(--space-xl) var(--space-sm);
   background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
   border-top: 1px solid var(--border-light);
   position: relative; z-index: 110;
-  flex-wrap: wrap; justify-content: center;
 }
+
 .nav-btn {
-  flex: 1; min-width: 0; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-md);
-  font-size: var(--font-size-xs); font-weight: 700; text-align: center;
+  flex: 1 1 auto; min-width: 0; padding: 4px var(--space-xs); border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm); font-weight: 700; text-align: center;
   transition: all 0.2s;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  min-height: 40px;
+  min-height: 48px;
 }
-.nav-game { background: linear-gradient(135deg, #EDE7F6, #D1C4E9); color: #5E35B1; }
-.nav-game:hover { transform: scale(1.02); }
+.nav-icon { font-size: 1.3rem; line-height: 1; }
+.nav-playground { background: linear-gradient(135deg, #EDE7F6, #D1C4E9); color: #5E35B1; }
+.nav-playground:hover { transform: scale(1.02); }
 .nav-nursery { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); color: #E65100; }
 .nav-nursery:hover { transform: scale(1.02); }
 .nav-sentence { background: linear-gradient(135deg, #F3E8FF, #DDD6FE); color: #7C3AED; }
 .nav-sentence:hover { transform: scale(1.02); }
-.nav-balloon { background: linear-gradient(135deg, #FFEBEE, #FFCDD2); color: #D32F2F; }
-.nav-balloon:hover { transform: scale(1.02); }
-.nav-speed { background: linear-gradient(135deg, #FFF8E1, #FFE082); color: #F57F17; }
-.nav-speed:hover { transform: scale(1.02); }
-.nav-sort { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); color: #2E7D32; }
-.nav-sort:hover { transform: scale(1.02); }
+.nav-review { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); color: #2E7D32; }
+.nav-review:hover { transform: scale(1.02); }
 .nav-parent {
-  background: var(--border-light); color: var(--text-secondary); flex: 0.6;
+  background: var(--border-light); color: var(--text-secondary); flex: 0.8;
   transition: all 0.2s;
 }
 .nav-parent:hover { background: #E8E0D6; color: var(--text-primary); transform: scale(1.05); }
 .nav-parent:active { transform: scale(0.95); }
-.nav-parent-icon { stroke: currentColor; flex-shrink: 0; }
-.nav-parent-text { font-size: 0.65rem; font-weight: 600; line-height: 1; }
-
-/* 学习模式隐藏游戏 */
-.home-learning-mode .nav-game,
-.home-learning-mode .nav-balloon,
-.home-learning-mode .nav-speed,
-.home-learning-mode .nav-sort { display: none; }
+.nav-shield { stroke: currentColor; flex-shrink: 0; }
 
 /* ===== P1: 锁定的分类卡片 ===== */
 .explore-card.locked {

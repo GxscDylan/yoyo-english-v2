@@ -22,6 +22,12 @@ const router = createRouter({
       meta: { title: '游戏工坊' }
     },
     {
+      path: '/playground',
+      name: 'playground',
+      component: () => import('@/views/PlaygroundView.vue'),
+      meta: { title: '游乐场' }
+    },
+    {
       path: '/parent',
       name: 'parent',
       component: () => import('@/views/ParentView.vue'),

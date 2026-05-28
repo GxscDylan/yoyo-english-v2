@@ -1,7 +1,16 @@
 <template>
   <div class="sort-it-game">
+    <!-- 解锁检测：至少需要 2 个分类才能分类 -->
+    <div v-if="!isUnlocked" class="phase-locked anim-fade-up">
+      <span class="lock-icon">🔒</span>
+      <h1>快分类</h1>
+      <p class="lock-desc">先学完 1 个新分类再来玩分类游戏吧！</p>
+      <p class="lock-hint">当前解锁：{{ store.unlockedCategories }} / 2</p>
+      <button class="btn-home" @click="$router.push('/')">🏠 返回首页</button>
+    </div>
+
     <!-- 准备 -->
-    <div v-if="phase === 'ready'" class="phase-ready anim-fade-up">
+    <div v-else-if="phase === 'ready'" class="phase-ready anim-fade-up">
       <h1>🗂️ 快分类</h1>
       <p class="desc">把单词放到正确的分类篮子里！</p>
       <YoyoMascot :mood="'idle'" :bubble-text="'Let\'s sort them!'" :show-stars="false" />
@@ -125,6 +134,9 @@ const config = computed(() => {
   return DIFFICULTY_CONFIG[diff] || DIFFICULTY_CONFIG.medium
 })
 
+/** 解锁检测：至少 2 个分类才能玩分类游戏 */
+const isUnlocked = computed(() => store.unlockedCategories >= 2)
+
 const phase = ref('ready')
 const countdownNum = ref(3)
 const timeLeft = ref(config.value.timeLimit || 0)
@@ -168,7 +180,7 @@ function prepareBaskets() {
   if (diff === 'simple') {
     // 简单模式：取前 2 个解锁的分类
     baskets.value = store.unlockedCategoryList.slice(0, 2).map(c => ({
-      id: c.id, emoji: c.emoji, label: c.nameZh
+      id: c.id, emoji: c.emoji, label: c.name
     }))
   } else if (diff === 'medium') {
     // 中等模式：优先用主题组，不够就用前 3 个
@@ -177,7 +189,7 @@ function prepareBaskets() {
       baskets.value = group.baskets
     } else {
       baskets.value = store.unlockedCategoryList.slice(0, 3).map(c => ({
-        id: c.id, emoji: c.emoji, label: c.nameZh
+        id: c.id, emoji: c.emoji, label: c.name
       }))
     }
   } else {
@@ -188,7 +200,7 @@ function prepareBaskets() {
       baskets.value = unique.slice(0, 4)
     } else {
       baskets.value = store.unlockedCategoryList.slice(0, 4).map(c => ({
-        id: c.id, emoji: c.emoji, label: c.nameZh
+        id: c.id, emoji: c.emoji, label: c.name
       }))
     }
   }
@@ -207,16 +219,16 @@ function prepareWords() {
     }
   }
 
-  // 补充到 10 个词
-  while (words.value.length < totalWords) {
-    const randomCat = store.unlockedCategoryList[Math.floor(Math.random() * store.unlockedCategoryList.length)]
-    if (randomCat) {
-      const word = randomCat.words[Math.floor(Math.random() * randomCat.words.length)]
-      if (word && !words.value.find(w => w.id === word.id)) {
-        words.value.push(word)
-      }
-    } else {
-      break
+  // 补充到 10 个词（只从当前篮子的分类中选词，避免死局）
+  const basketCategories = baskets.value
+    .map(b => ALL_CATEGORIES.find(c => c.id === b.id))
+    .filter(Boolean)
+  
+  while (words.value.length < totalWords && basketCategories.length > 0) {
+    const randomCat = basketCategories[Math.floor(Math.random() * basketCategories.length)]
+    const word = randomCat.words[Math.floor(Math.random() * randomCat.words.length)]
+    if (word && !words.value.find(w => w.id === word.id)) {
+      words.value.push(word)
     }
   }
 
@@ -262,6 +274,8 @@ function startGame() {
 
 function nextWord() {
   if (currentIdx.value >= totalWords) {
+    // 所有词已分完，立即停止计时器避免空转和重复调用
+    clearInterval(gameTimer)
     finishGame()
     return
   }
@@ -304,6 +318,8 @@ function handleSort(basket) {
 }
 
 function finishGame() {
+  // 防重入：已被调用过则跳过
+  if (phase.value === 'complete') return
   clearInterval(gameTimer)
   sfxComplete()
   phase.value = 'complete'
@@ -317,8 +333,8 @@ function finishGame() {
     setYoyo('encourage', starMessages[0])
   }
 
-  if (score.value.correct >= 8) {
-    emit('game-complete')
+  if (score.value.correct >= 5) {
+    emit('game-complete', { stars: starLevel.value })
   }
 }
 
@@ -426,12 +442,16 @@ onUnmounted(() => {
 .btn-home { background: #F5F5F5; color: var(--text-primary); }
 
 /* 准备/倒计时 */
-.phase-ready, .phase-countdown {
+.phase-ready, .phase-countdown, .phase-locked {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; height: 100%; text-align: center;
 }
 .phase-ready h1 { font-size: 2.5rem; margin-bottom: 8px; }
 .phase-ready .desc { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 24px; }
+.phase-locked .lock-icon { font-size: 5rem; display: block; margin-bottom: 16px; }
+.phase-locked h1 { font-size: 2rem; margin-bottom: 12px; }
+.phase-locked .lock-desc { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 8px; }
+.phase-locked .lock-hint { font-size: 0.95rem; color: var(--text-hint); margin-bottom: 24px; }
 .btn-start {
   padding: 16px 48px; font-size: 1.5rem; border-radius: 32px;
   border: none; background: linear-gradient(135deg, #4CAF50, #8BC34A);

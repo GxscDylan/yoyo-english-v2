@@ -148,13 +148,14 @@ import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
 
 const store = useLearningStore()
+const emit = defineEmits(['game-complete'])
 const { speak, isSpeaking, stop, playAudio } = useSpeech()
 
-// 难度配置
+// 难度配置（选项数 + 回合数）
 const difficultyConfig = {
-  simple: { options: 3, label: 'Easy' },
-  medium: { options: 4, label: 'Medium' },
-  hard: { options: 5, label: 'Hard' }
+  simple: { options: 3, rounds: 4, label: 'Easy' },
+  medium: { options: 4, rounds: 5, label: 'Medium' },
+  hard: { options: 5, rounds: 6, label: 'Hard' }
 }
 
 // 气球颜色
@@ -163,7 +164,10 @@ const BALLOON_COLORS = [
   '#FF9A76', '#54C7EC', '#F96D00', '#E056A0', '#00B4D8'
 ]
 
-const totalRounds = 5
+const totalRounds = computed(() => {
+  const diff = store.gameDifficulty || 'medium'
+  return difficultyConfig[diff]?.rounds || 5
+})
 let usedWordIds = new Set()
 
 const phase = ref('ready')
@@ -174,7 +178,7 @@ const balloons = ref([])
 const feedbackId = ref(null)
 const feedbackText = ref('')
 const feedbackClass = ref('')
-const score = ref({ correct: 0, total: totalRounds })
+const score = ref({ correct: 0, total: totalRounds.value })
 
 const yoyoMood = ref('idle')
 const yoyoBubble = ref('Are you ready?')
@@ -186,7 +190,7 @@ let countdownTimer = null
 let balloonAnimTimer = null
 
 const starLevel = computed(() => {
-  const ratio = score.value.correct / totalRounds
+  const ratio = score.value.correct / totalRounds.value
   if (ratio >= 0.8) return 3
   if (ratio >= 0.5) return 2
   return 1
@@ -292,7 +296,9 @@ function handleSelect(b) {
     feedbackClass.value = 'feedback-correct'
     score.value.correct++
     setYoyo('happy', feedbackText.value, true)
-    store.addStars(1)
+    store.addCombo()
+    const comboBonus = store.getComboBonus()
+    store.addStars(comboBonus)
     store.updateGameScore('balloon', score.value.correct)
   } else {
     sfxWrong()
@@ -300,6 +306,7 @@ function handleSelect(b) {
     feedbackText.value = wrongMsgs[Math.floor(Math.random() * wrongMsgs.length)]
     feedbackClass.value = 'feedback-wrong'
     setYoyo('encourage', feedbackText.value)
+    store.resetCombo()
     setTimeout(() => {
       feedbackId.value = null
       feedbackText.value = ''
@@ -311,7 +318,7 @@ function handleSelect(b) {
 
   phase.value = 'feedback'
   setTimeout(() => {
-    if (currentRound.value < totalRounds) {
+    if (currentRound.value < totalRounds.value) {
       currentRound.value++
       startRound()
     } else {
@@ -343,10 +350,15 @@ function finishGame() {
   const goodMsgs = ['Great job! Keep it up! 💪', 'Well done! Almost perfect! ', 'Nice game! ']
   const keepMsgs = ['Good try! Keep practicing! 🌈', 'You\'re learning! Try again! 🚀', 'Don\'t give up! 💫']
 
-  if (score.value.correct >= 5) {
+  const perfectThreshold = Math.ceil(totalRounds.value * 0.8)
+  const passThreshold = Math.ceil(totalRounds.value * 0.5)
+
+  if (score.value.correct >= perfectThreshold) {
     setYoyo('celebrate', perfectMsgs[Math.floor(Math.random() * perfectMsgs.length)], true)
-  } else if (score.value.correct >= 3) {
+    emit('game-complete', { stars: starLevel.value })
+  } else if (score.value.correct >= passThreshold) {
     setYoyo('happy', goodMsgs[Math.floor(Math.random() * goodMsgs.length)], true)
+    emit('game-complete', { stars: starLevel.value })
   } else {
     setYoyo('encourage', keepMsgs[Math.floor(Math.random() * keepMsgs.length)], true)
   }

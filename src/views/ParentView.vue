@@ -1,7 +1,9 @@
 <template>
   <div class="parent-page">
     <header class="parent-header">
-      <button class="btn-back" @click="$router.push('/')">← 首页</button>
+      <button class="btn-back" @click="$router.push('/')">
+        <span class="back-icon">🏠</span>
+      </button>
       <h2>👨‍👩‍👧 家长中心</h2>
       <div class="header-spacer"></div>
     </header>
@@ -114,7 +116,7 @@
 
       <section class="section-card">
         <h3>🎯 游戏难度</h3>
-        <p class="diff-hint">调整四款游戏的选项数量，适合不同年龄段</p>
+        <p class="diff-hint">调整六款游戏的选项数量，适合不同年龄段</p>
         <div class="diff-grid">
           <button v-for="d in difficulties" :key="d.key" class="diff-option"
             :class="{ active: store.gameDifficulty === d.key }"
@@ -178,6 +180,8 @@
         <div class="row"><span>👂 听音选词</span><span class="score">{{ gameScoreStars('listen') }}</span></div>
         <div class="row"><span>🃏 翻翻乐</span><span class="score">{{ gameScoreStars('memory') }}</span></div>
         <div class="row"><span>🎈 气球碰碰</span><span class="score">{{ gameScoreStars('balloon') }}</span></div>
+        <div class="row"><span>⚡ 快闪速记</span><span class="score">{{ gameScoreStars('speed-rush') }}</span></div>
+        <div class="row"><span>🗂️ 分类小达人</span><span class="score">{{ gameScoreStars('sort-it') }}</span></div>
       </section>
 
       <section class="section-card">
@@ -359,7 +363,15 @@ onMounted(() => store.loadFromDB())
   display: flex; align-items: center; justify-content: space-between;
   padding: var(--space-md) var(--space-xl); background: rgba(255,255,255,0.9); backdrop-filter: blur(8px);
 }
-.btn-back { padding: var(--space-xs) var(--space-md); border-radius: var(--radius-full); font-size: var(--font-size-sm); color: var(--text-secondary); font-weight: 600; }
+.btn-back {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  background: var(--border-light);
+  border: none; border-radius: 50%;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-back:hover { background: var(--color-primary-light); transform: scale(1.05); }
+.btn-back .back-icon { font-size: 1.3rem; }
 .header-spacer { width: 60px; }
 
 .pin-gate { flex: 1; display: flex; align-items: center; justify-content: center; }

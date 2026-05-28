@@ -232,7 +232,7 @@ function flipCard(card) {
             phase.value = 'complete'
             setYoyo('celebrate', 'You found them all!', true)
             store.updateGameScore('memory', starLevel.value)
-            emit('game-complete')
+            emit('game-complete', { stars: starLevel.value })
           }, 600)
         }
       }, 800)
@@ -244,7 +244,7 @@ function flipCard(card) {
       feedbackText.value = wrongMsgs[Math.floor(Math.random() * wrongMsgs.length)]
       feedbackClass.value = 'feedback-wrong'
       setYoyo('encourage', feedbackText.value)
-      store.resetCombo() // 配对失败重置连击
+      // 配对失败不重置连击（记忆游戏鼓励探索）
       setTimeout(() => {
         a.flipped = false; b.flipped = false; a.shaking = false; b.shaking = false
         checkingPair.value = false; flippedCards = []

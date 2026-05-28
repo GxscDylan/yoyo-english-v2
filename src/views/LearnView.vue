@@ -10,7 +10,9 @@
 
     <!-- 顶部导航 -->
     <header class="learn-header">
-      <button class="btn-back" @click="handleBack">← 返回</button>
+      <button class="btn-back" @click="handleBack">
+        <span class="back-icon">🏠</span>
+      </button>
       <div class="header-info">
         <span class="category-emoji">{{ category?.emoji }}</span>
         <span class="category-name">{{ category?.name }}</span>
@@ -323,6 +325,8 @@ const step4FeedbackClass = ref('')
 
 // Step 2 专用：自动重读定时器
 let autoReplayTimer = null
+let autoReplayCount = 0 // 防止无限循环
+const AUTO_REPLAY_MAX = 10 // 最多自动重读 10 次
 
 const currentWord = computed(() => words.value[currentWordIndex.value])
 
@@ -374,6 +378,7 @@ function setYoyo(mood, text, stars = false) {
 
 // 开始学习
 function startLearning() {
+  resetAutoReplay()
   currentStep.value = 1
   setYoyo('idle', `今天我们来认识 ${category.value?.name}！`)
   // 延迟自动播放
@@ -481,11 +486,13 @@ function handleTestAnswer(opt) {
   }
 }
 
-// Step 2 自动重读：4秒无操作重读单词
+// Step 2 自动重读：4秒无操作重读单词（最多 AUTO_REPLAY_MAX 次）
 function startAutoReplayTimer() {
   clearAutoReplayTimer()
+  if (autoReplayCount >= AUTO_REPLAY_MAX) return // 防止无限循环
   autoReplayTimer = setTimeout(() => {
     if (currentStep.value === 2 && !answeredId.value) {
+      autoReplayCount++
       playWord() // 重读单词
       startAutoReplayTimer() // 递归设置下一个
     }
@@ -497,6 +504,11 @@ function clearAutoReplayTimer() {
     clearTimeout(autoReplayTimer)
     autoReplayTimer = null
   }
+}
+
+function resetAutoReplay() {
+  autoReplayCount = 0
+  clearAutoReplayTimer()
 }
 
 // Step 3 录音模拟 + 音效反馈 + 自动前进
@@ -588,6 +600,7 @@ function advanceFromStep4(earnedStars) {
 
   if (currentWordIndex.value < words.value.length - 1) {
     setTimeout(() => {
+      resetAutoReplay()
       currentWordIndex.value++
       currentStep.value = 1
       store.incrementTodayLearned()
@@ -682,16 +695,28 @@ onUnmounted(() => {
   z-index: 10;
 }
 
-.btn-back, .btn-skip {
+.btn-back {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  background: var(--border-light);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-back:hover { background: var(--color-primary-light); transform: scale(1.05); }
+.btn-back .back-icon { font-size: 1.3rem; }
+
+.btn-skip {
   padding: var(--space-xs) var(--space-md);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  transition: all 0.2s;
+  color: var(--text-hint);
+  background: none; border: none;
+  cursor: pointer; transition: all 0.2s;
 }
-.btn-back { color: var(--text-secondary); }
-.btn-skip { color: var(--text-hint); }
-.btn-back:hover, .btn-skip:hover { background: var(--border-light); }
+.btn-skip:hover { background: var(--border-light); }
 
 .header-info {
   display: flex; align-items: center; gap: var(--space-sm);

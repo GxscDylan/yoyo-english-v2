@@ -320,8 +320,8 @@ function finishGame() {
   sfxComplete()
   phase.value = 'complete'
   store.updateGameScore('match', score.value.correct)
-  if (score.value.correct >= totalRounds) {
-    emit('game-complete')
+  if (score.value.correct >= 3) {
+    emit('game-complete', { stars: starLevel.value })
   }
 
   // 个性化鼓励语
