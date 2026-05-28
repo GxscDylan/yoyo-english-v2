@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Windows reserved filenames (cannot be committed to git)
+nul
+con
+prn
+aux

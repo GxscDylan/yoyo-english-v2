@@ -114,7 +114,7 @@
 
       <section class="section-card">
         <h3>🎯 游戏难度</h3>
-        <p class="diff-hint">调整三款游戏的选项数量，适合不同年龄段</p>
+        <p class="diff-hint">调整四款游戏的选项数量，适合不同年龄段</p>
         <div class="diff-grid">
           <button v-for="d in difficulties" :key="d.key" class="diff-option"
             :class="{ active: store.gameDifficulty === d.key }"
@@ -153,10 +153,52 @@
       </section>
 
       <section class="section-card">
+        <h3>📅 本周学习</h3>
+        <div class="week-summary">
+          <div class="week-stat"><span class="week-stat-val">{{ store.weeklySummary.activeDays }}</span><span class="week-stat-lbl">活跃天数</span></div>
+          <div class="week-stat"><span class="week-stat-val">{{ store.weeklySummary.totalSteps }}</span><span class="week-stat-lbl">完成步骤</span></div>
+          <div class="week-stat"><span class="week-stat-val">{{ store.weeklySummary.totalMastered }}</span><span class="week-stat-lbl">掌握单词</span></div>
+          <div class="week-stat"><span class="week-stat-val">{{ store.weeklySummary.totalStars }}</span><span class="week-stat-lbl">获得星星</span></div>
+        </div>
+        <div class="week-chart">
+          <div v-for="day in store.weeklyActivity" :key="day.date" class="week-bar-col" :class="{ today: day.isToday }">
+            <div class="week-bar-wrap">
+              <div class="week-bar" :style="{ height: barHeight(day.steps) + '%' }" :class="{ active: day.steps > 0 }"></div>
+            </div>
+            <span class="week-bar-val" v-if="day.steps > 0">{{ day.steps }}</span>
+            <span class="week-bar-label">{{ day.dayLabel }}</span>
+          </div>
+        </div>
+        <p class="week-streak" v-if="store.currentStreak > 0">🔥 已连续学习 <strong>{{ store.currentStreak }}</strong> 天，继续加油！</p>
+      </section>
+
+      <section class="section-card">
         <h3>🎮 游戏成绩</h3>
         <div class="row"><span>🔍 找一找</span><span class="score">{{ gameScoreStars('match') }}</span></div>
         <div class="row"><span>👂 听音选词</span><span class="score">{{ gameScoreStars('listen') }}</span></div>
         <div class="row"><span>🃏 翻翻乐</span><span class="score">{{ gameScoreStars('memory') }}</span></div>
+        <div class="row"><span>🎈 气球碰碰</span><span class="score">{{ gameScoreStars('balloon') }}</span></div>
+      </section>
+
+      <section class="section-card">
+        <h3>🏅 成就勋章</h3>
+        <p class="medal-hint">孩子通过持续学习解锁的成就</p>
+        <div class="medal-grid">
+          <div v-for="m in store.achievements" :key="m.id" class="medal-card"
+            :class="{ unlocked: m.unlocked }">
+            <div class="medal-icon" :class="{ 'medal-locked': !m.unlocked }">
+              {{ m.icon }}
+            </div>
+            <div class="medal-name">{{ m.name }}</div>
+            <div class="medal-name-en">{{ m.nameEn }}</div>
+            <div class="medal-condition">{{ m.condition }}</div>
+            <div class="medal-progress-bar">
+              <div class="medal-progress-fill" :style="{ width: (m.progress / m.max * 100) + '%' }"></div>
+            </div>
+            <div class="medal-progress-text">{{ m.progress }}/{{ m.max }}</div>
+            <span v-if="m.unlocked" class="medal-badge">已解锁</span>
+          </div>
+        </div>
       </section>
 
       <section class="section-card">
@@ -210,6 +252,13 @@ const difficulties = [
 
 function setDifficulty(key) {
   store.setGameDifficulty(key)
+}
+
+/** 周报柱状图高度（相对本周最大 steps） */
+function barHeight(steps) {
+  const max = store.weeklySummary.maxDailySteps
+  if (!max || steps === 0) return 0
+  return Math.max(8, Math.round((steps / max) * 100))
 }
 
 // 游戏成绩转星级显示
@@ -365,6 +414,40 @@ onMounted(() => store.loadFromDB())
 
 .score { font-weight: 700; color: var(--text-primary); }
 
+/* ===== 本周学习周报 ===== */
+.week-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-sm); margin-bottom: var(--space-md); }
+.week-stat { background: var(--bg-main); border-radius: var(--radius-md); padding: var(--space-sm); text-align: center; }
+.week-stat-val { font-size: var(--font-size-lg); font-weight: 800; color: var(--color-primary); display: block; }
+.week-stat-lbl { font-size: 0.6rem; color: var(--text-hint); }
+
+.week-chart {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-xs);
+  height: 100px; padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: var(--space-sm);
+}
+.week-bar-col {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  height: 100%;
+}
+.week-bar-col.today .week-bar-label { color: var(--color-primary); font-weight: 700; }
+.week-bar-wrap {
+  flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center;
+}
+.week-bar {
+  width: 20px; min-height: 2px; border-radius: 4px 4px 0 0;
+  background: var(--border-light);
+  transition: height 0.5s ease;
+}
+.week-bar.active {
+  background: linear-gradient(180deg, var(--color-primary), #FFB74D);
+}
+.week-bar-val { font-size: 0.55rem; font-weight: 700; color: var(--color-primary); }
+.week-bar-label { font-size: 0.6rem; color: var(--text-hint); }
+
+.week-streak { font-size: var(--font-size-sm); color: var(--text-secondary); text-align: center; margin-top: var(--space-sm); }
+.week-streak strong { color: #E65100; }
+
 .btn-row { display: flex; gap: var(--space-sm); }
 .btn-act { flex: 1; padding: var(--space-sm); border-radius: var(--radius-md); font-size: var(--font-size-sm); font-weight: 600; text-align: center; cursor: pointer; transition: all 0.2s; }
 .btn-exp { background: #E3F2FD; color: #1565C0; } .btn-imp { background: #E8F5E9; color: #2E7D32; position: relative; }
@@ -408,6 +491,32 @@ onMounted(() => store.loadFromDB())
   background: var(--color-success); color: #fff;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.7rem; font-weight: 700;
+  animation: pop 0.3s var(--ease-bounce);
+}
+
+/* ===== 勋章展示 ===== */
+.medal-hint { font-size: var(--font-size-xs); color: var(--text-hint); margin-top: -8px; margin-bottom: var(--space-md); }
+.medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-md); }
+.medal-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: var(--space-lg) var(--space-md); border-radius: var(--radius-lg);
+  background: var(--bg-main); border: 2px solid var(--border-light);
+  transition: all 0.3s var(--ease-smooth); position: relative; text-align: center;
+}
+.medal-card.unlocked { border-color: var(--color-primary); background: linear-gradient(135deg, #FFF3E0, #FFE0B2); }
+.medal-icon { font-size: 2.5rem; line-height: 1; }
+.medal-icon.medal-locked { filter: grayscale(1) opacity(0.4); }
+.medal-name { font-size: var(--font-size-sm); font-weight: 700; color: var(--text-primary); white-space: nowrap; }
+.medal-name-en { font-size: 0.6rem; color: var(--text-hint); white-space: nowrap; }
+.medal-condition { font-size: 0.55rem; color: var(--text-hint); text-align: center; line-height: 1.3; }
+.medal-progress-bar { width: 100%; height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.medal-progress-fill { height: 100%; background: var(--color-primary); border-radius: 3px; transition: width 0.5s var(--ease-smooth); }
+.medal-progress-text { font-size: 0.55rem; color: var(--text-hint); }
+.medal-badge {
+  position: absolute; top: 6px; right: 6px;
+  padding: 2px 8px; border-radius: var(--radius-full);
+  background: var(--color-success); color: #fff;
+  font-size: 0.5rem; font-weight: 700;
   animation: pop 0.3s var(--ease-bounce);
 }
 

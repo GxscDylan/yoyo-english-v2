@@ -81,7 +81,7 @@ import YoyoMascot from '@/components/common/YoyoMascot.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useLearningStore()
-const { speak, stop } = useSpeech()
+const { speakSentence, stop } = useSpeech()
 
 const rhymes = NURSERY_RHYMES
 const currentRhymeId = ref(route.query.cat || '')
@@ -153,6 +153,8 @@ function selectRhyme(id) {
   yoyoMood.value = 'happy'
   yoyoBubble.value = 'Great choice! Let\'s sing together! 🎵'
   setTimeout(() => { yoyoMood.value = 'idle'; yoyoBubble.value = '' }, 3000)
+  // 自动朗读第一行
+  nextTick(() => readLine(0))
 }
 
 function readLine(index) {
@@ -165,7 +167,7 @@ function readLine(index) {
   const words = line.replace(/[^\w\s']/g, '').split(/\s+/)
   const text = words.join(' ')
   
-  speak(text, {
+  speakSentence(text, {
     rate: 0.8,
     onEnd: () => {
       isSpeaking.value = false
@@ -210,7 +212,7 @@ function readLinesSequential(index) {
   const text = words.join(' ')
   isSpeaking.value = true
   
-  speak(text, {
+  speakSentence(text, {
     rate: 0.8,
     onEnd: () => {
       isSpeaking.value = false

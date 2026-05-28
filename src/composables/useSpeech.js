@@ -88,15 +88,28 @@ export function useSpeech() {
 
   /** TTS 回退 */
   function fallbackTTS(path, onEnd) {
+    const word = path.split('/').pop()?.replace('.mp3', '') || ''
+    _speakTTS(word, 0.7, onEnd)
+  }
+
+  /** 直接朗读句子（跳过音频文件查找，适用于童谣/长文本） */
+  function speakSentence(text, options = {}) {
+    const { rate = 0.8, onEnd = null, onError = null } = options
+    stop()
+    _speakTTS(text, rate, onEnd, onError)
+    return true
+  }
+
+  /** 内部 TTS 实现 */
+  function _speakTTS(text, rate, onEnd, onError) {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       lastError.value = 'SpeechSynthesis 不可用'
+      if (onError) onError()
       return
     }
 
-    // 从路径提取单词
-    const word = path.split('/').pop()?.replace('.mp3', '') || ''
-    const utter = new SpeechSynthesisUtterance(word)
-    utter.rate = 0.7
+    const utter = new SpeechSynthesisUtterance(text)
+    utter.rate = rate || 0.7
     utter.lang = 'en-US'
     utter.volume = 1.0
 
@@ -106,7 +119,7 @@ export function useSpeech() {
 
     utter.onstart = () => { isSpeaking.value = true }
     utter.onend = () => { isSpeaking.value = false; if (onEnd) onEnd() }
-    utter.onerror = () => { isSpeaking.value = false; lastError.value = 'TTS失败' }
+    utter.onerror = () => { isSpeaking.value = false; if (onError) onError(); else lastError.value = 'TTS失败' }
 
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utter)
@@ -137,5 +150,5 @@ export function useSpeech() {
     isSpeaking.value = false
   }
 
-  return { isSpeaking, isSupported, lastError, speak, speakCountdown, playAudio, stop }
+  return { isSpeaking, isSupported, lastError, speak, speakSentence, speakCountdown, playAudio, stop }
 }

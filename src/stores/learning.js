@@ -108,7 +108,7 @@ export const useLearningStore = defineStore('learning', () => {
   const totalStars = ref(0)
 
   /** 各游戏历史最高分 { match: X, listen: X, memory: X } */
-  const gameScores = ref({ match: 0, listen: 0, memory: 0 })
+  const gameScores = ref({ match: 0, listen: 0, memory: 0, balloon: 0, 'speed-rush': 0, 'sort-it': 0 })
 
   /** 首次使用时间 */
   const firstUseTime = ref(null)
@@ -132,6 +132,64 @@ export const useLearningStore = defineStore('learning', () => {
   /** 游戏难度级别 ('simple' | 'medium' | 'hard') */
   const gameDifficulty = ref('medium')
 
+  /** 每日活动记录 { 'YYYY-MM-DD': { steps: N, mastered: N, stars: N } } */
+  const dailyActivity = ref({})
+
+  // ============================================================
+  // Combo 连击系统
+  // ============================================================
+
+  /** 当前连击数（不持久化，局内有效） */
+  const gameCombo = ref(0)
+
+  /** 本局最大连击（不持久化） */
+  const gameMaxCombo = ref(0)
+
+  /** 历史最大连击（持久化到 user_progress） */
+  const lifetimeMaxCombo = ref(0)
+
+  /** 是否显示 Combo 首次引导（家长控制） */
+  const showComboGuide = ref(true)
+
+  // ============================================================
+  // Catch Stars 奖励游戏
+  // ============================================================
+
+  /** 各分类最后一次奖励游戏触发时间 { categoryIndex: timestamp } */
+  const catchStarsCooldown = ref({})
+
+  function canTriggerCatchStars(categoryIndex) {
+    const lastTime = catchStarsCooldown.value[categoryIndex] || 0
+    const now = Date.now()
+    // 24 小时冷却：同一分类 24 小时内不再触发
+    return now - lastTime > 24 * 60 * 60 * 1000
+  }
+
+  function recordCatchStarsTrigger(categoryIndex) {
+    catchStarsCooldown.value[categoryIndex] = Date.now()
+    persistProgress()
+  }
+
+  /** 获取 Catch Stars 收集上限 */
+  function getCatchStarsLimit() {
+    // L1: 10 个，L2: 15 个
+    return unlockedCategories.value <= 5 ? 10 : 15
+  }
+
+  function addCombo() {
+    gameCombo.value++
+    if (gameCombo.value > gameMaxCombo.value) gameMaxCombo.value = gameCombo.value
+    if (gameCombo.value > lifetimeMaxCombo.value) lifetimeMaxCombo.value = gameCombo.value
+  }
+
+  function resetCombo() {
+    gameCombo.value = 0
+  }
+
+  function getComboBonus() {
+    return gameCombo.value >= 3 ? gameCombo.value : 1
+  }
+
   // ============================================================
   // 计算属性
   // ============================================================
@@ -152,10 +210,81 @@ export const useLearningStore = defineStore('learning', () => {
   // P3: 养成系统 — 成就装扮检测
   // ============================================================
 
-  /** 连续学习天数（基于 firstUseTime 和 lastActiveTime） */
+  /** 获取今天的日期 key (YYYY-MM-DD) */
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10)
+  }
+
+  /** 记录今日活动（完成步骤时调用） */
+  function recordDailyActivity(type, count = 1) {
+    const key = todayKey()
+    if (!dailyActivity.value[key]) {
+      dailyActivity.value[key] = { steps: 0, mastered: 0, stars: 0 }
+    }
+    if (type === 'step') dailyActivity.value[key].steps += count
+    if (type === 'mastered') dailyActivity.value[key].mastered += count
+    if (type === 'stars') dailyActivity.value[key].stars += count
+    persistProgress()
+  }
+
+  /** 连续学习天数（基于 dailyActivity 记录） */
+  const currentStreak = computed(() => {
+    let streak = 0
+    const today = new Date()
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      const key = d.toISOString().slice(0, 10)
+      const record = dailyActivity.value[key]
+      if (record && (record.steps > 0 || record.mastered > 0)) {
+        streak++
+      } else if (i > 0) {
+        // 今天还没活动不算断，但昨天及之前没活动就断
+        break
+      }
+      // i === 0 且今天没活动，继续检查昨天
+    }
+    return streak
+  })
+
+  /** 连续学习天数（兼容旧逻辑） */
   const consecutiveDays = computed(() => {
     if (!firstUseTime.value) return 0
+    // 优先使用 streak 计算，旧逻辑作为 fallback
+    const streak = currentStreak.value
+    if (streak > 0) return streak
     return Math.max(1, Math.floor((Date.now() - firstUseTime.value) / (24 * 60 * 60 * 1000)))
+  })
+
+  /** 最近7天活动（周报用） */
+  const weeklyActivity = computed(() => {
+    const result = []
+    const today = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      const key = d.toISOString().slice(0, 10)
+      const record = dailyActivity.value[key] || { steps: 0, mastered: 0, stars: 0 }
+      result.push({
+        date: key,
+        dayLabel: ['日', '一', '二', '三', '四', '五', '六'][d.getDay()],
+        isToday: i === 0,
+        ...record
+      })
+    }
+    return result
+  })
+
+  /** 本周汇总统计 */
+  const weeklySummary = computed(() => {
+    const week = weeklyActivity.value
+    return {
+      totalSteps: week.reduce((s, d) => s + d.steps, 0),
+      totalMastered: week.reduce((s, d) => s + d.mastered, 0),
+      totalStars: week.reduce((s, d) => s + d.stars, 0),
+      activeDays: week.filter(d => d.steps > 0 || d.mastered > 0).length,
+      maxDailySteps: Math.max(...week.map(d => d.steps), 0)
+    }
   })
 
   /** 🎩 小帽子（连续学习3天） */
@@ -168,8 +297,21 @@ export const useLearningStore = defineStore('learning', () => {
   const showCrown = computed(() => masteredWordCount.value >= 100)
   /** 🌟 光环（全部游戏通关） */
   const showHalo = computed(() => {
-    return gameScores.value.match > 0 && gameScores.value.listen > 0 && gameScores.value.memory > 0
+    return gameScores.value.match > 0 && gameScores.value.listen > 0 && gameScores.value.memory > 0 && gameScores.value.balloon > 0 && gameScores.value['speed-rush'] > 0 && gameScores.value['sort-it'] > 0
   })
+
+  // ============================================================
+  // P3: 勋章系统 — 成就列表（用于家长中心展示）
+  // ============================================================
+
+  /** 5 个成就的完整信息 */
+  const achievements = computed(() => [
+    { id: 'hat', name: '学习小达人', nameEn: 'Study Star', icon: '🎩', condition: '连续学习 3 天', unlocked: showHat.value, progress: Math.min(consecutiveDays.value, 3), max: 3 },
+    { id: 'glasses', name: '知识探索家', nameEn: 'Knowledge Seeker', icon: '👓', condition: '连续学习 7 天', unlocked: showGlasses.value, progress: Math.min(consecutiveDays.value, 7), max: 7 },
+    { id: 'wings', name: '单词小飞侠', nameEn: 'Word Flyer', icon: '🦋', condition: '掌握 50 个单词', unlocked: showWings.value, progress: Math.min(masteredWordCount.value, 50), max: 50 },
+    { id: 'crown', name: '词汇大师', nameEn: 'Vocab Master', icon: '👑', condition: '掌握 100 个单词', unlocked: showCrown.value, progress: Math.min(masteredWordCount.value, 100), max: 100 },
+    { id: 'halo', name: '游戏全通关', nameEn: 'Game Champion', icon: '🌟', condition: '6 款游戏全部通关', unlocked: showHalo.value, progress: [gameScores.value.match, gameScores.value.listen, gameScores.value.memory, gameScores.value.balloon, gameScores.value['speed-rush'], gameScores.value['sort-it']].filter(s => s > 0).length, max: 6 }
+  ])
 
   /** 时间段锁检测 */
   const isInLockPeriod = computed(() => {
@@ -223,6 +365,7 @@ export const useLearningStore = defineStore('learning', () => {
     const record = getWordRecord(wordId)
     if (!record.stepComplete.includes(step)) {
       record.stepComplete.push(step)
+      recordDailyActivity('step')
     }
     record.lastReviewed = Date.now()
     wordRecords.value[wordId] = { ...record }
@@ -238,6 +381,8 @@ export const useLearningStore = defineStore('learning', () => {
     record.lastReviewed = Date.now()
     wordRecords.value[wordId] = { ...record }
     totalStars.value += 3
+    recordDailyActivity('mastered')
+    recordDailyActivity('stars', 3)
     dbPut('learning_records', JSON.parse(JSON.stringify({ wordId, ...record })))
     persistProgress()
     addToReviewQueue(wordId)
@@ -271,6 +416,7 @@ export const useLearningStore = defineStore('learning', () => {
   /** 添加星星 */
   function addStars(count) {
     totalStars.value += count
+    recordDailyActivity('stars', count)
     persistProgress()
   }
 
@@ -363,7 +509,11 @@ export const useLearningStore = defineStore('learning', () => {
       settings: { ...settings.value },
       avatar: avatar.value,
       themeColor: themeColor.value,
-      gameDifficulty: gameDifficulty.value
+      gameDifficulty: gameDifficulty.value,
+      dailyActivity: dailyActivity.value,
+      lifetimeMaxCombo: lifetimeMaxCombo.value,
+      showComboGuide: showComboGuide.value,
+      catchStarsCooldown: catchStarsCooldown.value
     }
   }
 
@@ -372,12 +522,15 @@ export const useLearningStore = defineStore('learning', () => {
     wordRecords.value = data.wordRecords || {}
     unlockedCategories.value = data.unlockedCategories || 1
     totalStars.value = data.totalStars || 0
-    gameScores.value = data.gameScores || { match: 0, listen: 0, memory: 0 }
+    gameScores.value = data.gameScores || { match: 0, listen: 0, memory: 0, balloon: 0, 'speed-rush': 0, 'sort-it': 0 }
     reviewQueue.value = data.reviewQueue || {}
     if (data.settings) settings.value = { ...DEFAULT_SETTINGS, ...data.settings }
     avatar.value = data.avatar || null
     themeColor.value = data.themeColor || 'orange'
     gameDifficulty.value = data.gameDifficulty || 'medium'
+    dailyActivity.value = data.dailyActivity || {}
+    lifetimeMaxCombo.value = data.lifetimeMaxCombo || 0
+    showComboGuide.value = data.showComboGuide !== false
     persistAll()
     return true
   }
@@ -387,7 +540,7 @@ export const useLearningStore = defineStore('learning', () => {
     Object.assign(wordRecords, {})
     unlockedCategories.value = 1
     totalStars.value = 0
-    gameScores.value = { match: 0, listen: 0, memory: 0 }
+    gameScores.value = { match: 0, listen: 0, memory: 0, balloon: 0, 'speed-rush': 0, 'sort-it': 0 }
     reviewQueue.value = {}
     todayLearnedCount.value = 0
     todayDate.value = ''
@@ -395,6 +548,11 @@ export const useLearningStore = defineStore('learning', () => {
     avatar.value = null
     themeColor.value = 'orange'
     gameDifficulty.value = 'medium'
+    dailyActivity.value = {}
+    gameCombo.value = 0
+    gameMaxCombo.value = 0
+    lifetimeMaxCombo.value = 0
+    catchStarsCooldown.value = {}
     persistAll()
   }
 
@@ -413,7 +571,11 @@ export const useLearningStore = defineStore('learning', () => {
       todayDate: todayDate.value,
       avatar: avatar.value,
       themeColor: themeColor.value,
-      gameDifficulty: gameDifficulty.value
+      gameDifficulty: gameDifficulty.value,
+      dailyActivity: dailyActivity.value,
+      lifetimeMaxCombo: lifetimeMaxCombo.value,
+      showComboGuide: showComboGuide.value,
+      catchStarsCooldown: catchStarsCooldown.value
     })))
   }
 
@@ -443,13 +605,17 @@ export const useLearningStore = defineStore('learning', () => {
       if (progress) {
         unlockedCategories.value = progress.unlockedCategories || 1
         totalStars.value = progress.totalStars || 0
-        gameScores.value = progress.gameScores || { match: 0, listen: 0, memory: 0 }
+        gameScores.value = progress.gameScores || { match: 0, listen: 0, memory: 0, balloon: 0, 'speed-rush': 0, 'sort-it': 0 }
         firstUseTime.value = progress.firstUseTime || null
         todayLearnedCount.value = progress.todayLearnedCount || 0
         todayDate.value = progress.todayDate || ''
         avatar.value = progress.avatar || null
         themeColor.value = progress.themeColor || 'orange'
         gameDifficulty.value = progress.gameDifficulty || 'medium'
+        dailyActivity.value = progress.dailyActivity || {}
+        lifetimeMaxCombo.value = progress.lifetimeMaxCombo || 0
+        showComboGuide.value = progress.showComboGuide !== false
+        catchStarsCooldown.value = progress.catchStarsCooldown || {}
       }
 
       const settingData = await dbGet('parent_settings', 'main')
@@ -480,11 +646,19 @@ export const useLearningStore = defineStore('learning', () => {
     // 状态
     wordRecords, unlockedCategories, totalStars, gameScores,
     firstUseTime, settings, todayLearnedCount, todayDate, reviewQueue,
-    avatar, themeColor, gameDifficulty,
+    avatar, themeColor, gameDifficulty, dailyActivity,
+    // Combo 连击系统
+    gameCombo, gameMaxCombo, lifetimeMaxCombo, showComboGuide,
+    addCombo, resetCombo, getComboBonus,
+    // Catch Stars 奖励游戏
+    catchStarsCooldown, canTriggerCatchStars, recordCatchStarsTrigger, getCatchStarsLimit,
     // 计算
-    isFirstUse, unlockedCategoryList, masteredWordCount, consecutiveDays, isInLockPeriod,
+    isFirstUse, unlockedCategoryList, masteredWordCount, consecutiveDays, currentStreak,
+    weeklyActivity, weeklySummary, isInLockPeriod,
+    // 每日打卡
+    recordDailyActivity, todayKey,
     // P3: 养成系统
-    showHat, showGlasses, showWings, showCrown, showHalo,
+    showHat, showGlasses, showWings, showCrown, showHalo, achievements,
     // 限制检查
     resetSessionTimer, isSessionTimeExceeded, checkAllLimits,
     // 单词

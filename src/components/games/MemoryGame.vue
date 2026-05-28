@@ -12,6 +12,9 @@
       </div>
     </header>
 
+    <!-- Combo 连击显示 -->
+    <ComboDisplay :combo="store.gameCombo" guide-key="memory" />
+
     <main class="game-main">
       <!-- 浮动装饰元素 -->
       <div class="bg-decorations" aria-hidden="true">
@@ -94,8 +97,10 @@ import { sfxMatch, sfxWrong, sfxComplete, sfxFlip } from '@/composables/useSfx'
 import { ALL_CATEGORIES, ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
+import ComboDisplay from '@/components/common/ComboDisplay.vue'
 
 const store = useLearningStore()
+const emit = defineEmits(['game-complete'])
 const { speak, stop, playAudio } = useSpeech()
 
 // 确保 store 已初始化
@@ -150,6 +155,7 @@ function prepareGame() {
   countdownNum.value = 3
   feedbackText.value = ''
   feedbackClass.value = ''
+  store.resetCombo() // 新游戏重置连击
   generateCards()
 
   // 链式播放：等一个音效播完再切下一个数字
@@ -211,7 +217,9 @@ function flipCard(card) {
       feedbackText.value = correctMsgs[Math.floor(Math.random() * correctMsgs.length)]
       feedbackClass.value = 'feedback-correct'
       setYoyo('happy', feedbackText.value, true)
-      store.addStars(1)
+      store.addCombo()
+      const comboBonus = store.getComboBonus()
+      store.addStars(comboBonus)
       // 配对后朗读单词
       setTimeout(() => speak(a.en, { rate: 0.7 }), 300)
       setTimeout(() => {
@@ -224,17 +232,19 @@ function flipCard(card) {
             phase.value = 'complete'
             setYoyo('celebrate', 'You found them all!', true)
             store.updateGameScore('memory', starLevel.value)
+            emit('game-complete')
           }, 600)
         }
       }, 800)
     }, 400)
-  } else {
+    } else {
     setTimeout(() => {
       sfxWrong()
       a.shaking = true; b.shaking = true
       feedbackText.value = wrongMsgs[Math.floor(Math.random() * wrongMsgs.length)]
       feedbackClass.value = 'feedback-wrong'
       setYoyo('encourage', feedbackText.value)
+      store.resetCombo() // 配对失败重置连击
       setTimeout(() => {
         a.flipped = false; b.flipped = false; a.shaking = false; b.shaking = false
         checkingPair.value = false; flippedCards = []

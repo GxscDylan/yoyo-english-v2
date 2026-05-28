@@ -34,10 +34,22 @@ const router = createRouter({
       meta: { title: '单词复习' }
     },
     {
+      path: '/sentence/:categoryId?',
+      name: 'sentence',
+      component: () => import('@/views/SentenceView.vue'),
+      meta: { title: '句型练习' }
+    },
+    {
       path: '/nursery',
       name: 'nursery',
       component: () => import('@/views/NurseryRhymeView.vue'),
       meta: { title: '英文童谣' }
+    },
+    {
+      path: '/offline',
+      name: 'offline',
+      component: () => import('@/views/OfflineView.vue'),
+      meta: { title: '网络断开' }
     },
     {
       path: '/:pathMatch(.*)*',

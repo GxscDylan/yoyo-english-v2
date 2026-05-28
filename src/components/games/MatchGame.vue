@@ -13,6 +13,9 @@
       <div class="header-spacer"></div>
     </header>
 
+    <!-- Combo 连击显示 -->
+    <ComboDisplay :combo="store.gameCombo" guide-key="match" />
+
     <!-- 进度条 -->
     <div class="progress-bar" v-if="phase !== 'ready' && phase !== 'countdown' && phase !== 'complete'">
       <div class="progress-track">
@@ -138,8 +141,10 @@ import { sfxCorrect, sfxWrong, sfxComplete, sfxTick } from '@/composables/useSfx
 import { ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
+import ComboDisplay from '@/components/common/ComboDisplay.vue'
 
 const store = useLearningStore()
+const emit = defineEmits(['game-complete'])
 const { speak, isSpeaking, stop, playAudio } = useSpeech()
 
 // 自动重读定时器
@@ -187,6 +192,7 @@ let countdownTimer = null
 
 function startCountdown() {
   usedWordIds.clear() // 新游戏清空去重记录
+  store.resetCombo() // 新游戏重置连击
   phase.value = 'countdown'
   countdownNum.value = 3
 
@@ -263,7 +269,9 @@ function handleSelect(opt) {
     feedbackClass.value = 'feedback-correct'
     score.value.correct++
     setYoyo('happy', feedbackText.value, true)
-    store.addStars(1)
+    store.addCombo()
+    const comboBonus = store.getComboBonus()
+    store.addStars(comboBonus)
     store.updateGameScore('match', score.value.correct)
   } else {
     sfxWrong()
@@ -271,6 +279,8 @@ function handleSelect(opt) {
     feedbackText.value = wrongMsgs[Math.floor(Math.random() * wrongMsgs.length)]
     feedbackClass.value = 'feedback-wrong'
     setYoyo('encourage', feedbackText.value)
+    store.addStars(1) // still give +1 for encouragement
+    store.resetCombo()
     setTimeout(() => {
       feedbackId.value = null
       feedbackText.value = ''
@@ -310,6 +320,9 @@ function finishGame() {
   sfxComplete()
   phase.value = 'complete'
   store.updateGameScore('match', score.value.correct)
+  if (score.value.correct >= totalRounds) {
+    emit('game-complete')
+  }
 
   // 个性化鼓励语
   const perfectMsgs = ['Amazing! You\'re a listening star! ', 'Perfect! You got them all! ', 'Incredible! You\'re awesome! 🏆']

@@ -45,6 +45,7 @@
         <div class="hero-left">
           <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars"
             :show-hat="store.showHat" :show-glasses="store.showGlasses"
+            :show-wings="store.showWings"
             :show-crown="store.showCrown" :show-halo="store.showHalo"
             :avatar-src="store.avatar"
             @click="petYoyo" />
@@ -61,20 +62,47 @@
                   completed: catProgress(cat.id) >= 100,
                   'just-unlocked': i === store.justUnlockedIndex
                 }">
-                <span class="node-icon">{{ i < store.unlockedCategories ? cat.emoji : '🔒' }}</span>
+                <div class="node-icon-wrap">
+                  <span class="node-icon">{{ i < store.unlockedCategories ? cat.emoji : '🔒' }}</span>
+                  <span v-if="catProgress(cat.id) >= 100" class="node-check">✅</span>
+                </div>
                 <span class="node-label" v-if="i < store.unlockedCategories">{{ cat.name }}</span>
+                <span class="node-scene" v-if="i < store.unlockedCategories">{{ sceneName(cat.scene) }}</span>
                 <div v-if="i < store.unlockedCategories" class="node-bar">
                   <div class="node-bar-fill" :style="{ width: catProgress(cat.id) + '%' }"></div>
                 </div>
+                <span v-if="i < store.unlockedCategories" class="node-pct">{{ catProgress(cat.id) }}%</span>
                 <span v-if="i === store.unlockedCategories - 1 && catProgress(cat.id) < 100" class="node-pulse"></span>
+                <span v-if="i === store.unlockedCategories - 1 && catProgress(cat.id) < 100" class="node-go">GO!</span>
               </div>
             </div>
             <div class="map-footer">
+              <span>⭐ {{ store.totalStars }}</span>
               <span>{{ totalProgress }} 词已掌握</span>
             </div>
           </div>
         </div>
       </header>
+
+      <!-- 每日打卡 streak 徽章 -->
+      <section class="streak-card" v-if="!isLocked">
+        <div class="streak-main">
+          <span class="streak-flame" :class="{ active: store.currentStreak > 0 }">🔥</span>
+          <div class="streak-info">
+            <span class="streak-count">连续学习 <strong>{{ store.currentStreak }}</strong> 天</span>
+            <span class="streak-hint" v-if="store.currentStreak === 0">今天开始打卡吧！</span>
+            <span class="streak-hint" v-else-if="store.currentStreak < 3">加油，坚持就是胜利！</span>
+            <span class="streak-hint" v-else-if="store.currentStreak < 7">太棒了，继续保持！</span>
+            <span class="streak-hint" v-else>🌟 学习小达人！</span>
+          </div>
+        </div>
+        <div class="streak-week">
+          <div v-for="day in store.weeklyActivity" :key="day.date" class="streak-day" :class="{ active: day.steps > 0 || day.mastered > 0, today: day.isToday }">
+            <span class="streak-dot"></span>
+            <span class="streak-label">{{ day.dayLabel }}</span>
+          </div>
+        </div>
+      </section>
 
       <!-- 今日推荐 -->
       <section class="today-section" v-if="todayCategory">
@@ -144,8 +172,20 @@
       <button class="nav-btn nav-game" @click="goGame('memory')">
         <span>🃏 Memory</span>
       </button>
+      <button class="nav-btn nav-balloon" @click="goGame('balloon')">
+        <span>🎈 Pop!</span>
+      </button>
+      <button class="nav-btn nav-speed" @click="goGame('speed-rush')">
+        <span>⚡ Rush</span>
+      </button>
+      <button class="nav-btn nav-sort" @click="goGame('sort-it')">
+        <span>🗂️ Sort!</span>
+      </button>
       <button class="nav-btn nav-nursery" @click="goNursery">
         <span>🎵 Songs</span>
+      </button>
+      <button class="nav-btn nav-sentence" @click="goSentence">
+        <span>💬 Sentences</span>
       </button>
       <button class="nav-btn nav-parent" @click="goParent" title="家长中心">
         <svg class="nav-parent-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -275,6 +315,14 @@ function goGame(gameId) { router.push(`/game/${gameId}`) }
 function goParent() { router.push('/parent') }
 function goReview() { router.push('/review') }
 function goNursery() { router.push('/nursery') }
+function goSentence() { router.push('/sentence') }
+
+const sceneLabels = {
+  forest: '🌲 森林', orchard: '🍎 果园', rainbow: '🌈 彩虹', mirror: '🪞 魔镜', home: '🏠 家',
+  kitchen: '🍳 厨房', city: '🏢 城市', outdoor: '☀️ 户外', classroom: '📚 教室',
+  playground: '🛝 游乐场', bedroom: '🛏️ 卧室', heart: '❤️ 心灵'
+}
+function sceneName(scene) { return sceneLabels[scene] || scene }
 
 onMounted(async () => {
   await store.loadFromDB()
@@ -375,54 +423,102 @@ onMounted(async () => {
 
 /* ===== 冒险地图 ===== */
 .adventure-map {
-  background: var(--bg-card); border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #FFFDF7 0%, #FFF8E1 100%);
+  border-radius: var(--radius-lg);
   padding: var(--space-lg); box-shadow: var(--shadow-card);
+  border: 2px solid #FFE082;
 }
-.map-title { font-size: var(--font-size-sm); color: var(--text-hint); font-weight: 700; margin-bottom: var(--space-md); }
+.map-title { font-size: var(--font-size-sm); color: #F57F17; font-weight: 700; margin-bottom: var(--space-md); letter-spacing: 0.5px; }
 .map-path {
-  display: flex; align-items: center; gap: 0;
+  display: flex; align-items: flex-start; gap: 0;
   overflow-x: auto; padding-bottom: var(--space-sm);
 }
 .map-node {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  position: relative; min-width: 64px;
-  padding: 0 var(--space-xs);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  position: relative; min-width: 72px;
+  padding: 6px var(--space-xs) 4px;
+  transition: background 0.3s;
+  border-radius: 12px;
 }
+.map-node.unlocked { background: rgba(255,255,255,0.5); }
+.map-node.unlocked:hover { background: rgba(255,255,255,0.85); }
 .map-node:not(:last-child)::after {
   content: '→';
-  position: absolute; right: -6px; top: 22%;
-  color: var(--text-hint); font-size: 0.7rem; opacity: 0.6;
+  position: absolute; right: -6px; top: 32%;
+  color: #FFB74D; font-size: 0.9rem; opacity: 0.7;
   z-index: 1;
 }
 .map-node.locked:not(:last-child)::after { opacity: 0.2; }
-.node-icon { font-size: 1.8rem; transition: transform 0.3s; }
-.node-label { font-size: 0.65rem; color: var(--text-secondary); white-space: nowrap; }
-.node-bar { width: 48px; height: 4px; background: var(--border-light); border-radius: var(--radius-full); overflow: hidden; }
-.node-bar-fill { height: 100%; background: var(--color-primary); border-radius: var(--radius-full); transition: width 0.5s; }
+
+.node-icon-wrap {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,0.8);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: all 0.3s;
+}
+.map-node.completed .node-icon-wrap {
+  background: rgba(76, 175, 80, 0.15);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.25);
+}
+.map-node.locked .node-icon-wrap {
+  background: rgba(0,0,0,0.04);
+  box-shadow: none;
+}
+.node-icon { font-size: 1.6rem; transition: transform 0.3s; }
+.node-check {
+  position: absolute; top: -4px; right: -4px; font-size: 0.7rem;
+  animation: checkPop 0.4s var(--ease-bounce);
+}
+.node-label { font-size: 0.7rem; color: var(--text-primary); font-weight: 600; white-space: nowrap; }
+.node-scene { font-size: 0.55rem; color: var(--text-hint); white-space: nowrap; }
+.node-bar { width: 52px; height: 5px; background: var(--border-light); border-radius: var(--radius-full); overflow: hidden; }
+.node-bar-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), #FFB74D); border-radius: var(--radius-full); transition: width 0.5s; }
+.node-pct { font-size: 0.6rem; color: var(--color-primary); font-weight: 700; }
 .node-pulse {
-  position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--color-primary); animation: pulse 1.5s infinite;
 }
-.map-node.completed .node-icon { transform: scale(1.1); }
-.map-node.completed .node-bar-fill { background: var(--color-success); }
-.map-node.locked .node-icon { opacity: 0.4; }
-.map-footer { margin-top: var(--space-sm); font-size: var(--font-size-xs); color: var(--text-hint); text-align: right; }
+.node-go {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  font-size: 0.55rem; font-weight: 800; color: #FF5722;
+  animation: goBounce 1.2s ease-in-out infinite;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.map-node.completed .node-icon { transform: scale(1.05); }
+.map-node.completed .node-bar-fill { background: linear-gradient(90deg, #4CAF50, #66BB6A); }
+.map-node.completed .node-pct { color: #4CAF50; }
+.map-node.locked .node-icon { opacity: 0.3; }
+.map-node.locked .node-label { opacity: 0.3; }
+.map-footer { margin-top: var(--space-sm); font-size: var(--font-size-xs); color: var(--text-hint); text-align: right; display: flex; justify-content: space-between; }
+
+@keyframes checkPop {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+@keyframes goBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  50% { transform: translateX(-50%) translateY(-6px); opacity: 0.7; }
+}
 
 /* === Current node: guiding glow === */
 .map-node.current .node-icon {
   animation: currentIconBounce 2s ease-in-out infinite;
 }
+.map-node.current .node-icon-wrap {
+  background: linear-gradient(135deg, #FFF8E1, #FFECB3);
+  box-shadow: 0 4px 16px rgba(255, 193, 7, 0.4);
+  border: 2px solid #FFD54F;
+}
 .map-node.current {
-  outline: 3px solid rgba(255, 213, 79, 0.6);
-  outline-offset: 4px;
-  border-radius: 12px;
+  background: rgba(255, 248, 225, 0.6);
   animation: currentGlow 2s ease-in-out infinite;
 }
 
 @keyframes currentIconBounce {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
+  50% { transform: scale(1.12); }
 }
 
 /* === Just-unlocked node: entrance animation === */
@@ -442,6 +538,61 @@ onMounted(async () => {
 /* === Smooth scrolling for map-path === */
 .map-path {
   scroll-behavior: smooth;
+}
+
+/* ===== 每日打卡 streak 徽章 ===== */
+.streak-card {
+  margin: 0 var(--space-xl) var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+  border-radius: var(--radius-lg);
+  border: 2px solid #FFB74D;
+  display: flex; align-items: center; gap: var(--space-lg);
+  box-shadow: var(--shadow-card);
+}
+.streak-main { display: flex; align-items: center; gap: var(--space-md); flex: 1; min-width: 0; }
+.streak-flame {
+  font-size: 2rem; flex-shrink: 0;
+  filter: grayscale(0.8) opacity(0.4);
+  transition: all 0.4s;
+}
+.streak-flame.active {
+  filter: none;
+  animation: flameDance 1.2s ease-in-out infinite;
+}
+.streak-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.streak-count { font-size: var(--font-size-sm); color: var(--text-primary); }
+.streak-count strong { color: #E65100; font-size: var(--font-size-lg); }
+.streak-hint { font-size: var(--font-size-xs); color: var(--text-hint); }
+.streak-week {
+  display: flex; gap: 6px; flex-shrink: 0;
+}
+.streak-day {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.streak-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(0,0,0,0.08);
+  transition: all 0.3s;
+}
+.streak-day.active .streak-dot {
+  background: #FF9800;
+  box-shadow: 0 0 6px rgba(255, 152, 0, 0.5);
+}
+.streak-day.today .streak-dot {
+  border: 2px solid #E65100;
+}
+.streak-day.today.active .streak-dot {
+  background: #E65100;
+}
+.streak-label { font-size: 0.55rem; color: var(--text-hint); }
+.streak-day.today .streak-label { color: #E65100; font-weight: 700; }
+
+@keyframes flameDance {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-5deg); }
+  50% { transform: scale(1.05) rotate(3deg); }
+  75% { transform: scale(1.12) rotate(-3deg); }
 }
 
 /* ===== 今日推荐 ===== */
@@ -522,6 +673,14 @@ onMounted(async () => {
 .nav-game:hover { transform: scale(1.02); }
 .nav-nursery { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); color: #E65100; }
 .nav-nursery:hover { transform: scale(1.02); }
+.nav-sentence { background: linear-gradient(135deg, #F3E8FF, #DDD6FE); color: #7C3AED; }
+.nav-sentence:hover { transform: scale(1.02); }
+.nav-balloon { background: linear-gradient(135deg, #FFEBEE, #FFCDD2); color: #D32F2F; }
+.nav-balloon:hover { transform: scale(1.02); }
+.nav-speed { background: linear-gradient(135deg, #FFF8E1, #FFE082); color: #F57F17; }
+.nav-speed:hover { transform: scale(1.02); }
+.nav-sort { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); color: #2E7D32; }
+.nav-sort:hover { transform: scale(1.02); }
 .nav-parent {
   background: var(--border-light); color: var(--text-secondary); flex: 0.6;
   transition: all 0.2s;
@@ -532,7 +691,10 @@ onMounted(async () => {
 .nav-parent-text { font-size: 0.65rem; font-weight: 600; line-height: 1; }
 
 /* 学习模式隐藏游戏 */
-.home-learning-mode .nav-game { display: none; }
+.home-learning-mode .nav-game,
+.home-learning-mode .nav-balloon,
+.home-learning-mode .nav-speed,
+.home-learning-mode .nav-sort { display: none; }
 
 /* ===== P1: 锁定的分类卡片 ===== */
 .explore-card.locked {

@@ -67,6 +67,63 @@
         <span class="scene-clock">🕰️</span>
         <span class="scene-sofa">🛋️</span>
       </template>
+      <!-- 🍽️ 厨房场景 (food) -->
+      <template v-else-if="category?.scene === 'kitchen'">
+        <span class="scene-pot pot-1">🍳</span>
+        <span class="scene-pot pot-2">🥄</span>
+        <span class="scene-steam steam-1">💨</span>
+        <span class="scene-steam steam-2">💨</span>
+        <span class="scene-plate">🍽️</span>
+      </template>
+      <!-- 🚦 城市场景 (transport) -->
+      <template v-else-if="category?.scene === 'city'">
+        <span class="scene-building bld-1">🏢</span>
+        <span class="scene-building bld-2">🏬</span>
+        <span class="scene-traffic-light">🚦</span>
+        <span class="scene-car car-1">🚗</span>
+        <span class="scene-car car-2">🚌</span>
+      </template>
+      <!-- 🌤️ 户外场景 (weather) -->
+      <template v-else-if="category?.scene === 'outdoor'">
+        <span class="scene-sun">☀️</span>
+        <span class="scene-cloud cloud-1">☁️</span>
+        <span class="scene-cloud cloud-2">⛅</span>
+        <span class="scene-umbrella">☂️</span>
+        <span class="scene-snowflake snow-1">❄️</span>
+        <span class="scene-snowflake snow-2">❄️</span>
+      </template>
+      <!-- 🎒 教室场景 (numbers/school) -->
+      <template v-else-if="category?.scene === 'classroom'">
+        <span class="scene-blackboard">📋</span>
+        <span class="scene-pencil">✏️</span>
+        <span class="scene-book book-1">📚</span>
+        <span class="scene-book book-2">📖</span>
+        <span class="scene-bell">🔔</span>
+      </template>
+      <!-- 🎠 游乐场场景 (toys/actions) -->
+      <template v-else-if="category?.scene === 'playground'">
+        <span class="scene-slide">🛝</span>
+        <span class="scene-balloon balloon-1">🎈</span>
+        <span class="scene-balloon balloon-2">🎈</span>
+        <span class="scene-ferris">🎡</span>
+        <span class="scene-star star-1">⭐</span>
+      </template>
+      <!-- 🧺 卧室场景 (clothes) -->
+      <template v-else-if="category?.scene === 'bedroom'">
+        <span class="scene-bed">🛏️</span>
+        <span class="scene-lamp">💡</span>
+        <span class="scene-hanger hanger-1">👕</span>
+        <span class="scene-hanger hanger-2">👗</span>
+        <span class="scene-moon">🌙</span>
+      </template>
+      <!-- ❤️ 心灵场景 (emotions) -->
+      <template v-else-if="category?.scene === 'heart'">
+        <span class="scene-heart heart-1">❤️</span>
+        <span class="scene-heart heart-2">💛</span>
+        <span class="scene-heart heart-3">💙</span>
+        <span class="scene-smiley smiley-1">😊</span>
+        <span class="scene-smiley smiley-2">🥰</span>
+      </template>
     </div>
 
     <!-- 主要内容区 -->
@@ -1209,6 +1266,53 @@ onUnmounted(() => {
 .scene-decorations .scene-house { top: 8%; left: 5%; font-size: 2.5rem; }
 .scene-decorations .scene-clock { top: 10%; right: 12%; animation: clockSwing 3s ease-in-out infinite; }
 
+/* 厨房 */
+.scene-decorations .pot-1 { bottom: 18%; left: 8%; font-size: 2.5rem; animation: potBubble 3s ease-in-out infinite; }
+.scene-decorations .pot-2 { bottom: 15%; right: 12%; font-size: 2rem; }
+.scene-decorations .steam-1 { bottom: 35%; left: 12%; animation: steamRise 4s ease-out infinite; }
+.scene-decorations .steam-2 { bottom: 32%; left: 18%; animation: steamRise 5s ease-out infinite 1s; }
+.scene-decorations .scene-plate { bottom: 12%; left: 45%; font-size: 2rem; }
+
+/* 城市 */
+.scene-decorations .bld-1 { bottom: 10%; left: 5%; font-size: 3rem; }
+.scene-decorations .bld-2 { bottom: 12%; right: 8%; font-size: 2.5rem; }
+.scene-decorations .scene-traffic-light { top: 15%; left: 50%; animation: trafficBlink 4s steps(1) infinite; }
+.scene-decorations .car-1 { bottom: 8%; left: 35%; animation: carDrive 8s linear infinite; }
+.scene-decorations .car-2 { bottom: 5%; right: 25%; animation: carDrive 10s linear infinite 3s; }
+
+/* 户外 */
+.scene-decorations .scene-umbrella { bottom: 15%; right: 15%; font-size: 2.5rem; animation: umbrellaSway 5s ease-in-out infinite; }
+.scene-decorations .snow-1 { top: 20%; left: 25%; animation: snowFall 6s linear infinite; }
+.scene-decorations .snow-2 { top: 15%; right: 30%; animation: snowFall 8s linear infinite 2s; }
+
+/* 教室 */
+.scene-decorations .scene-blackboard { top: 8%; left: 5%; font-size: 2.5rem; }
+.scene-decorations .scene-pencil { bottom: 20%; right: 10%; animation: pencilWrite 2s ease-in-out infinite; }
+.scene-decorations .book-1 { bottom: 15%; left: 15%; font-size: 2rem; }
+.scene-decorations .book-2 { bottom: 18%; left: 30%; font-size: 1.8rem; animation: bookFlip 6s ease-in-out infinite; }
+.scene-decorations .scene-bell { top: 10%; right: 8%; font-size: 2rem; animation: bellRing 3s ease-in-out infinite; }
+
+/* 游乐场 */
+.scene-decorations .scene-slide { bottom: 12%; left: 8%; font-size: 2.5rem; }
+.scene-decorations .balloon-1 { top: 12%; right: 15%; animation: balloonFloat 5s ease-in-out infinite; }
+.scene-decorations .balloon-2 { top: 18%; right: 25%; animation: balloonFloat 6s ease-in-out infinite 1.5s; }
+.scene-decorations .scene-ferris { top: 8%; left: 50%; transform: translateX(-50%); font-size: 3rem; animation: ferrisSpin 12s linear infinite; }
+.scene-decorations .star-1 { top: 5%; right: 8%; animation: starTwinkle 2s ease-in-out infinite; }
+
+/* 卧室 */
+.scene-decorations .scene-bed { bottom: 12%; left: 8%; font-size: 2.5rem; }
+.scene-decorations .scene-lamp { top: 10%; right: 10%; font-size: 2rem; animation: lampGlow 4s ease-in-out infinite; }
+.scene-decorations .hanger-1 { top: 20%; left: 15%; animation: hangerSwing 4s ease-in-out infinite; }
+.scene-decorations .hanger-2 { top: 22%; left: 30%; animation: hangerSwing 5s ease-in-out infinite 1s; }
+.scene-decorations .scene-moon { top: 5%; right: 5%; font-size: 2.5rem; animation: moonGlow 6s ease-in-out infinite; }
+
+/* 心灵 */
+.scene-decorations .heart-1 { top: 15%; left: 10%; animation: heartBeat 2s ease-in-out infinite; }
+.scene-decorations .heart-2 { top: 25%; right: 15%; animation: heartBeat 2.5s ease-in-out infinite 0.5s; }
+.scene-decorations .heart-3 { bottom: 20%; left: 50%; animation: heartBeat 3s ease-in-out infinite 1s; }
+.scene-decorations .smiley-1 { bottom: 25%; left: 20%; animation: smileyBounce 3s ease-in-out infinite; }
+.scene-decorations .smiley-2 { bottom: 22%; right: 20%; animation: smileyBounce 4s ease-in-out infinite 1s; }
+
 /* 场景动画 keyframes */
 @keyframes swayTree {
   0%, 100% { transform: rotate(-2deg); }
@@ -1243,5 +1347,80 @@ onUnmounted(() => {
 @keyframes clockSwing {
   0%, 100% { transform: rotate(-5deg); }
   50% { transform: rotate(5deg); }
+}
+@keyframes potBubble {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05) translateY(-2px); }
+}
+@keyframes steamRise {
+  0% { transform: translateY(0) scale(1); opacity: 0.3; }
+  50% { transform: translateY(-15px) scale(1.2); opacity: 0.15; }
+  100% { transform: translateY(-30px) scale(0.8); opacity: 0; }
+}
+@keyframes trafficBlink {
+  0%, 33% { opacity: 0.6; }
+  34%, 66% { opacity: 0.3; }
+  67%, 100% { opacity: 0.6; }
+}
+@keyframes carDrive {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(40px); }
+}
+@keyframes umbrellaSway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+@keyframes snowFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
+  100% { transform: translateY(40px) rotate(360deg); opacity: 0; }
+}
+@keyframes pencilWrite {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg) translateX(-2px); }
+  75% { transform: rotate(5deg) translateX(2px); }
+}
+@keyframes bookFlip {
+  0%, 100% { transform: rotateY(0deg); }
+  50% { transform: rotateY(15deg); }
+}
+@keyframes bellRing {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(-10deg); }
+  20%, 40% { transform: rotate(10deg); }
+  50% { transform: rotate(0deg); }
+}
+@keyframes balloonFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes ferrisSpin {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  100% { transform: translateX(-50%) rotate(360deg); }
+}
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+}
+@keyframes lampGlow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+@keyframes hangerSwing {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+@keyframes moonGlow {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(1.05); }
+}
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.15); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+}
+@keyframes smileyBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 </style>

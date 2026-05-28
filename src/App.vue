@@ -9,6 +9,10 @@
 </template>
 
 <script setup>
+import { useThemeColorSync } from '@/composables/useThemeColor'
+
+// 启用主题色同步到 meta theme-color
+useThemeColorSync()
 </script>
 
 <style scoped>
