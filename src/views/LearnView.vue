@@ -389,6 +389,7 @@ const yoyoBubble = ref('')
 
 // 连击追踪（用于反馈分级 L2→L3→L4→L5）
 const testCombo = ref(0)
+const testWrongCount = ref(0) // P3-3: 答错计数（用于动态难度调节）
 const groupCorrectCount = ref(0) // 当前组内答对总数
 
 // 自动重读定时器
@@ -618,8 +619,13 @@ function handleTestAnswer(opt) {
       container: document.body
     })
 
-    // 文案跟随级别
-    feedbackText.value = level >= 4 ? '🔥 AMAZING!' : (level >= 3 ? '🌟 Excellent!' : 'Great!')
+    // P3-3: 动态难度调节 — 根据表现调整呦呦语气
+    const accuracy = testCombo.value / Math.max(1, testCombo.value + testWrongCount.value)
+    const tone = getDynamicTone(accuracy, testCombo.value, store.masteredWordCount || 0)
+    yoyoMood.value = tone.yoyoMood
+
+    // 文案跟随动态级别
+    feedbackText.value = tone.level >= 4 ? '🔥 AMAZING!' : (tone.level >= 3 ? '🌟 Excellent!' : 'Great!')
     testFeedbackClass.value = 'feedback-correct'
 
     store.completeWordStep(testTargetWord.value?.id, 2)
@@ -645,6 +651,7 @@ function handleTestAnswer(opt) {
     }, 1200)
   } else {
     testCombo.value = 0 // 答错重置连击
+    testWrongCount.value++ // P3-3: 累计答错次数
     playFeedback(1, { mascot: yoyoMood, isCorrect: false })
 
     // P3-3: 动态难度调节 — 根据表现调整呦呦语气

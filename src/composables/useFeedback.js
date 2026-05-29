@@ -9,6 +9,41 @@ import { sfxCorrect, sfxWrong, sfxComplete, sfxStar, sfxFanfare } from './useSfx
 import { triggerConfetti } from './useConfetti'
 
 // ============================================================
+// TTS 语音库（v5.0 新增）
+// ============================================================
+
+const AUDIO_BASE = '/src/assets/audio/feedback/'
+
+// 按级别映射语音文件
+const VOICE_MAP = {
+  1: ['l2_try_again', 'l2_dont_worry', 'l2_almost', 'l2_keep_going'],
+  2: ['l1_good', 'l1_great', 'l1_nice', 'l1_wonderful'],
+  3: ['l3_combo', 'l3_on_fire', 'l3_streak'],
+  4: ['l4_milestone', 'l4_progress', 'l4_halfway'],
+  5: ['l5_legend', 'l5_super', 'l5_amazing']
+}
+
+// 轮询计数器，随机选择语音
+const voiceCounters = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+
+/** 播放对应级别的 TTS 语音 */
+function playVoice(level) {
+  try {
+    const candidates = VOICE_MAP[level]
+    if (!candidates) return
+
+    // 轮询 + 随机，避免重复
+    const idx = voiceCounters[level] % candidates.length
+    voiceCounters[level]++
+    const file = candidates[idx]
+
+    const audio = new Audio(`${AUDIO_BASE}${file}.mp3`)
+    audio.volume = 0.7
+    audio.play().catch(() => {})
+  } catch(e) {}
+}
+
+// ============================================================
 // 反馈级别定义
 // ============================================================
 
@@ -60,6 +95,9 @@ function playLevel1(context = {}) {
     sfxWrong()
   } catch(e) {}
 
+  // 语音：温暖鼓励
+  playVoice(1)
+
   // 吉祥物：comfort 或 encourage mood
   if (context.mascot) {
     context.mascot.value = context.wrongCount >= 3 ? 'comfort' : 'encourage'
@@ -86,6 +124,9 @@ function playLevel2(context = {}) {
   try {
     sfxCorrect()
   } catch(e) {}
+
+  // 语音：正常鼓励
+  playVoice(2)
 
   // 吉祥物
   if (context.mascot) {
@@ -119,6 +160,9 @@ function playLevel3(context = {}) {
     sfxCorrect()
   } catch(e) {}
 
+  // 语音：连续正确鼓励
+  playVoice(3)
+
   // 吉祥物
   if (context.mascot) {
     context.mascot.value = 'excited'
@@ -149,6 +193,9 @@ function playLevel4(context = {}) {
   try {
     sfxFanfare()
   } catch(e) {}
+
+  // 语音：高光时刻
+  playVoice(4)
 
   // 吉祥物
   if (context.mascot) {
@@ -181,6 +228,9 @@ function playLevel5(context = {}) {
   try {
     sfxComplete()
   } catch(e) {}
+
+  // 语音：传奇时刻
+  playVoice(5)
 
   // 吉祥物
   if (context.mascot) {

@@ -453,6 +453,12 @@ export const useLearningStore = defineStore('learning', () => {
     persistProgress()
   }
 
+  /** 消耗星星（萌宠操作） */
+  function spendStars(count) {
+    totalStars.value = Math.max(0, totalStars.value - count)
+    persistProgress()
+  }
+
   /** 更新游戏最高分 */
   function updateGameScore(gameId, score) {
     if (score > (gameScores.value[gameId] || 0)) {
@@ -704,7 +710,7 @@ export const useLearningStore = defineStore('learning', () => {
     // 单词
     getWordRecord, completeWordStep, markWordMastered, isWordMastered,
     // 进度
-    unlockNextCategory, addStars, updateGameScore,
+    unlockNextCategory, addStars, spendStars, updateGameScore,
     incrementTodayLearned, resetTodayLearned,
     // just unlocked tracking
     justUnlockedIndex, consumeJustUnlocked,

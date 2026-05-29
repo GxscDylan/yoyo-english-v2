@@ -12,21 +12,44 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, watch, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { useThemeColorSync } from '@/composables/useThemeColor'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import { playBGM, stopBGM } from '@/composables/useBGM'
 
 // 启用主题色同步到 meta theme-color
 useThemeColorSync()
+
+// 路由监听 BGM 场景切换
+const route = useRoute()
+
+function getBGMScene(name) {
+  const map = {
+    home: 'home',
+    learn: 'learn',
+    game: 'game',
+    playground: 'game',
+    review: 'review',
+    sentence: 'learn',
+    nursery: 'nursery',
+    parent: 'parent'
+  }
+  return map[name] || 'home'
+}
+
+watch(() => route.name, (newName) => {
+  if (!newName) return
+  const scene = getBGMScene(newName)
+  playBGM(scene)
+}, { immediate: true })
 
 // Loading 状态
 const isLoading = ref(false)
 let transitionTimer = null
 
 function onTransitionStart() {
-  // 页面切换开始时显示 Loading（最多展示 2 秒趣味文案）
   isLoading.value = true
-  // 超过 2 秒自动隐藏，防止卡死
   clearTimeout(transitionTimer)
   transitionTimer = setTimeout(() => {
     isLoading.value = false
@@ -34,7 +57,6 @@ function onTransitionStart() {
 }
 
 function onTransitionEnd() {
-  // 页面切换完成立即隐藏
   clearTimeout(transitionTimer)
   nextTick(() => {
     isLoading.value = false
