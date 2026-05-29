@@ -73,6 +73,7 @@
         </div>
         <p class="complete-msg">{{ starMessage }}</p>
         <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" />
+        <LikeButton :source="'sort'" class="complete-like" />
         <div class="complete-buttons">
           <button class="btn-retry" @click="resetGame">🔄 再来一次</button>
           <button class="btn-home" @click="$router.push('/playground')">🏠 游乐场</button>
@@ -95,6 +96,7 @@ import { sfxCorrect, sfxWrong, sfxComplete } from '@/composables/useSfx'
 import { ALL_CATEGORIES } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
+import LikeButton from '@/components/common/LikeButton.vue'
 
 const store = useLearningStore()
 const emit = defineEmits(['game-complete'])

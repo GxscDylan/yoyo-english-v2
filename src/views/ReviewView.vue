@@ -23,12 +23,15 @@
       </div>
     </header>
 
-    <!-- 空状态 -->
+    <!-- 空状态 — 呦呦趣味引导 -->
     <div v-if="reviewWords.length === 0" class="review-empty anim-fade-up">
-      <span class="empty-icon">✅</span>
-      <h2>暂无复习内容</h2>
-      <p>所有单词都已掌握，继续学习新内容吧！</p>
-      <button class="btn-continue" @click="goHome">返回首页</button>
+      <YoyoMascot :mood="'happy'" :bubble-text="emptyBubble" :show-stars="true" class="empty-yoyo" />
+      <h2>{{ emptyTitle }}</h2>
+      <p>{{ emptyMessage }}</p>
+      <div class="empty-actions">
+        <button class="btn-continue" @click="goHome">🏠 返回首页</button>
+        <button class="btn-continue btn-secondary" @click="goLearn">📚 去学新单词</button>
+      </div>
     </div>
 
     <!-- 主要内容区 -->
@@ -150,6 +153,32 @@ const showComplete = ref(false)
 const selectedOptionId = ref(null)
 
 const word = computed(() => reviewWords.value[currentIndex.value] || {})
+
+// 空状态趣味文案
+const emptyTitle = computed(() => {
+  const todayWords = store.todayLearned || 0
+  if (todayWords === 0) return '还没有需要复习的单词哦~'
+  if (todayWords < 10) return '今天学得很认真！暂时没有需要复习的~'
+  return '哇！今天学了这么多，暂时不需要复习哦！'
+})
+
+const emptyMessage = computed(() => {
+  const messages = [
+    '去学几个新单词吧，呦呦在等你呢！',
+    '休息一下，然后继续探险吧~',
+    '所有单词都记住了，太厉害了！去解锁新内容吧~'
+  ]
+  return messages[Math.floor(Math.random() * messages.length)]
+})
+
+const emptyBubble = computed(() => {
+  const bubbles = [
+    '太棒了！所有单词都记住了~',
+    '去学新的吧！我在等你呢~',
+    '休息一下，喝口水再继续~ 💧'
+  ]
+  return bubbles[Math.floor(Math.random() * bubbles.length)]
+})
 
 const progressPct = computed(() => {
   if (!reviewWords.value.length) return 0
@@ -297,6 +326,9 @@ function handleStepEntry() {
 function showCompleteScreen() {
   triggerConfetti(50)
   sfxComplete()
+  // P2-2: 记录复习次数
+  store.settings.reviewCount = (store.settings.reviewCount || 0) + 1
+  store.persistSettings?.()
   showComplete.value = true
   setYoyo('celebrate', '全部复习完成！🎉', true)
 }
@@ -315,6 +347,11 @@ function reviewAgain() {
 function goHome() {
   stop()
   router.push('/')
+}
+
+function goLearn() {
+  stop()
+  router.push('/learn')
 }
 
 onMounted(async () => {
@@ -426,30 +463,36 @@ onUnmounted(() => {
 .review-empty {
   text-align: center;
   padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  min-height: 60vh;
+  justify-content: center;
 }
 
-.empty-icon {
-  font-size: 5rem;
-  display: block;
-  margin-bottom: var(--space-xl);
-  animation: introEmojiFloat 3s ease-in-out infinite;
-}
-@keyframes introEmojiFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-10px) rotate(-3deg); }
-  75% { transform: translateY(-5px) rotate(3deg); }
+.empty-yoyo {
+  transform: scale(1.2);
+  margin-bottom: var(--space-sm);
 }
 
 .review-empty h2 {
   font-size: var(--font-size-2xl);
   color: var(--text-primary);
-  margin-bottom: var(--space-md);
+  margin: 0;
 }
 
 .review-empty p {
   color: var(--text-secondary);
-  margin-bottom: var(--space-xl);
   font-size: var(--font-size-lg);
+  margin: 0;
+}
+
+.empty-actions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .btn-continue {
@@ -462,6 +505,16 @@ onUnmounted(() => {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .btn-continue:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 6px 20px rgba(255,140,66,0.3); }
+
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 2px solid var(--border-light);
+}
+.btn-secondary:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
 
 /* ===== Step 徽章 ===== */
 .step-badge {

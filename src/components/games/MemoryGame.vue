@@ -60,10 +60,7 @@
         </Transition>
 
         <div v-if="phase === 'complete'" class="complete-card anim-fade-up">
-          <!-- 撒花粒子 -->
-          <div class="confetti-container">
-            <span v-for="i in 30" :key="i" class="confetti" :style="{ left: Math.random()*100+'%', animationDelay: Math.random()*2+'s', animationDuration: (1.5+Math.random()*1.5)+'s' }">🎉</span>
-          </div>
+          <!-- 全局 confetti 由 useConfetti 管理 -->
           <!-- 奖杯动画 -->
           <div class="trophy-wrapper">
             <span class="complete-trophy">{{ starLevel >= 3 ? '🏆' : starLevel >= 2 ? '🥈' : '🎖️' }}</span>
@@ -77,6 +74,7 @@
           <p class="complete-msg">{{ starMessage }}</p>
           <!-- 宝贝头像庆祝 -->
           <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" class="complete-yoyo" />
+          <LikeButton :source="'memory'" class="complete-like" />
           <div class="complete-buttons">
             <button class="btn-retry" @click="resetGame">🔄 Play again</button>
             <button class="btn-home" @click="$router.push('/playground')">🏠 Playground</button>
@@ -96,9 +94,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { useSpeech } from '@/composables/useSpeech'
 import { sfxMatch, sfxWrong, sfxComplete, sfxFlip } from '@/composables/useSfx'
+import { triggerConfetti } from '@/composables/useConfetti'
+import { playFeedback, triggerPerfectClear } from '@/composables/useFeedback'
 import { ALL_CATEGORIES, ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
+import LikeButton from '@/components/common/LikeButton.vue'
 import ComboDisplay from '@/components/common/ComboDisplay.vue'
 
 const store = useLearningStore()
@@ -230,11 +231,19 @@ function flipCard(card) {
         feedbackText.value = ''; feedbackClass.value = ''
         if (matchedPairs.value >= currentConfig.value.pairs) {
           setTimeout(() => {
-            sfxComplete()
             phase.value = 'complete'
             setYoyo('celebrate', 'You found them all!', true)
             store.updateGameScore('memory', starLevel.value)
             emit('game-complete', { stars: starLevel.value })
+
+            // 全局 confetti 分级
+            if (starLevel.value >= 3) {
+              triggerPerfectClear({ container: document.body, mascot: yoyoMood })
+            } else if (starLevel.value === 2) {
+              triggerConfetti(20, 'purple')
+            } else if (starLevel.value === 1) {
+              triggerConfetti(10, 'default')
+            }
           }, 600)
         }
       }, 800)
@@ -408,19 +417,6 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer) })
 .complete-card.complete-silver { border-color: #B0BEC5; }
 .complete-card.complete-bronze { border-color: #FF8A65; }
 
-/* 撒花粒子 */
-.confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 0; }
-.confetti {
-  position: absolute; top: -20px; font-size: 1.2rem;
-  animation: confettiFall 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  opacity: 0;
-}
-@keyframes confettiFall {
-  0% { transform: translateY(-20px) rotate(0deg) scale(0.5); opacity: 0; }
-  20% { opacity: 1; transform: translateY(40px) rotate(120deg) scale(1); }
-  80% { opacity: 1; }
-  100% { transform: translateY(350px) rotate(360deg) scale(0.8); opacity: 0; }
-}
 
 .trophy-wrapper { position: relative; z-index: 1; }
 .complete-trophy { font-size: 4.5rem; display: block; animation: trophyBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }

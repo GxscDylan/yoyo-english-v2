@@ -76,6 +76,7 @@
           <span v-for="i in starLevel" :key="i" class="star" style="animation: starPop 0.5s ease forwards;">⭐</span>
         </div>
         <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" />
+        <LikeButton :source="'speed'" class="complete-like" />
         <div class="complete-buttons">
           <button class="btn-retry" @click="resetGame">🔄 再来一次</button>
           <button class="btn-home" @click="$router.push('/playground')">🏠 游乐场</button>
@@ -98,6 +99,7 @@ import { sfxCorrect, sfxWrong, sfxComplete, sfxTick } from '@/composables/useSfx
 import { ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
+import LikeButton from '@/components/common/LikeButton.vue'
 import ComboDisplay from '@/components/common/ComboDisplay.vue'
 
 const store = useLearningStore()

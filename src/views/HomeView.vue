@@ -40,6 +40,11 @@
     </div>
 
     <main class="home-main">
+      <!-- 节日问候横幅 -->
+      <div v-if="seasonalGreeting" class="season-greeting" :data-decoration="seasonalDecoration">
+        {{ seasonalGreeting }}
+      </div>
+
       <!-- 顶部区域：呦呦 + 冒险地图 -->
       <header class="home-top">
         <div class="hero-left">
@@ -48,7 +53,15 @@
             :show-wings="store.showWings"
             :show-crown="store.showCrown" :show-halo="store.showHalo"
             :avatar-src="store.avatar"
-            @click="petYoyo" />
+            @click="handleYoyoInteraction" />
+          <!-- v5.0: 点赞墙 -->
+          <div v-if="!isLocked" class="like-wall">
+            <div class="like-wall-count">
+              <span class="like-wall-icon">👍</span>
+              <span class="like-wall-num" :class="{ 'milestone-reached': isLikeMilestone }">{{ todayLikes }}</span>
+            </div>
+            <span class="like-wall-label">今天收获</span>
+          </div>
         </div>
         <div class="hero-right">
           <div class="adventure-map">
@@ -161,6 +174,19 @@
       </section>
     </main>
 
+    <!-- 季节节日漂浮粒子 -->
+    <div v-if="showParticles" class="season-particles-container">
+      <span v-for="(p, i) in particles" :key="i" class="season-particle"
+        :style="{
+          left: p.left,
+          animationDelay: p.delay,
+          animationDuration: p.duration,
+          fontSize: p.size
+        }">
+        {{ p.emoji }}
+      </span>
+    </div>
+
     <!-- 底部导航（锁屏/学习模式时隐藏） -->
     <nav class="home-nav" v-if="!isLocked && store.settings.learningMode !== 'card'">
       <button class="nav-btn nav-playground" @click="goPlayground">
@@ -189,20 +215,85 @@
         <span>家长</span>
       </button>
     </nav>
+
+    <!-- v5.0: 点赞里程碑特效 -->
+    <Transition name="pop">
+      <div v-if="showLikeMilestone" class="milestone-overlay" @click="dismissMilestone">
+        <div class="milestone-content">
+          <span class="milestone-emoji">🎉</span>
+          <h3>太棒了！</h3>
+          <p>今天已经收到 <strong>{{ todayLikes }}</strong> 个赞啦！</p>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLearningStore } from '@/stores/learning'
 import { ALL_CATEGORIES } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import { triggerConfetti } from '@/composables/useConfetti'
+import { useSeasonalDecorations } from '@/composables/useSeasonalDecorations'
+import { useEasterEggs } from '@/composables/useEasterEggs'
+import { useYoyoCopy } from '@/composables/useYoyoCopy'
+import { generateAIBubble } from '@/composables/useYoyoAI'
+import { useThumbsUp } from '@/composables/useThumbsUp'
+import { sfxCheer } from '@/composables/useSfx'
 
 const router = useRouter()
 const store = useLearningStore()
 const mapPathRef = ref(null)
+
+// v5.0: 点赞系统
+const { thumbsUpState, triggerAutoLike } = useThumbsUp()
+const todayLikes = ref(0)
+const showLikeMilestone = ref(false)
+const milestoneThresholds = [10, 25, 50, 100]
+const lastShownMilestone = ref(0)
+
+// 是否达到新的里程碑
+const isLikeMilestone = computed(() => {
+  return milestoneThresholds.some(t => todayLikes.value >= t && t > lastShownMilestone.value)
+})
+
+function dismissMilestone() {
+  showLikeMilestone.value = false
+}
+
+// 更新今日点赞数
+function updateTodayLikes() {
+  todayLikes.value = thumbsUpState.value.todayTotal || 0
+
+  // 检查里程碑
+  for (const threshold of milestoneThresholds) {
+    if (todayLikes.value >= threshold && threshold > lastShownMilestone.value) {
+      lastShownMilestone.value = threshold
+      showLikeMilestone.value = true
+      sfxCheer()
+      triggerConfetti(15)
+      setTimeout(() => { showLikeMilestone.value = false }, 3000)
+      break
+    }
+  }
+}
+
+// 监听点赞变化
+watch(() => thumbsUpState.value.todayTotal, updateTodayLikes)
+
+// P1-1: 季节节日装饰
+const {
+  greeting: seasonalGreeting,
+  bubbleText: seasonalBubble,
+  particles,
+  showParticles,
+  isActive: isSeasonActive
+} = useSeasonalDecorations()
+
+// P1-2: Easter Egg 发现系统
+const { handleYoyoClick: handleEasterEggClick } = useEasterEggs()
 
 // P2: 首次开场动画状态
 const showIntro = ref(false)
@@ -234,20 +325,20 @@ const yoyoMood = ref('idle')
 const yoyoBubble = ref('')
 const showStars = ref(false)
 
-const yoyoMessages = [
-  '你真棒！一起加油 💪',
-  '今天也要开开心心哦 😄',
-  '你是最棒的小朋友！🌟',
-  '来，击个掌 ✋',
-  '哇！你又来看我啦 ',
-  '今天想学什么呢？📚',
-  '我等你好久了 🐯',
-  '你是我的小太阳 ☀️',
-]
+// P2-1: 情境微文案系统
+const yoyoCopy = useYoyoCopy(store)
+
+function handleYoyoInteraction() {
+  // 先触发 Easter Egg 检测
+  handleEasterEggClick()
+  // 再执行常规互动
+  petYoyo()
+}
 
 function petYoyo() {
   yoyoMood.value = 'happy'
-  yoyoBubble.value = yoyoMessages[Math.floor(Math.random() * yoyoMessages.length)]
+  // P2-1: 情境微文案 — 根据学习状态动态生成
+  yoyoBubble.value = yoyoCopy.getWelcomeBubble()
   showStars.value = true
   setTimeout(() => {
     showStars.value = false
@@ -314,9 +405,9 @@ function goSentence() { router.push('/sentence') }
 
 // 场景名称映射
 const sceneLabels = {
-  forest: '🌲 森林', orchard: '🍎 果园', rainbow: ' 彩虹', mirror: ' 魔镜', home: '🏠 家',
+  forest: '🌲 森林', orchard: '🍎 果园', rainbow: '🌈 彩虹', mirror: '🪞 魔镜', home: '🏠 家',
   kitchen: '🍳 厨房', city: '🏢 城市', outdoor: '☀️ 户外', classroom: '📚 教室',
-  playground: '🛝 游乐场', bedroom: ' 卧室', heart: '❤️ 心灵'
+  playground: '🛝 游乐场', bedroom: '🌙 卧室', heart: '❤️ 心灵'
 }
 
 // 底部导航按钮配置 - 5 个主要入口
@@ -331,7 +422,10 @@ function sceneName(scene) { return sceneLabels[scene] || scene }
 
 onMounted(async () => {
   await store.loadFromDB()
-  
+
+  // v5.0: 加载今日点赞数
+  updateTodayLikes()
+
   // Detect if a new category was just unlocked
   if (store.justUnlockedIndex >= 0) {
     // Trigger a small confetti burst on return to home
@@ -348,13 +442,13 @@ onMounted(async () => {
     // Clear the flag so the animation only plays once
     store.consumeJustUnlocked()
   }
-  
+
   // P2: 首次访问播放开场动画
   const hasSeenIntro = localStorage.getItem('yoyo-intro-seen')
   if (store.isFirstUse && !hasSeenIntro) {
     showIntro.value = true
     introPhase.value = 0
-    
+
     // 0.3s 呦呦弹入
     setTimeout(() => { introPhase.value = 1 }, 300)
     // 1.0s 气泡弹出
@@ -365,16 +459,17 @@ onMounted(async () => {
     setTimeout(() => {
       showIntro.value = false
       localStorage.setItem('yoyo-intro-seen', 'true')
-      // 后续显示普通欢迎气泡
+      // 后续显示 AI 情境化欢迎气泡
       yoyoMood.value = 'summon'
-      yoyoBubble.value = '准备好了吗？点一个分类开始探险吧！'
+      yoyoBubble.value = generateAIBubble(store, { scenario: 'welcome' })
       showStars.value = true
       setTimeout(() => { yoyoBubble.value = ''; showStars.value = false }, 3000)
     }, 4000)
   } else {
     const m = store.masteredWordCount
     yoyoMood.value = 'idle'
-    yoyoBubble.value = m > 0 ? `你已经学会 ${m} 个单词啦！今天继续~` : '快来学新单词吧！'
+    // P3-1: AI 情境对话 — 根据学习进度智能生成欢迎语
+    yoyoBubble.value = generateAIBubble(store, { scenario: 'welcome' })
     // 气泡 3 秒后自动隐藏
     setTimeout(() => { yoyoBubble.value = '' }, 3000)
   }
@@ -423,8 +518,37 @@ onMounted(async () => {
   display: flex; gap: var(--space-sm); padding: var(--space-sm) var(--space-xl) 0;
   align-items: flex-start;
 }
-.hero-left { flex: 0 0 100px; min-width: 100px; display: flex; align-items: center; gap: var(--space-sm); justify-content: center; }
+.hero-left { flex: 0 0 140px; min-width: 140px; display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); }
 .hero-right { flex: 1; min-width: 0; }
+
+/* v5.0: 点赞墙 */
+.like-wall {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+  border-radius: var(--radius-lg); padding: 6px 12px;
+  border: 2px solid #90CAF9; min-width: 80px;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+}
+.like-wall-count {
+  display: flex; align-items: center; gap: 4px;
+}
+.like-wall-icon { font-size: 1.2rem; }
+.like-wall-num {
+  font-size: var(--font-size-xl); font-weight: 800; color: #1565C0;
+  transition: transform 0.3s, color 0.3s;
+}
+.like-wall-num.milestone-reached {
+  color: #FF6F00;
+  animation: milestonePulse 0.6s ease-in-out 3;
+}
+.like-wall-label {
+  font-size: 0.6rem; color: #1976D2; font-weight: 600;
+}
+
+@keyframes milestonePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
 
 /* ===== 冒险地图 ===== */
 .adventure-map {
@@ -797,5 +921,40 @@ onMounted(async () => {
 @keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+/* v5.0: 点赞里程碑弹窗 */
+.milestone-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+.milestone-content {
+  text-align: center; padding: var(--space-xl) var(--space-2xl);
+  background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
+  border-radius: var(--radius-xl); border: 3px solid #FFB74D;
+  box-shadow: 0 12px 48px rgba(255, 152, 0, 0.3);
+  animation: milestonePop 0.5s var(--ease-bounce);
+}
+.milestone-emoji { font-size: 4rem; display: block; margin-bottom: var(--space-sm); }
+.milestone-content h3 { font-size: var(--font-size-2xl); color: #E65100; margin-bottom: var(--space-xs); }
+.milestone-content p { font-size: var(--font-size-lg); color: #F57C00; }
+.milestone-content strong { font-size: var(--font-size-3xl); }
+
+@keyframes milestonePop {
+  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+  70% { transform: scale(1.1) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ===== P1: 季节节日漂浮粒子 ===== */
+.season-particles-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  overflow: hidden;
 }
 </style>

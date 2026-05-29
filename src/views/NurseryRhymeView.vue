@@ -15,8 +15,11 @@
     </header>
 
     <!-- 选择器（未选分类时显示） -->
-    <div v-if="!rhyme" class="rhyme-picker">
-      <h3>🎵 Choose a Rhyme</h3>
+    <div v-if="!rhyme" class="rhyme-picker anim-fade-up">
+      <div class="picker-header">
+        <YoyoMascot :mood="'happy'" bubble-text="想听哪首歌？选一个开始吧！🎵" class="picker-yoyo" />
+        <h3>🎵 选一首好听的英文童谣~</h3>
+      </div>
       <div class="rhyme-list">
         <button v-for="r in rhymes" :key="r.id" class="rhyme-card"
           :class="{ active: currentRhymeId === r.id }"
@@ -151,6 +154,9 @@ function highlightKeywords(line) {
 }
 
 function selectRhyme(id) {
+  // P2-2: 记录童谣听过数
+  store.settings.nurseryListened = (store.settings.nurseryListened || 0) + 1
+  store.persistSettings?.()
   currentRhymeId.value = id
   activeLine.value = 0
   yoyoMood.value = 'happy'
@@ -389,9 +395,21 @@ onUnmounted(() => {
   flex: 1; overflow-y: auto; padding: var(--space-lg);
 }
 
+.picker-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.picker-yoyo {
+  flex-shrink: 0;
+  transform: scale(0.9);
+}
+
 .rhyme-picker h3 {
-  font-size: var(--font-size-lg); color: var(--text-primary);
-  margin-bottom: var(--space-md);
+  font-size: var(--font-size-xl); color: var(--text-primary);
+  margin: 0;
 }
 
 .rhyme-list {

@@ -1,0 +1,205 @@
+/* ===== 季节节日装饰 CSS ===== */
+
+/* 节日漂浮粒子动画 */
+.season-particle {
+  position: fixed;
+  bottom: -50px;
+  pointer-events: none;
+  z-index: 50;
+  animation: floatUp linear forwards;
+  opacity: 0;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-110vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* 节日边框装饰 */
+.season-border-glow {
+  position: relative;
+}
+
+.season-border-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--season-border-color, #E53935);
+  opacity: 0.3;
+  animation: seasonGlow 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes seasonGlow {
+  0%, 100% { opacity: 0.2; box-shadow: 0 0 8px var(--season-border-color, #E53935); }
+  50% { opacity: 0.5; box-shadow: 0 0 16px var(--season-border-color, #E53935); }
+}
+
+/* 节日问候气泡 */
+.season-greeting {
+  position: relative;
+  background: var(--season-bg, #FFF3E0);
+  border: 2px solid var(--season-border, #E53935);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-md, 12px) var(--space-lg, 16px);
+  margin-bottom: var(--space-lg, 16px);
+  text-align: center;
+  font-size: var(--font-size-lg, 16px);
+  font-weight: 600;
+  color: var(--season-text, #1d1d1f);
+  animation: fadeInScale 0.5s ease-out;
+}
+
+.season-greeting::after {
+  content: attr(data-decoration);
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  font-size: 1.5rem;
+  animation: decorBounce 2s ease-in-out infinite;
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes decorBounce {
+  0%, 100% { transform: translateY(0) rotate(-10deg); }
+  50% { transform: translateY(-8px) rotate(10deg); }
+}
+
+/* ===== 各节日特定样式 ===== */
+
+/* 春节 */
+body.season-spring-festival .home-page {
+  --season-border-color: #E53935;
+  --season-bg: #FFF3E0;
+}
+
+/* 万圣节 */
+body.season-halloween .home-page {
+  --season-border-color: #FF6D00;
+  --season-bg: #FFF3E0;
+}
+
+/* 圣诞节 */
+body.season-christmas .home-page {
+  --season-border-color: #2E7D32;
+  --season-bg: #E8F5E9;
+}
+
+body.season-christmas .home-top {
+  position: relative;
+}
+
+body.season-christmas .home-top::after {
+  content: '❄️';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 1.5rem;
+  animation: snowflakeFall 3s ease-in-out infinite;
+}
+
+@keyframes snowflakeFall {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translateY(20px) rotate(180deg); opacity: 1; }
+}
+
+/* 儿童节 */
+body.season-childrens-day .home-page {
+  --season-border-color: #E91E63;
+  --season-bg: #FCE4EC;
+}
+
+body.season-childrens-day .streak-card {
+  background: linear-gradient(135deg, #FCE4EC, #FFF8E1);
+  border: 2px solid #F06292;
+}
+
+/* 国庆节 */
+body.season-national-day .home-page {
+  --season-border-color: #E53935;
+  --season-bg: #FFEBEE;
+}
+
+/* 中秋节 */
+body.season-mid-autumn .home-page {
+  --season-border-color: #FFA726;
+  --season-bg: #FFF8E1;
+}
+
+body.season-mid-autumn .home-top::after {
+  content: '🌕';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 2rem;
+  animation: moonGlow 4s ease-in-out infinite;
+}
+
+@keyframes moonGlow {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* 春季 */
+body.season-spring .home-page {
+  --season-border-color: #F06292;
+  --season-bg: #FCE4EC;
+}
+
+body.season-spring .home-top::after {
+  content: '🌸';
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 1.2rem;
+  animation: petalFloat 4s ease-in-out infinite;
+}
+
+@keyframes petalFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translateY(-10px) rotate(15deg); opacity: 1; }
+}
+
+/* 夏季 */
+body.season-summer .home-page {
+  --season-border-color: #FF8F00;
+  --season-bg: #FFF8E1;
+}
+
+/* 秋季 */
+body.season-autumn .home-page {
+  --season-border-color: #BF360C;
+  --season-bg: #FBE9E7;
+}
+
+/* 冬季 */
+body.season-winter .home-page {
+  --season-border-color: #1565C0;
+  --season-bg: #E3F2FD;
+}
+
+body.season-winter .home-top::after {
+  content: '❄️';
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 1.2rem;
+  animation: snowflakeFall 3s ease-in-out infinite;
+}

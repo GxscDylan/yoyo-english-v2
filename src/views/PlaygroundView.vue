@@ -90,13 +90,13 @@ const GAME_LIST = [
   {
     id: 'speed-rush', name: 'Speed Rush', desc: '限时答题，挑战反应速度',
     bgColor: 'linear-gradient(135deg, #FF6F00, #FFA726)',
-    unlocked: false,
+    unlocked: true,
     icon: '<polygon points="38,8 22,32 34,32 30,56 46,30 34,30" stroke-width="3" fill="currentColor" opacity="0.8"/>'
   },
   {
     id: 'sort-it', name: 'Sort It!', desc: '分类单词，整理收纳',
     bgColor: 'linear-gradient(135deg, #66BB6A, #81C784)',
-    unlocked: false,
+    unlocked: true,
     icon: '<rect x="12" y="16" width="40" height="32" rx="4"/><line x1="12" y1="30" x2="52" y2="30" stroke-width="2.5"/><line x1="28" y1="30" x2="28" y2="48" stroke-width="2.5"/>'
   }
 ]

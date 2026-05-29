@@ -32,6 +32,10 @@ function openDB() {
       if (!db.objectStoreNames.contains('review_queue')) {
         db.createObjectStore('review_queue', { keyPath: 'wordId' })
       }
+      // v5.0: 点赞系统
+      if (!db.objectStoreNames.contains('thumbs_up')) {
+        db.createObjectStore('thumbs_up', { keyPath: 'key' })
+      }
     }
   })
 }
@@ -87,7 +91,9 @@ const DEFAULT_SETTINGS = {
   singleSessionMinutes: 15,
   lockStartTime: '20:00',
   lockEndTime: '07:00',
-  learningMode: 'fourStep' // 'fourStep' | 'card'
+  learningMode: 'fourStep', // 'fourStep' | 'card'
+  reviewCount: 0, // P2-2: 复习次数统计
+  nurseryListened: 0 // P2-2: 童谣听过数统计
 }
 
 export const useLearningStore = defineStore('learning', () => {
@@ -125,6 +131,9 @@ export const useLearningStore = defineStore('learning', () => {
 
   /** 宝贝头像（base64 字符串，纯本地存储） */
   const avatar = ref(null)
+
+  /** 宝贝性别（用于个性化称呼 'boy' | 'girl' | 'neutral'） */
+  const childGender = ref('neutral')
 
   /** 主题色方案 */
   const themeColor = ref('orange')
@@ -300,17 +309,41 @@ export const useLearningStore = defineStore('learning', () => {
     return gameScores.value.match > 0 && gameScores.value.listen > 0 && gameScores.value.memory > 0 && gameScores.value.balloon > 0 && gameScores.value['speed-rush'] > 0 && gameScores.value['sort-it'] > 0
   })
 
+  // P2-2: 扩展成就 — 新增配饰状态
+  /** 🎖️ 连胜徽章（游戏最大连击≥5） */
+  const showComboBadge = computed(() => lifetimeMaxCombo.value >= 5)
+  /** ⭐ 星星收集家（累计获得30颗星） */
+  const showStarBadge = computed(() => totalStars.value >= 30)
+  /** 📖 复习达人（复习次数≥10） */
+  const showReviewBadge = computed(() => (settings.value.reviewCount || 0) >= 10)
+  /** 🎵 童谣爱好者（听过≥5首童谣） */
+  const showMusicNote = computed(() => (settings.value.nurseryListened || 0) >= 5)
+  /** 🏅 分类探索家（解锁全部12个分类） */
+  const showExplorerBadge = computed(() => unlockedCategories.value >= 12)
+
   // ============================================================
   // P3: 勋章系统 — 成就列表（用于家长中心展示）
   // ============================================================
 
-  /** 5 个成就的完整信息 */
+  /** 15 个成就的完整信息（P2-2 扩展） */
   const achievements = computed(() => [
+    // 原有 5 个
     { id: 'hat', name: '学习小达人', nameEn: 'Study Star', icon: '🎩', condition: '连续学习 3 天', unlocked: showHat.value, progress: Math.min(consecutiveDays.value, 3), max: 3 },
     { id: 'glasses', name: '知识探索家', nameEn: 'Knowledge Seeker', icon: '👓', condition: '连续学习 7 天', unlocked: showGlasses.value, progress: Math.min(consecutiveDays.value, 7), max: 7 },
     { id: 'wings', name: '单词小飞侠', nameEn: 'Word Flyer', icon: '🦋', condition: '掌握 50 个单词', unlocked: showWings.value, progress: Math.min(masteredWordCount.value, 50), max: 50 },
     { id: 'crown', name: '词汇大师', nameEn: 'Vocab Master', icon: '👑', condition: '掌握 100 个单词', unlocked: showCrown.value, progress: Math.min(masteredWordCount.value, 100), max: 100 },
-    { id: 'halo', name: '游戏全通关', nameEn: 'Game Champion', icon: '🌟', condition: '6 款游戏全部通关', unlocked: showHalo.value, progress: [gameScores.value.match, gameScores.value.listen, gameScores.value.memory, gameScores.value.balloon, gameScores.value['speed-rush'], gameScores.value['sort-it']].filter(s => s > 0).length, max: 6 }
+    { id: 'halo', name: '游戏全通关', nameEn: 'Game Champion', icon: '🌟', condition: '6 款游戏全部通关', unlocked: showHalo.value, progress: [gameScores.value.match, gameScores.value.listen, gameScores.value.memory, gameScores.value.balloon, gameScores.value['speed-rush'], gameScores.value['sort-it']].filter(s => s > 0).length, max: 6 },
+    // 新增 10 个
+    { id: 'combo-badge', name: '连击小能手', nameEn: 'Combo Master', icon: '🎖️', condition: '游戏连击≥5', unlocked: showComboBadge.value, progress: Math.min(lifetimeMaxCombo.value, 5), max: 5 },
+    { id: 'star-badge', name: '星星收集家', nameEn: 'Star Collector', icon: '⭐', condition: '累计获得 30 颗星', unlocked: showStarBadge.value, progress: Math.min(totalStars.value, 30), max: 30 },
+    { id: 'review-badge', name: '复习达人', nameEn: 'Review Pro', icon: '📖', condition: '复习次数≥10', unlocked: showReviewBadge.value, progress: Math.min(settings.value.reviewCount || 0, 10), max: 10 },
+    { id: 'music-note', name: '童谣爱好者', nameEn: 'Rhyme Lover', icon: '🎵', condition: '听过≥5首童谣', unlocked: showMusicNote.value, progress: Math.min(settings.value.nurseryListened || 0, 5), max: 5 },
+    { id: 'explorer-badge', name: '分类探索家', nameEn: 'Category Explorer', icon: '🏅', condition: '解锁全部 12 个分类', unlocked: showExplorerBadge.value, progress: Math.min(unlockedCategories.value, 12), max: 12 },
+    { id: 'first-word', name: '第一桶金', nameEn: 'First Word', icon: '🥇', condition: '学会第一个单词', unlocked: masteredWordCount.value >= 1, progress: Math.min(masteredWordCount.value, 1), max: 1 },
+    { id: 'first-game', name: '初次游戏', nameEn: 'First Game', icon: '🎮', condition: '玩第一次游戏', unlocked: Object.values(gameScores.value).some(s => s > 0), progress: Object.values(gameScores.value).some(s => s > 0) ? 1 : 0, max: 1 },
+    { id: 'streak-14', name: '两周坚持', nameEn: 'Two Weeks', icon: '🔥', condition: '连续学习 14 天', unlocked: consecutiveDays.value >= 14, progress: Math.min(consecutiveDays.value, 14), max: 14 },
+    { id: 'streak-30', name: '月度达人', nameEn: 'Monthly Star', icon: '💎', condition: '连续学习 30 天', unlocked: consecutiveDays.value >= 30, progress: Math.min(consecutiveDays.value, 30), max: 30 },
+    { id: 'perfect-game', name: '完美游戏', nameEn: 'Perfect Game', icon: '💯', condition: '游戏满分一次', unlocked: Object.values(gameScores.value).some(s => s >= 100), progress: Object.values(gameScores.value).some(s => s >= 100) ? 1 : 0, max: 1 }
   ])
 
   /** 时间段锁检测 */
@@ -508,6 +541,7 @@ export const useLearningStore = defineStore('learning', () => {
       reviewQueue: reviewQueue.value,
       settings: { ...settings.value },
       avatar: avatar.value,
+      childGender: childGender.value,
       themeColor: themeColor.value,
       gameDifficulty: gameDifficulty.value,
       dailyActivity: dailyActivity.value,
@@ -526,6 +560,7 @@ export const useLearningStore = defineStore('learning', () => {
     reviewQueue.value = data.reviewQueue || {}
     if (data.settings) settings.value = { ...DEFAULT_SETTINGS, ...data.settings }
     avatar.value = data.avatar || null
+    childGender.value = data.childGender || 'neutral'
     themeColor.value = data.themeColor || 'orange'
     gameDifficulty.value = data.gameDifficulty || 'medium'
     dailyActivity.value = data.dailyActivity || {}
@@ -546,6 +581,7 @@ export const useLearningStore = defineStore('learning', () => {
     todayDate.value = ''
     firstUseTime.value = null
     avatar.value = null
+    childGender.value = 'neutral'
     themeColor.value = 'orange'
     gameDifficulty.value = 'medium'
     dailyActivity.value = {}
@@ -570,6 +606,7 @@ export const useLearningStore = defineStore('learning', () => {
       todayLearnedCount: todayLearnedCount.value,
       todayDate: todayDate.value,
       avatar: avatar.value,
+      childGender: childGender.value,
       themeColor: themeColor.value,
       gameDifficulty: gameDifficulty.value,
       dailyActivity: dailyActivity.value,
@@ -646,7 +683,7 @@ export const useLearningStore = defineStore('learning', () => {
     // 状态
     wordRecords, unlockedCategories, totalStars, gameScores,
     firstUseTime, settings, todayLearnedCount, todayDate, reviewQueue,
-    avatar, themeColor, gameDifficulty, dailyActivity,
+    avatar, childGender, themeColor, gameDifficulty, dailyActivity,
     // Combo 连击系统
     gameCombo, gameMaxCombo, lifetimeMaxCombo, showComboGuide,
     addCombo, resetCombo, getComboBonus,
@@ -658,7 +695,10 @@ export const useLearningStore = defineStore('learning', () => {
     // 每日打卡
     recordDailyActivity, todayKey,
     // P3: 养成系统
-    showHat, showGlasses, showWings, showCrown, showHalo, achievements,
+    showHat, showGlasses, showWings, showCrown, showHalo,
+    // P2-2: 扩展成就配饰
+    showComboBadge, showStarBadge, showReviewBadge, showMusicNote, showExplorerBadge,
+    achievements,
     // 限制检查
     resetSessionTimer, isSessionTimeExceeded, checkAllLimits,
     // 单词

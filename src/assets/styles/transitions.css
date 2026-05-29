@@ -1,0 +1,363 @@
+/**
+ * 呦呦英语启蒙 — 页面过渡 & 庆祝特效 CSS
+ * v5.0 激励与过渡系统
+ */
+
+/* ============================================================
+   1. 方向性滑动过渡（路由级）
+   ============================================================ */
+
+/* 向左滑动（前进：首页→学习/游戏） */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-left-enter-from {
+  transform: translateX(30%);
+  opacity: 0;
+}
+.slide-left-leave-to {
+  transform: translateX(-30%);
+  opacity: 0;
+}
+
+/* 向右滑动（后退：学习/游戏→首页） */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-right-enter-from {
+  transform: translateX(-30%);
+  opacity: 0;
+}
+.slide-right-leave-to {
+  transform: translateX(30%);
+  opacity: 0;
+}
+
+/* 向上滑动（进入家长中心） */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-up-enter-from {
+  transform: translateY(40%);
+  opacity: 0;
+}
+.slide-up-leave-to {
+  transform: translateY(-40%);
+  opacity: 0;
+}
+
+/* 向下滑动（退出家长中心） */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-down-enter-from {
+  transform: translateY(-40%);
+  opacity: 0;
+}
+.slide-down-leave-to {
+  transform: translateY(40%);
+  opacity: 0;
+}
+
+/* ============================================================
+   2. 学习步骤翻页过渡（LearnView 四步切换）
+   ============================================================ */
+
+/* 步骤前进 */
+.step-forward-enter-active,
+.step-forward-leave-active {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.35s ease;
+}
+.step-forward-enter-from {
+  transform: translateX(50%);
+  opacity: 0;
+}
+.step-forward-leave-to {
+  transform: translateX(-50%);
+  opacity: 0;
+}
+
+/* 步骤后退 */
+.step-backward-enter-active,
+.step-backward-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease;
+}
+.step-backward-enter-from {
+  transform: translateX(-50%);
+  opacity: 0;
+}
+.step-backward-leave-to {
+  transform: translateX(50%);
+  opacity: 0;
+}
+
+/* 单词切换：轻微 fadeUp */
+.word-fade-enter-active {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.word-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.word-fade-enter-from {
+  transform: translateY(16px);
+  opacity: 0;
+}
+.word-fade-leave-to {
+  opacity: 0;
+}
+
+/* ============================================================
+   3. 反馈视觉特效
+   ============================================================ */
+
+/* 正确脉冲光环（从选项卡片中心扩散的绿色光环） */
+@keyframes correctPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+.correct-pulse {
+  animation: correctPulse 0.5s ease-out;
+}
+
+/* 错误轻微抖动（减弱版 ±3px） */
+@keyframes shakeGentle {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+.shake-gentle {
+  animation: shakeGentle 0.4s ease;
+}
+
+/* 金色径向闪光（L4 高光时刻） */
+@keyframes goldenFlash {
+  0% {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.6) 0%, transparent 0%);
+    opacity: 1;
+  }
+  100% {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0) 100%, transparent 100%);
+    opacity: 0;
+  }
+}
+.golden-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+  animation: goldenFlash 0.6s ease-out forwards;
+}
+
+/* 完美横幅（从顶部滑入） */
+@keyframes bannerSlideIn {
+  0% { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+  15% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  85% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+}
+.perfect-banner {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9995;
+  background: linear-gradient(135deg, #FFD700, #FFA000);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 12px 32px;
+  border-radius: 40px;
+  box-shadow: 0 4px 20px rgba(255, 165, 0, 0.4);
+  pointer-events: none;
+  animation: bannerSlideIn 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  white-space: nowrap;
+}
+
+/* 彩虹边框（L5 传奇时刻） */
+@keyframes rainbowBorder {
+  0% { opacity: 0; border-width: 0; }
+  20% { opacity: 1; border-width: 6px; }
+  80% { opacity: 1; border-width: 6px; }
+  100% { opacity: 0; border-width: 0; }
+}
+.rainbow-border {
+  position: fixed;
+  inset: 0;
+  z-index: 9988;
+  pointer-events: none;
+  border: 6px solid transparent;
+  border-image: linear-gradient(
+    45deg,
+    #FF6B6B, #FFE66D, #4ECDC4, #45B7D1, #96CEB4, #FF6B9D
+  ) 1;
+  animation: rainbowBorder 3s ease forwards;
+}
+
+/* 火焰飘浮（L3 Combo x3） */
+@keyframes fireFloat {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-120px) scale(0.6);
+    opacity: 0;
+  }
+}
+.fire-float {
+  position: fixed;
+  bottom: 0;
+  font-size: 2rem;
+  pointer-events: none;
+  animation: fireFloat 1.5s ease-out forwards;
+  z-index: 9980;
+}
+
+/* 星星飞入（从选项位置飞到顶部计数器） */
+@keyframes starFlyToCounter {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(var(--fly-x, 0px), var(--fly-y, -200px)) scale(1.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--fly-x, 0px), var(--fly-y, -200px)) scale(0.5);
+  }
+}
+.star-fly {
+  position: fixed;
+  font-size: 1.5rem;
+  pointer-events: none;
+  z-index: 9985;
+  animation: starFlyToCounter 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ============================================================
+   4. 游戏内轮次过渡
+   ============================================================ */
+
+/* 正确→下一题：当前卡片缩小淡出 */
+@keyframes cardExitCorrect {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+.card-exit-correct {
+  animation: cardExitCorrect 0.3s ease forwards;
+}
+
+/* 新卡片从底部弹入 */
+@keyframes cardEnterBounce {
+  0% { transform: translateY(30px) scale(0.9); opacity: 0; }
+  60% { transform: translateY(-5px) scale(1.02); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.card-enter-bounce {
+  animation: cardEnterBounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ============================================================
+   5. 自动点赞飘出动画
+   ============================================================ */
+
+@keyframes thumbFlyOut {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-30px, -80px) scale(1.4);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-60px, -160px) scale(0.6);
+    opacity: 0;
+  }
+}
+.thumb-fly {
+  position: fixed;
+  font-size: 2rem;
+  pointer-events: none;
+  z-index: 9990;
+  animation: thumbFlyOut 0.8s ease-out forwards;
+}
+
+/* ============================================================
+   5.5 Mini Confetti 局部发射（从元素位置扩散）
+   ============================================================ */
+
+@keyframes miniConfettiSpread {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  60% {
+    opacity: 0.9;
+    transform: translate(var(--spread-x, 10vw), var(--spread-y, -30vh)) rotate(var(--rotation, 180deg)) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--spread-x, 10vw), calc(var(--spread-y, -30vh) + 20vh)) rotate(var(--rotation, 360deg)) scale(0.4);
+  }
+}
+
+/* Mini confetti pieces use this animation instead of the global fall */
+.confetti-piece[style*="--spread-x"] {
+  animation-name: miniConfettiSpread !important;
+}
+
+/* ============================================================
+   6. prefers-reduced-motion 降级
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-left-enter-active, .slide-left-leave-active,
+  .slide-right-enter-active, .slide-right-leave-active,
+  .slide-up-enter-active, .slide-up-leave-active,
+  .slide-down-enter-active, .slide-down-leave-active {
+    transition: opacity 0.15s ease;
+  }
+  .slide-left-enter-from, .slide-right-enter-from,
+  .slide-up-enter-from, .slide-down-enter-from {
+    transform: none;
+  }
+  .slide-left-leave-to, .slide-right-leave-to,
+  .slide-up-leave-to, .slide-down-leave-to {
+    transform: none;
+  }
+
+  .correct-pulse,
+  .shake-gentle,
+  .golden-flash,
+  .perfect-banner,
+  .rainbow-border,
+  .fire-float,
+  .star-fly,
+  .thumb-fly,
+  .card-exit-correct,
+  .card-enter-bounce {
+    animation: none;
+  }
+}

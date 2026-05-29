@@ -100,6 +100,28 @@
         />
       </section>
 
+      <!-- P3-2: 宝贝性别选择（个性化称呼） -->
+      <section class="section-card">
+        <h3>👶 宝贝信息</h3>
+        <div class="gender-selector">
+          <p class="gender-label">宝贝性别（用于呦呦的个性化称呼）</p>
+          <div class="gender-options">
+            <button class="gender-option" :class="{ active: store.childGender === 'boy' }" @click="setGender('boy')">
+              <span class="gender-emoji">👦</span>
+              <span>男孩</span>
+            </button>
+            <button class="gender-option" :class="{ active: store.childGender === 'girl' }" @click="setGender('girl')">
+              <span class="gender-emoji">👧</span>
+              <span>女孩</span>
+            </button>
+            <button class="gender-option" :class="{ active: store.childGender === 'neutral' }" @click="setGender('neutral')">
+              <span class="gender-emoji">⭐</span>
+              <span>通用</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section class="section-card">
         <h3>🎨 主题色设置</h3>
         <p class="theme-hint">选择宝贝喜欢的颜色，全局即时生效</p>
@@ -131,6 +153,13 @@
 
       <section class="section-card">
         <h3>📊 学习报告</h3>
+        <!-- 空状态：呦呦趣味引导 -->
+        <div v-if="isReportEmpty" class="report-empty anim-fade-up">
+          <YoyoMascot :mood="'happy'" :bubble-text="reportBubble" class="empty-yoyo" />
+          <p>宝贝还没有开始学习呢~ 选个分类开始吧！</p>
+        </div>
+        <!-- 有数据：显示统计 -->
+        <template v-else>
         <div class="stats-grid">
           <div class="stat"><span class="stat-val">{{ store.masteredWordCount }}</span><span class="stat-lbl">已掌握</span></div>
           <div class="stat"><span class="stat-val">{{ store.totalStars }}</span><span class="stat-lbl">总星星</span></div>
@@ -152,10 +181,18 @@
             </span>
           </div>
         </div>
+        </template>
       </section>
 
       <section class="section-card">
         <h3>📅 本周学习</h3>
+        <!-- 空状态：呦呦趣味引导 -->
+        <div v-if="isWeekEmpty" class="week-empty anim-fade-up">
+          <YoyoMascot :mood="'happy'" :bubble-text="weekBubble" class="empty-yoyo" />
+          <p>这周还没有学习记录哦，快去学几个单词吧！</p>
+        </div>
+        <!-- 有数据：显示图表 -->
+        <template v-else>
         <div class="week-summary">
           <div class="week-stat"><span class="week-stat-val">{{ store.weeklySummary.activeDays }}</span><span class="week-stat-lbl">活跃天数</span></div>
           <div class="week-stat"><span class="week-stat-val">{{ store.weeklySummary.totalSteps }}</span><span class="week-stat-lbl">完成步骤</span></div>
@@ -172,6 +209,7 @@
           </div>
         </div>
         <p class="week-streak" v-if="store.currentStreak > 0">🔥 已连续学习 <strong>{{ store.currentStreak }}</strong> 天，继续加油！</p>
+        </template>
       </section>
 
       <section class="section-card">
@@ -184,10 +222,71 @@
         <div class="row"><span>🗂️ 分类小达人</span><span class="score">{{ gameScoreStars('sort-it') }}</span></div>
       </section>
 
+      <!-- v5.0: BGM 控制 -->
       <section class="section-card">
-        <h3>🏅 成就勋章</h3>
+        <h3>🎵 背景音乐</h3>
+        <div class="row">
+          <span>开关</span>
+          <button class="toggle" :class="{ on: bgmEnabled }" @click="toggleBGM">
+            {{ bgmEnabled ? 'ON' : 'OFF' }}
+          </button>
+        </div>
+        <div class="row">
+          <span>音量</span>
+          <div class="volume-slider">
+            <input type="range" min="0" max="100" :value="Math.round(bgmVolume * 100)"
+              @input="setBGMVolume($event.target.value / 100)" class="vol-range">
+            <span class="vol-val">{{ Math.round(bgmVolume * 100) }}%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- v5.0: 点赞统计 -->
+      <section class="section-card">
+        <h3>👍 点赞统计</h3>
+        <div class="stats-grid">
+          <div class="stat"><span class="stat-val">{{ todayTotalLikes }}</span><span class="stat-lbl">今日点赞</span></div>
+          <div class="stat"><span class="stat-val">{{ totalAllTimeLikes }}</span><span class="stat-lbl">累计点赞</span></div>
+          <div class="stat"><span class="stat-val">{{ favoriteWordsList.length }}</span><span class="stat-lbl">收藏单词</span></div>
+        </div>
+        <!-- 7天趋势图 -->
+        <div class="like-trend-chart">
+          <div v-for="day in likeTrend" :key="day.dayLabel" class="like-trend-col" :class="{ today: day.isToday }">
+            <div class="like-trend-wrap">
+              <div class="like-trend-bar" :style="{ height: (day.count / maxDailyLikes * 100) + '%' }" :class="{ active: day.count > 0 }"></div>
+            </div>
+            <span class="like-trend-val" v-if="day.count > 0">{{ day.count }}</span>
+            <span class="like-trend-label">{{ day.dayLabel }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- v5.0: 收藏单词列表 -->
+      <section class="section-card">
+        <h3>❤️ 收藏单词</h3>
+        <div v-if="favoriteWordsList.length === 0" class="fav-empty anim-fade-up">
+          <span class="fav-empty-icon">📝</span>
+          <p>还没有收藏的单词~</p>
+          <p class="fav-hint">在学习页面点击 🤍 可以收藏单词</p>
+        </div>
+        <div v-else class="fav-grid">
+          <div v-for="word in favoriteWordsList" :key="word.id" class="fav-item">
+            <span class="fav-emoji">{{ word.emoji }}</span>
+            <span class="fav-en">{{ word.en }}</span>
+            <button class="fav-unlike" @click="removeFavorite(word.id)">✕</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h3>🏅 成就章</h3>
         <p class="medal-hint">孩子通过持续学习解锁的成就</p>
-        <div class="medal-grid">
+        <!-- 空状态：全部未解锁 -->
+        <div v-if="isAllMedalsLocked" class="medals-empty anim-fade-up">
+          <YoyoMascot :mood="'excited'" bubble-text="快去解锁你的第一枚勋章吧！" class="empty-yoyo" />
+          <p>完成学习任务，收集属于你的成就勋章吧~</p>
+        </div>
+        <div v-else class="medal-grid">
           <div v-for="m in store.achievements" :key="m.id" class="medal-card"
             :class="{ unlocked: m.unlocked }">
             <div class="medal-icon" :class="{ 'medal-locked': !m.unlocked }">
@@ -201,9 +300,22 @@
             </div>
             <div class="medal-progress-text">{{ m.progress }}/{{ m.max }}</div>
             <span v-if="m.unlocked" class="medal-badge">已解锁</span>
+            <button v-if="m.unlocked" class="btn-share-medal" @click="shareAchievement(m)">📥 分享</button>
           </div>
         </div>
       </section>
+
+      <!-- P2-3: 成就分享卡弹窗 -->
+      <div v-if="showAchievementCard" class="achievement-modal-overlay anim-fade-up" @click.self="showAchievementCard = false">
+        <AchievementCard
+          :achievement="selectedAchievement"
+          :mastered-word-count="store.masteredWordCount"
+          :total-stars="store.totalStars"
+          :consecutive-days="store.consecutiveDays"
+          :theme-color="store.themeColor || 'orange'"
+          @close="showAchievementCard = false"
+        />
+      </div>
 
       <section class="section-card">
         <h3>💾 数据管理</h3>
@@ -229,12 +341,71 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { ALL_CATEGORIES, L1_WORDS, L2_WORDS } from '@/data/words'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import AchievementCard from '@/components/common/AchievementCard.vue'
+import { playBGM, stopBGM, muteBGM, unmuteBGM, setBGMVolume as _setBGMVolume, isBGMEnabled, isBGMPlaying } from '@/composables/useBGM'
+import { useThumbsUp } from '@/composables/useThumbsUp'
+
+// P2-3: 成就分享卡
+const showAchievementCard = ref(false)
+const selectedAchievement = ref(null)
+
+function shareAchievement(achievement) {
+  selectedAchievement.value = achievement
+  showAchievementCard.value = true
+}
 
 const store = useLearningStore()
+
+// v5.0: BGM 控制
+const bgmEnabled = ref(isBGMEnabled())
+const bgmVolume = ref(0.6)
+
+function toggleBGM() {
+  if (bgmEnabled.value) {
+    muteBGM()
+  } else {
+    unmuteBGM()
+    playBGM('parent')
+  }
+  bgmEnabled.value = isBGMEnabled()
+}
+
+function setBGMVolume(v) {
+  bgmVolume.value = v
+  _setBGMVolume(v)
+}
+
+// v5.0: 点赞统计
+const { thumbsUpState, getFavoriteWords, getLikeHistory } = useThumbsUp()
+const todayTotalLikes = computed(() => thumbsUpState.value.todayTotal || 0)
+const totalAllTimeLikes = computed(() => thumbsUpState.value.totalAllTime || 0)
+const favoriteWordsList = computed(() => getFavoriteWords())
+
+// 点赞趋势（最近7天）
+const likeTrend = computed(() => {
+  const history = getLikeHistory()
+  const last7 = []
+  const now = new Date()
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    const entry = history.find(h => h.date === key)
+    last7.push({
+      dayLabel: ['日', '一', '二', '三', '四', '五', '六'][d.getDay()],
+      isToday: i === 0,
+      count: entry?.count || 0
+    })
+  }
+  return last7
+})
+const maxDailyLikes = computed(() => Math.max(1, ...likeTrend.value.map(d => d.count)))
+
 const authenticated = ref(false)
 const pinInput = ref('')
 const pinError = ref('')
@@ -246,6 +417,38 @@ const fileInput = ref(null)
 // Avatar cropper state
 const showCropper = ref(false)
 const cropImageSrc = ref('')
+
+// 空状态判断
+const isReportEmpty = computed(() => {
+  return store.masteredWordCount === 0 && store.totalStars === 0 && store.unlockedCategories === 0
+})
+
+const isWeekEmpty = computed(() => {
+  return store.weeklySummary.activeDays === 0
+})
+
+const isAllMedalsLocked = computed(() => {
+  return store.achievements.every(m => !m.unlocked)
+})
+
+// 呦呦气泡文案（空状态）
+const reportBubble = computed(() => {
+  const msgs = [
+    '宝贝还没开始学习呢~ 选个分类开始吧！',
+    '新的一天，新的开始！今天学点什么呢？',
+    '万事开头难，但呦呦相信你可以的~ 💪'
+  ]
+  return msgs[Math.floor(Math.random() * msgs.length)]
+})
+
+const weekBubble = computed(() => {
+  const msgs = [
+    '这周还没有学习记录哦，快去学几个单词吧！',
+    '新的一天开始啦，让呦呦陪你一起学习吧~',
+    '坚持就是胜利！每天学一点，进步看得见~'
+  ]
+  return msgs[Math.floor(Math.random() * msgs.length)]
+})
 
 // 难度选项
 const difficulties = [
@@ -332,6 +535,18 @@ function handleCropConfirm(croppedBase64) {
   cropImageSrc.value = ''
 }
 function removeAvatar() { store.avatar = null; store.persistAll() }
+
+// P3-2: 设置宝贝性别
+function setGender(g) {
+  store.childGender = g
+  store.persistAll()
+}
+
+// v5.0: 取消收藏
+function removeFavorite(wordId) {
+  const { toggleFavorite } = useThumbsUp()
+  toggleFavorite(wordId)
+}
 function doExport() {
   const data = store.exportData()
   const b = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -458,7 +673,56 @@ onMounted(() => store.loadFromDB())
 .week-bar-label { font-size: 0.6rem; color: var(--text-hint); }
 
 .week-streak { font-size: var(--font-size-sm); color: var(--text-secondary); text-align: center; margin-top: var(--space-sm); }
+
+/* ===== 空状态 ===== */
+.report-empty, .week-empty, .medals-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-md);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.empty-yoyo {
+  transform: scale(0.9);
+}
 .week-streak strong { color: #E65100; }
+
+/* ===== P2-3: 成就分享卡弹窗 ===== */
+.achievement-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+.btn-share-medal {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.medal-card:hover .btn-share-medal {
+  opacity: 1;
+}
 
 .btn-row { display: flex; gap: var(--space-sm); }
 .btn-act { flex: 1; padding: var(--space-sm); border-radius: var(--radius-md); font-size: var(--font-size-sm); font-weight: 600; text-align: center; cursor: pointer; transition: all 0.2s; }
@@ -554,5 +818,117 @@ onMounted(() => store.loadFromDB())
   display: flex; align-items: center; justify-content: center;
   font-size: 0.7rem; font-weight: 700;
   animation: pop 0.3s var(--ease-bounce);
+}
+
+/* ===== v5.0: BGM 音量滑块 ===== */
+.volume-slider { display: flex; align-items: center; gap: var(--space-sm); }
+.vol-range {
+  -webkit-appearance: none; appearance: none;
+  width: 120px; height: 6px; border-radius: 3px;
+  background: var(--border-light); outline: none;
+}
+.vol-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--color-primary); cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.vol-val { font-size: var(--font-size-xs); color: var(--text-hint); min-width: 36px; }
+
+/* ===== v5.0: 点赞趋势图 ===== */
+.like-trend-chart {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-xs);
+  height: 60px; padding: var(--space-sm) 0;
+  border-top: 1px solid var(--border-light);
+  margin-top: var(--space-sm);
+}
+.like-trend-col {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  height: 100%;
+}
+.like-trend-col.today .like-trend-label { color: var(--color-primary); font-weight: 700; }
+.like-trend-wrap {
+  flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center;
+}
+.like-trend-bar {
+  width: 16px; min-height: 2px; border-radius: 4px 4px 0 0;
+  background: var(--border-light);
+  transition: height 0.5s ease;
+}
+.like-trend-bar.active {
+  background: linear-gradient(180deg, #2196F3, #64B5F6);
+}
+.like-trend-val { font-size: 0.5rem; font-weight: 700; color: #2196F3; }
+.like-trend-label { font-size: 0.55rem; color: var(--text-hint); }
+
+/* ===== v5.0: 收藏单词列表 ===== */
+.fav-empty {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-sm);
+  padding: var(--space-lg) 0; text-align: center;
+}
+.fav-empty-icon { font-size: 2.5rem; }
+.fav-empty p { font-size: var(--font-size-sm); color: var(--text-secondary); margin: 0; }
+.fav-hint { font-size: 0.6rem !important; color: var(--text-hint); }
+
+.fav-grid {
+  display: flex; flex-wrap: wrap; gap: var(--space-xs);
+}
+.fav-item {
+  display: flex; align-items: center; gap: var(--space-xs);
+  padding: 6px 10px; border-radius: var(--radius-lg);
+  background: var(--bg-main); border: 1px solid var(--border-light);
+  font-size: var(--font-size-sm);
+  transition: all 0.2s;
+}
+.fav-item:hover { border-color: #EF9A9A; background: #FFF3F3; }
+.fav-emoji { font-size: 1.2rem; }
+.fav-en { font-weight: 600; color: var(--text-primary); }
+.fav-unlike {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: transparent; color: #ccc;
+  font-size: 0.7rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.fav-unlike:hover { background: #EF5350; color: #fff; }
+
+/* ===== P3-2: 性别选择器 ===== */
+.gender-label {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+.gender-options {
+  display: flex;
+  gap: var(--space-md);
+}
+.gender-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-sm);
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+.gender-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+.gender-option.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.2);
+}
+.gender-emoji {
+  font-size: 2rem;
 }
 </style>

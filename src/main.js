@@ -5,6 +5,9 @@ import router from './router'
 import './assets/styles/variables.css'
 import './assets/styles/base.css'
 import './assets/styles/animations.css'
+import './assets/styles/transitions.css'
+import './assets/css/seasonal.css'
+import { initHoverSfx } from '@/composables/useSfx'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -18,6 +21,8 @@ const store = useLearningStore()
 store.loadFromDB().then(() => {
   // 初始化主题色
   document.documentElement.setAttribute('data-theme', store.themeColor || 'orange')
+  // 初始化悬停音效
+  initHoverSfx()
 })
 
 // 存储空间满检测

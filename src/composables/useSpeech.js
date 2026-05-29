@@ -10,6 +10,7 @@ import { ref } from 'vue'
 // 预录音频缓存
 const audioCache = {}
 let currentAudio = null
+let currentTimeout = null
 
 export function useSpeech() {
   const isSpeaking = ref(false)
@@ -49,7 +50,16 @@ export function useSpeech() {
     audio.preload = 'auto'
     audio.volume = 1.0
 
-    audio.oncanplaythrough = () => {
+    let resolved = false
+    let timeoutId = null
+
+    const resolve = () => {
+      if (resolved) return
+      resolved = true
+      if (timeoutId) clearTimeout(timeoutId)
+      audio.oncanplaythrough = null
+      audio.onerror = null
+      // 不清理 onended — 等它自然触发后再清
       isSpeaking.value = true
       currentAudio = audio
       audio.play().catch(() => {
@@ -58,37 +68,37 @@ export function useSpeech() {
       })
     }
 
+    audio.oncanplaythrough = resolve
+
     audio.onended = () => {
+      if (!resolved) return // 已被超时/错误抢占，忽略
       isSpeaking.value = false
       currentAudio = null
       if (onEnd) onEnd()
     }
 
     audio.onerror = () => {
+      if (resolved) return
+      resolved = true
+      if (timeoutId) clearTimeout(timeoutId)
+      audio.oncanplaythrough = null
+      audio.onerror = null
       audioCache[path] = 'failed'
       isSpeaking.value = false
       currentAudio = null
       fallbackTTS(path, onEnd)
     }
 
-    // 超时回退（500ms内未加载则用TTS）
-    const timeout = setTimeout(() => {
-      if (!isSpeaking.value) {
+    // 超时回退（800ms — 给小文件足够加载时间）
+    timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        audio.oncanplaythrough = null
+        audio.onerror = null
         audioCache[path] = 'failed'
         fallbackTTS(path, onEnd)
       }
-    }, 500)
-
-    audio.oncanplaythrough = () => {
-      clearTimeout(timeout)
-      audio.oncanplaythrough = null // 只触发一次
-      isSpeaking.value = true
-      currentAudio = audio
-      audio.play().catch(() => {
-        audioCache[path] = 'failed'
-        fallbackTTS(path, onEnd)
-      })
-    }
+    }, 800)
 
     audio.src = path
     audio.load()
@@ -111,52 +121,50 @@ export function useSpeech() {
     audio.preload = 'auto'
     audio.volume = 1.0
 
-    let triedTTS = false
+    let resolved = false
+    let timeoutId = null
 
-    audio.oncanplaythrough = () => {
+    const resolve = () => {
+      if (resolved) return
+      resolved = true
+      if (timeoutId) clearTimeout(timeoutId)
+      audio.oncanplaythrough = null
+      audio.onerror = null
+      // 不清理 onended — 等它自然触发
       isSpeaking.value = true
       currentAudio = audio
       audio.play().catch(() => {
-        if (!triedTTS) {
-          triedTTS = true
-          _speakTTS(text, rate, onEnd, onError)
-        }
+        if (!resolved) _speakTTS(text, rate, onEnd, onError)
       })
     }
 
+    audio.oncanplaythrough = resolve
+
     audio.onended = () => {
+      if (!resolved) return // 已被超时/错误抢占，忽略
       isSpeaking.value = false
       currentAudio = null
       if (onEnd) onEnd()
     }
 
     audio.onerror = () => {
-      if (!triedTTS) {
-        triedTTS = true
-        _speakTTS(text, rate, onEnd, onError)
-      }
-    }
-
-    // 超时回退（300ms）
-    const timeout = setTimeout(() => {
-      if (!isSpeaking.value && !triedTTS) {
-        triedTTS = true
-        _speakTTS(text, rate, onEnd, onError)
-      }
-    }, 300)
-
-    audio.oncanplaythrough = () => {
-      clearTimeout(timeout)
+      if (resolved) return
+      resolved = true
+      if (timeoutId) clearTimeout(timeoutId)
       audio.oncanplaythrough = null
-      isSpeaking.value = true
-      currentAudio = audio
-      audio.play().catch(() => {
-        if (!triedTTS) {
-          triedTTS = true
-          _speakTTS(text, rate, onEnd, onError)
-        }
-      })
+      audio.onerror = null
+      _speakTTS(text, rate, onEnd, onError)
     }
+
+    // 超时回退（500ms）
+    timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        audio.oncanplaythrough = null
+        audio.onerror = null
+        _speakTTS(text, rate, onEnd, onError)
+      }
+    }, 500)
 
     audio.src = sentencePath
     audio.load()

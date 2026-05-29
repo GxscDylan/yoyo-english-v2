@@ -16,25 +16,24 @@
       <div class="header-info">
         <span class="category-emoji">{{ category?.emoji }}</span>
         <span class="category-name">{{ category?.name }}</span>
-        <span class="word-progress">{{ currentWordIndex + 1 }} / {{ words.length }}</span>
+        <span class="word-progress">{{ progressLabel }}</span>
       </div>
-      <button v-if="currentStep > 1 && currentStep <= 4" class="btn-skip" @click="skipStep">跳过此步 →</button>
+      <button v-if="showSkipBtn" class="btn-skip" @click="skipStep">跳过此步 →</button>
     </header>
 
-    <!-- 进度条 -->
+    <!-- 进度条 — 按组展示 -->
     <div class="progress-track">
       <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
       <div class="progress-nodes">
-        <div v-for="(w, i) in words" :key="w.id" class="node"
-          :class="{ done: i < currentWordIndex, active: i === currentWordIndex, pending: i > currentWordIndex }">
-          <span class="node-icon">{{ i < currentWordIndex ? '✓' : w.emoji }}</span>
+        <div v-for="(grp, gi) in groups" :key="gi" class="node"
+          :class="{ done: gi < currentGroupIndex, active: gi === currentGroupIndex, pending: gi > currentGroupIndex }">
+          <span class="node-icon">{{ gi < currentGroupIndex ? '✓' : grp[0]?.emoji }}</span>
         </div>
       </div>
     </div>
 
     <!-- 场景动态插图 -->
     <div class="scene-decorations" :data-scene="category?.scene">
-      <!-- 森林场景 -->
       <template v-if="category?.scene === 'forest'">
         <span class="scene-tree tree-1">🌲</span>
         <span class="scene-tree tree-2">🌳</span>
@@ -43,33 +42,28 @@
         <span class="scene-animal animal-1">🐰</span>
         <span class="scene-animal animal-2">🐦</span>
       </template>
-      <!-- 果园场景 -->
       <template v-else-if="category?.scene === 'orchard'">
         <span class="scene-tree tree-1">🍊</span>
         <span class="scene-sun">☀️</span>
         <span class="scene-leaf leaf-1">🍃</span>
         <span class="scene-leaf leaf-2">🍂</span>
       </template>
-      <!-- 彩虹场景 -->
       <template v-else-if="category?.scene === 'rainbow'">
         <span class="scene-rainbow">🌈</span>
         <span class="scene-cloud cloud-1">☁️</span>
         <span class="scene-cloud cloud-2">☁️</span>
         <span class="scene-cloud cloud-3">☁️</span>
       </template>
-      <!-- 镜子场景 -->
       <template v-else-if="category?.scene === 'mirror'">
         <span class="scene-mirror">🪞</span>
         <span class="scene-sparkle sparkle-1">✨</span>
         <span class="scene-sparkle sparkle-2">✨</span>
       </template>
-      <!-- 家庭场景 -->
       <template v-else-if="category?.scene === 'home'">
         <span class="scene-house">🏠</span>
         <span class="scene-clock">🕰️</span>
         <span class="scene-sofa">🛋️</span>
       </template>
-      <!-- 🍽️ 厨房场景 (food) -->
       <template v-else-if="category?.scene === 'kitchen'">
         <span class="scene-pot pot-1">🍳</span>
         <span class="scene-pot pot-2">🥄</span>
@@ -77,7 +71,6 @@
         <span class="scene-steam steam-2">💨</span>
         <span class="scene-plate">🍽️</span>
       </template>
-      <!-- 🚦 城市场景 (transport) -->
       <template v-else-if="category?.scene === 'city'">
         <span class="scene-building bld-1">🏢</span>
         <span class="scene-building bld-2">🏬</span>
@@ -85,7 +78,6 @@
         <span class="scene-car car-1">🚗</span>
         <span class="scene-car car-2">🚌</span>
       </template>
-      <!-- 🌤️ 户外场景 (weather) -->
       <template v-else-if="category?.scene === 'outdoor'">
         <span class="scene-sun">☀️</span>
         <span class="scene-cloud cloud-1">☁️</span>
@@ -94,7 +86,6 @@
         <span class="scene-snowflake snow-1">❄️</span>
         <span class="scene-snowflake snow-2">❄️</span>
       </template>
-      <!-- 🎒 教室场景 (numbers/school) -->
       <template v-else-if="category?.scene === 'classroom'">
         <span class="scene-blackboard">📋</span>
         <span class="scene-pencil">✏️</span>
@@ -102,7 +93,6 @@
         <span class="scene-book book-2">📖</span>
         <span class="scene-bell">🔔</span>
       </template>
-      <!-- 🎠 游乐场场景 (toys/actions) -->
       <template v-else-if="category?.scene === 'playground'">
         <span class="scene-slide">🛝</span>
         <span class="scene-balloon balloon-1">🎈</span>
@@ -110,7 +100,6 @@
         <span class="scene-ferris">🎡</span>
         <span class="scene-star star-1">⭐</span>
       </template>
-      <!-- 🧺 卧室场景 (clothes) -->
       <template v-else-if="category?.scene === 'bedroom'">
         <span class="scene-bed">🛏️</span>
         <span class="scene-lamp">💡</span>
@@ -118,7 +107,6 @@
         <span class="scene-hanger hanger-2">👗</span>
         <span class="scene-moon">🌙</span>
       </template>
-      <!-- ❤️ 心灵场景 (emotions) -->
       <template v-else-if="category?.scene === 'heart'">
         <span class="scene-heart heart-1">❤️</span>
         <span class="scene-heart heart-2">💛</span>
@@ -130,8 +118,11 @@
 
     <!-- 主要内容区 -->
     <main class="learn-main">
+      <!-- 步骤翻页过渡包装 -->
+      <Transition :name="stepTransitionName" mode="out-in">
+      <div :key="'step-' + currentRound">
       <!-- Step 0: 分类介绍 -->
-      <div v-if="currentStep === 0" class="step-intro anim-fade-up">
+      <div v-if="currentRound === 'intro'" class="step-intro anim-fade-up">
         <div class="intro-scene">
           <span class="intro-emoji">{{ category?.emoji }}</span>
           <h2 class="intro-title">{{ category?.name }}</h2>
@@ -142,37 +133,51 @@
         </button>
       </div>
 
-      <!-- Step 1: 听力理解 -->
-      <div v-else-if="currentStep === 1" class="step-listen anim-fade-up">
-        <div class="step-badge">第 1 步 · 听一听</div>
-        <div class="listen-card anim-blink-border">
-          <span class="listen-emoji">{{ currentWord?.emoji }}</span>
-          <span class="listen-zh">{{ currentWord?.zh }}</span>
+      <!-- ===== L1 & L2 通用：Round 0 集体输入 ===== -->
+      <div v-else-if="currentRound === 0" class="step-input-phase anim-fade-up">
+        <div class="step-badge">第 1 步 · 看一看 听一听</div>
+        <div class="input-carousel">
+          <Transition name="card-slide" mode="out-in">
+            <div :key="inputWordIndex" class="input-card" @click="advanceInputWord">
+              <button class="btn-favorite" :class="{ active: isFavorite(currentInputWord?.id) }"
+                @click.stop="handleFavorite(currentInputWord)" :aria-label="isFavorite(currentInputWord?.id) ? '取消收藏' : '收藏'">
+                {{ isFavorite(currentInputWord?.id) ? '❤️' : '🤍' }}
+              </button>
+              <span class="input-emoji">{{ currentInputWord?.emoji }}</span>
+              <span class="input-zh" v-if="showChinese">{{ currentInputWord?.zh }}</span>
+            </div>
+          </Transition>
         </div>
-        <div class="listen-actions">
-          <button class="btn-speaker" :class="{ active: isSpeaking }" @click="playWord">
+        <div class="input-nav">
+          <button class="btn-speaker" :class="{ active: isSpeaking }" @click="playInputWord">
             🔊 <span>{{ isSpeaking ? '朗读中...' : '点我听' }}</span>
           </button>
           <button class="btn-hint" @click="showChinese = !showChinese">
-            💡 <span>{{ showChinese ? currentWord?.zh : '中文提示' }}</span>
+            💡 <span>{{ showChinese ? currentInputWord?.zh : '中文提示' }}</span>
           </button>
         </div>
-        <button class="btn-next" @click="nextStep">听懂了！→</button>
+        <div class="input-dots">
+          <span v-for="(w, i) in groupWords" :key="w.id" class="input-dot"
+            :class="{ active: i === inputWordIndex, done: i < inputWordIndex }">
+            {{ w.emoji }}
+          </span>
+        </div>
+        <button class="btn-next" @click="nextRound">听懂了！→</button>
       </div>
 
-      <!-- Step 2: 听力测试 -->
-      <div v-else-if="currentStep === 2" class="step-test anim-fade-up">
+      <!-- ===== L1 & L2 通用：Round 1 听力测试 ===== -->
+      <div v-else-if="currentRound === 1" class="step-test anim-fade-up">
         <div class="step-badge">第 2 步 · 找一找</div>
         <p class="test-prompt">
           <span class="prompt-icon"></span>
-          <span class="prompt-text">Which one is...</span>
+          <span class="prompt-text">哪个是…</span>
         </p>
         <div class="test-grid" :class="testGridClass">
           <button v-for="opt in testOptions" :key="opt.id" class="test-option"
             :class="{
-              correct: answeredId === opt.id && opt.id === currentWord?.id,
-              wrong: answeredId === opt.id && opt.id !== currentWord?.id,
-              dimmed: answeredId && opt.id !== answeredId && opt.id !== currentWord?.id
+              correct: answeredId === opt.id && opt.id === testTargetWord?.id,
+              wrong: answeredId === opt.id && opt.id !== testTargetWord?.id,
+              dimmed: answeredId && opt.id !== answeredId && opt.id !== testTargetWord?.id
             }"
             :disabled="!!answeredId"
             @click="handleTestAnswer(opt)">
@@ -182,39 +187,55 @@
         <div v-if="feedbackText" class="test-feedback" :class="testFeedbackClass">
           <span>{{ feedbackText }}</span>
         </div>
+        <div class="test-progress">
+          <span v-for="(w, i) in groupWords" :key="'tp-' + w.id" class="test-dot"
+            :class="{ done: i < testRoundIndex, active: i === testRoundIndex }">
+            {{ i < testRoundIndex ? '✓' : w.emoji }}
+          </span>
+        </div>
       </div>
 
-      <!-- Step 3: 跟读模仿 -->
-      <div v-else-if="currentStep === 3" class="step-speak anim-fade-up">
-        <div class="step-badge">第 3 步 · 说一说</div>
-        <div class="speak-card">
-          <span class="speak-emoji">{{ currentWord?.emoji }}</span>
-          <span class="speak-word">{{ currentWord?.en }}</span>
-          <span class="speak-zh">{{ currentWord?.zh }}</span>
+      <!-- ===== L2 only: Round 2 集体跟读 ===== -->
+      <div v-else-if="currentRound === 2 && !isL1" class="step-speak-phase anim-fade-up">
+        <div class="step-badge">第 3 步 · 跟我读</div>
+        <div class="speak-carousel">
+          <Transition name="card-slide" mode="out-in">
+            <div :key="speakWordIndex" class="speak-card-item">
+              <span class="speak-emoji">{{ currentSpeakWord?.emoji }}</span>
+              <span class="speak-word">{{ currentSpeakWord?.en }}</span>
+              <span class="speak-zh">{{ currentSpeakWord?.zh }}</span>
+            </div>
+          </Transition>
         </div>
-        <div class="speak-mic" :class="{ recording: isRecording, done: step3Done }" @click="toggleRecord">
-          <span class="mic-icon">{{ step3Done ? '✅' : '🎤' }}</span>
-          <span class="mic-label">{{ isRecording ? 'Listening...' : (step3Done ? 'Great job!' : 'Tap & Speak') }}</span>
+        <div class="speak-mic" :class="{ recording: isRecording, done: speakRoundDone }" @click="toggleRecord">
+          <span class="mic-icon">{{ speakRoundDone ? '✅' : '🎤' }}</span>
+          <span class="mic-label">{{ isRecording ? '正在听…' : (speakRoundDone ? '读得棒！' : '点我读一读') }}</span>
           <div class="mic-waves" v-if="isRecording">
             <span v-for="i in 4" :key="i" :style="{ animationDelay: i * 0.15 + 's' }"></span>
           </div>
         </div>
         <Transition name="pop">
-          <div v-if="step3Feedback" class="step-feedback" :class="step3FeedbackClass">
-            {{ step3Feedback }}
+          <div v-if="speakFeedback" class="step-feedback" :class="speakFeedbackClass">
+            {{ speakFeedback }}
           </div>
         </Transition>
         <div class="speak-actions">
-          <button class="btn-replay" @click="playWord">🔊 Listen again</button>
+          <button class="btn-replay" @click="playCurrentSpeakWord">🔊 再听一次</button>
+        </div>
+        <div class="speak-dots">
+          <span v-for="(w, i) in groupWords" :key="'sp-' + w.id" class="speak-dot"
+            :class="{ active: i === speakWordIndex, done: i < speakWordIndex }">
+            {{ w.emoji }}
+          </span>
         </div>
       </div>
 
-      <!-- Step 4: 独立说出 -->
-      <div v-else-if="currentStep === 4" class="step-say anim-fade-up">
+      <!-- ===== L2 only: Round 3 独立回忆（抽测） ===== -->
+      <div v-else-if="currentRound === 3 && !isL1" class="step-recall-phase anim-fade-up">
         <div class="step-badge">第 4 步 · 自己说</div>
-        <div class="say-card">
-          <span class="say-emoji">{{ currentWord?.emoji }}</span>
-          <div v-if="step4Phase === 'waiting'" class="say-timer">
+        <div class="recall-card">
+          <span class="recall-emoji">{{ recallTarget?.emoji }}</span>
+          <div v-if="recallPhase === 'waiting'" class="recall-timer">
             <span class="timer-dots">
               <span class="dot" :class="{ active: waitDot >= 0 }"></span>
               <span class="dot" :class="{ active: waitDot >= 1 }"></span>
@@ -222,25 +243,30 @@
               <span class="dot" :class="{ active: waitDot >= 3 }"></span>
               <span class="dot" :class="{ active: waitDot >= 4 }"></span>
             </span>
-            <span class="timer-text">Can you say it?</span>
+            <span class="timer-text">试着说出来？</span>
           </div>
-          <div v-else class="say-answered">
-            <span class="say-word">{{ currentWord?.en }}</span>
-            <button class="btn-replay" @click="playWord">🔊</button>
+          <div v-else class="recall-answered">
+            <span class="recall-word">{{ recallTarget?.en }}</span>
+            <button class="btn-replay" @click="playRecallWord">🔊</button>
           </div>
         </div>
         <Transition name="pop">
-          <div v-if="step4Feedback" class="step-feedback" :class="step4FeedbackClass">
-            {{ step4Feedback }}
+          <div v-if="recallFeedback" class="step-feedback" :class="recallFeedbackClass">
+            {{ recallFeedback }}
           </div>
         </Transition>
-        <div class="say-actions">
-          <button class="btn-speak-done" :disabled="isStep4Transitioning" @click="handleSayDone">
-            ⭐ I said it!
+        <div class="recall-actions">
+          <button class="btn-speak-done" :disabled="isRecallTransitioning" @click="handleRecallDone">
+            ⭐ 我说出来了！
           </button>
-          <button class="btn-skip-say" :disabled="isStep4Transitioning" @click="handleSaySkip">Skip →</button>
+          <button class="btn-skip-say" :disabled="isRecallTransitioning" @click="handleRecallSkip">跳过 →</button>
+        </div>
+        <div class="recall-progress">
+          <span>抽测 {{ recallIndex + 1 }} / {{ recallTargets.length }}</span>
         </div>
       </div>
+      </div>
+      </Transition>
 
       <!-- 完成弹窗 -->
       <div v-if="showComplete" class="complete-overlay anim-fade-in" @click.self="goHome">
@@ -263,7 +289,7 @@
 
     <!-- 呦呦吉祥物 -->
     <footer class="learn-footer">
-      <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showYoyoStars" />
+      <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showYoyoStars" :is-speaking="isRecording" />
     </footer>
   </div>
 </template>
@@ -273,81 +299,146 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLearningStore } from '@/stores/learning'
 import { useSpeech } from '@/composables/useSpeech'
-import { sfxCorrect, sfxWrong, sfxComplete } from '@/composables/useSfx'
+import { sfxCorrect, sfxWrong, sfxComplete, sfxFavorite } from '@/composables/useSfx'
 import { triggerConfetti } from '@/composables/useConfetti'
+import { playFeedback, triggerPerfectClear, triggerMilestone } from '@/composables/useFeedback'
 import { getCategoryById, ALL_WORDS, ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import { useYoyoCopy } from '@/composables/useYoyoCopy'
+import { generateAIBubble, getDynamicTone, generateReviewFeedback } from '@/composables/useYoyoAI'
+import { useThumbsUp } from '@/composables/useThumbsUp'
 
 const route = useRoute()
 const router = useRouter()
 const store = useLearningStore()
 const { speak, isSpeaking, stop, playAudio } = useSpeech()
+const yoyoCopy = useYoyoCopy(store)
+const { toggleFavorite, isFavorite } = useThumbsUp()
 
 // ============ 数据初始化 ============
 const categoryId = computed(() => route.params.categoryId || store.unlockedCategoryList[0]?.id)
 const category = computed(() => getCategoryById(categoryId.value))
 const words = computed(() => category.value?.words || [])
+const isL1 = computed(() => category.value?.level === 1)
 
 const sceneColor = computed(() => {
   const map = {
-    // L1
     forest: '#A8D8B9', orchard: '#FFD4A3', rainbow: '#D4C5F0', mirror: '#B5E4E8', home: '#FFF0D4',
-    // L2
     kitchen: '#FFCCBC', city: '#B0BEC5', outdoor: '#C8E6C9', classroom: '#F3E5F5',
     playground: '#FFF9C4', bedroom: '#E1D5E7', heart: '#FFCDD2'
   }
   return map[category.value?.scene] || '#FFF8F0'
 })
 
+// ============ 分组模型 ============
+const GROUP_SIZE_L1 = 3
+const GROUP_SIZE_L2 = 4
+
+const groups = computed(() => {
+  const size = isL1.value ? GROUP_SIZE_L1 : GROUP_SIZE_L2
+  const result = []
+  for (let i = 0; i < words.value.length; i += size) {
+    result.push(words.value.slice(i, i + size))
+  }
+  return result
+})
+
 // ============ 状态 ============
-const currentWordIndex = ref(0)
-const currentStep = ref(0) // 0=intro, 1=listen, 2=test, 3=speak, 4=say
+const currentGroupIndex = ref(0)
+const currentRound = ref('intro') // 'intro' | 0 | 1 | 2 | 3
+const previousRound = ref('intro') // 用于步骤翻页过渡方向判断
+
+// 步骤过渡方向：前进 slide-forward，后退 slide-backward
+const stepTransitionName = computed(() => {
+  const order = ['intro', 0, 1, 2, 3]
+  const fromIdx = order.indexOf(previousRound.value)
+  const toIdx = order.indexOf(currentRound.value)
+  return toIdx >= fromIdx ? 'step-forward' : 'step-backward'
+})
+
+// Round 0: 集体输入
+const inputWordIndex = ref(0)
 const showChinese = ref(false)
+
+// Round 1: 听力测试
+const testRoundIndex = ref(0)
 const answeredId = ref(null)
 const feedbackText = ref('')
 const testFeedbackClass = ref('')
+
+// Round 2: 集体跟读 (L2 only)
+const speakWordIndex = ref(0)
+const speakRoundDone = ref(false)
 const isRecording = ref(false)
-const waitingForAnswer = ref(true) // kept for Step 2 compatibility
-const step4Phase = ref('waiting') // 'waiting' | 'feedback' | 'done'
-const isStep4Transitioning = ref(false)
+const speakFeedback = ref('')
+const speakFeedbackClass = ref('')
+
+// Round 3: 独立回忆 (L2 only)
+const recallTargets = ref([])
+const recallIndex = ref(0)
+const recallPhase = ref('waiting')
+const isRecallTransitioning = ref(false)
 const waitDot = ref(0)
+const recallFeedback = ref('')
+const recallFeedbackClass = ref('')
+
 const showComplete = ref(false)
 const showYoyoStars = ref(false)
-
-// Step 3 专用
-const step3Done = ref(false)
-const step3Feedback = ref('')
-const step3FeedbackClass = ref('')
-
-// Step 4 专用
-const step4Feedback = ref('')
-const step4FeedbackClass = ref('')
-
-// Step 2 专用：自动重读定时器
-let autoReplayTimer = null
-let autoReplayCount = 0 // 防止无限循环
-const AUTO_REPLAY_MAX = 10 // 最多自动重读 10 次
-
-const currentWord = computed(() => words.value[currentWordIndex.value])
-
-const progressPercent = computed(() => {
-  const total = words.value.length * 4 // 4 steps per word
-  const done = currentWordIndex.value * 4 + currentStep.value
-  return Math.min((done / total) * 100, 100)
-})
-
-// 呦呦状态
 const yoyoMood = ref('idle')
 const yoyoBubble = ref('')
 
-// L1 前5词使用 1×2 网格
-const useSimpleGrid = computed(() => currentWordIndex.value < 5)
+// 连击追踪（用于反馈分级 L2→L3→L4→L5）
+const testCombo = ref(0)
+const groupCorrectCount = ref(0) // 当前组内答对总数
+
+// 自动重读定时器
+let autoReplayTimer = null
+let autoReplayCount = 0
+const AUTO_REPLAY_MAX = 10
+
+// ============ Computed ============
+const groupWords = computed(() => groups.value[currentGroupIndex.value] || [])
+const currentInputWord = computed(() => groupWords.value[inputWordIndex.value])
+const testTargetWord = computed(() => groupWords.value[testRoundIndex.value])
+const currentSpeakWord = computed(() => groupWords.value[speakWordIndex.value])
+const recallTarget = computed(() => recallTargets.value[recallIndex.value])
+
+const progressPercent = computed(() => {
+  const totalGroups = groups.value.length
+  if (currentRound.value === 'intro') return 0
+  if (typeof currentRound.value === 'number') {
+    const roundsPerGroup = isL1.value ? 2 : 4
+    const base = currentGroupIndex.value * roundsPerGroup
+    return Math.min(((base + currentRound.value) / (totalGroups * roundsPerGroup)) * 100, 100)
+  }
+  return 0
+})
+
+const progressLabel = computed(() => {
+  if (currentRound.value === 'intro') return `准备开始`
+  const done = currentGroupIndex.value
+  const total = groups.value.length
+  return `第 ${done + 1} / ${total} 组`
+})
+
+const showSkipBtn = computed(() => {
+  if (!isL1.value) {
+    return currentRound.value === 2 || currentRound.value === 3
+  }
+  return false
+})
+
+// L1 前2轮用 1x2 网格，之后 2x2
+const useSimpleGrid = computed(() => {
+  const totalTested = currentGroupIndex.value * groupWords.value.length + testRoundIndex.value
+  return totalTested < 2
+})
 const testGridClass = computed(() => useSimpleGrid.value ? 'grid-1x2' : 'grid-2x2')
 
-// 测试选项生成（根据当前分类级别选择干扰项池）
+// 测试选项
 const testOptions = computed(() => {
-  if (!currentWord.value) return []
-  const correct = currentWord.value
+  if (!testTargetWord.value) return []
+  const correct = testTargetWord.value
   const count = useSimpleGrid.value ? 2 : 4
   const pool = category.value?.level === 2 ? ALL_L2_WORDS : ALL_L1_WORDS
   const others = pool.filter(w => w.id !== correct.id)
@@ -357,17 +448,34 @@ const testOptions = computed(() => {
 })
 
 const starRating = computed(() => {
-  const record = store.getWordRecord(currentWord.value?.id)
-  const steps = record?.stepComplete?.length || 0
-  if (steps >= 4) return 3
-  if (steps >= 2) return 2
+  if (!category.value) return 3
+  const totalWords = words.value.length
+  const mastered = words.value.filter(w => {
+    const record = store.getWordRecord(w.id)
+    return (record?.stepComplete?.length || 0) >= 2
+  }).length
+  const ratio = mastered / totalWords
+  if (ratio >= 0.8) return 3
+  if (ratio >= 0.4) return 2
   return 1
 })
 
 // ============ 方法 ============
-function playWord() {
-  if (!currentWord.value) return
-  speak(currentWord.value.en, { rate: 0.7 })
+function playWord(word) {
+  if (!word) return
+  speak(word.en, { rate: 0.7 })
+}
+
+function playInputWord() {
+  playWord(currentInputWord.value)
+}
+
+function playCurrentSpeakWord() {
+  playWord(currentSpeakWord.value)
+}
+
+function playRecallWord() {
+  playWord(recallTarget.value)
 }
 
 function setYoyo(mood, text, stars = false) {
@@ -379,119 +487,190 @@ function setYoyo(mood, text, stars = false) {
 // 开始学习
 function startLearning() {
   resetAutoReplay()
-  currentStep.value = 1
+  previousRound.value = 'intro'
+  currentRound.value = 0
+  inputWordIndex.value = 0
+  showChinese.value = false
   setYoyo('idle', `今天我们来认识 ${category.value?.name}！`)
-  // 延迟自动播放
   setTimeout(() => {
-    if (currentStep.value === 1 && currentWord.value) {
-      playWord()
-      setYoyo('idle', `看，这是什么呀？`)
+    if (currentRound.value === 0 && currentInputWord.value) {
+      playInputWord()
+      setYoyo('idle', yoyoCopy.getLearnStepBubble(0, 0))
     }
   }, 500)
 }
 
-function nextStep() {
-  if (currentStep.value < 4) {
-    currentStep.value++
-    handleStepEntry()
-  } else {
-    // 完成当前词
-    completeWord()
+// 下一轮
+function nextRound() {
+  const maxRound = isL1.value ? 1 : 3
+
+  previousRound.value = currentRound.value
+
+  if (currentRound.value === 0) {
+    // 集体输入 → 听力测试
+    currentRound.value = 1
+    testRoundIndex.value = 0
+    answeredId.value = null
+    feedbackText.value = ''
+    testFeedbackClass.value = ''
+    handleRoundEntry()
+  } else if (currentRound.value === 1) {
+    if (isL1.value) {
+      // L1: 测试完 → 下一组或完成
+      completeGroup()
+    } else {
+      // L2: 测试 → 跟读
+      currentRound.value = 2
+      speakWordIndex.value = 0
+      speakRoundDone.value = false
+      speakFeedback.value = ''
+      speakFeedbackClass.value = ''
+      handleRoundEntry()
+    }
+  } else if (currentRound.value === 2) {
+    // L2: 跟读 → 回忆
+    currentRound.value = 3
+    // 随机选 2-3 个词抽测
+    const count = groupWords.value.length >= 3 ? 3 : 2
+    const shuffled = [...groupWords.value].sort(() => Math.random() - 0.5)
+    recallTargets.value = shuffled.slice(0, count)
+    recallIndex.value = 0
+    recallPhase.value = 'waiting'
+    isRecallTransitioning.value = false
+    recallFeedback.value = ''
+    recallFeedbackClass.value = ''
+    handleRoundEntry()
+  } else if (currentRound.value === 3) {
+    // L2: 回忆完 → 下一组或完成
+    completeGroup()
   }
 }
 
-function handleStepEntry() {
-  answeredId.value = null
-  feedbackText.value = ''
-  testFeedbackClass.value = ''
-  showChinese.value = false
-  waitingForAnswer.value = true
-  step4Phase.value = 'waiting'
-  isStep4Transitioning.value = false
+function handleRoundEntry() {
   clearAutoReplayTimer()
 
-  // 重置 Step 3/4 状态
-  step3Done.value = false
-  step3Feedback.value = ''
-  step3FeedbackClass.value = ''
-  step4Feedback.value = ''
-  step4FeedbackClass.value = ''
-
-  if (currentStep.value === 1) {
-    setYoyo('idle', `看，这是什么呀？`)
-    setTimeout(() => playWord(), 300)
-  } else if (currentStep.value === 2) {
-    setYoyo('thinking', 'Listen and find!')
-    // TTS 整句合成 — 消除音频文件造成的空白
+  if (currentRound.value === 0) {
+    // 集体输入：播放当前词
+    setYoyo('idle', '看一看，听一听~')
+    setTimeout(() => playInputWord(), 300)
+  } else if (currentRound.value === 1) {
+    // 听力测试 — 情境化文案
+    setYoyo('thinking', yoyoCopy.getLearnStepBubble(1, 0))
     startAutoReplayTimer()
     setTimeout(() => {
-      speak(`Which one is ${word.value.en}?`, { rate: 0.8 })
+      speak(`Which one is ${testTargetWord.value.en}?`, { rate: 0.8 })
     }, 300)
-  } else if (currentStep.value === 3) {
-    setYoyo('encourage', 'Repeat after me!')
-    // 链式播放：Repeat after me → 单词音频
+  } else if (currentRound.value === 2) {
+    // L2 集体跟读 — 情境化文案
+    setYoyo('encourage', yoyoCopy.getLearnStepBubble(2, 0))
     setTimeout(() => {
-      playAudio('/audio/repeat-after-me.mp3', () => {
-        playWord()
-      })
+      speak('跟我一起读！', { rate: 0.9 })
+      setTimeout(() => playCurrentSpeakWord(), 800)
     }, 400)
-  } else if (currentStep.value === 4) {
-    setYoyo('thinking', 'Can you say it?')
-    // 链式播放：Can you say it → 等待
-    setTimeout(() => {
-      playAudio('/audio/can-you-say-it.mp3', () => {
-        startWaitTimer()
-      })
-    }, 400)
+  } else if (currentRound.value === 3) {
+    // L2 独立回忆 — 情境化文案
+    setYoyo('thinking', yoyoCopy.getLearnStepBubble(3, 0))
+    startRecallWaitTimer()
   }
 }
 
-// Step 2 答案处理
+// 收藏/取消收藏单词
+function handleFavorite(word) {
+  if (!word?.id) return
+  const result = toggleFavorite(word.id, { en: word.en, emoji: word.emoji })
+  setYoyo(result.favorited ? 'excited' : 'comfort', result.favorited ? '❤️ 收藏啦！' : '已取消收藏')
+  sfxFavorite()
+}
+
+// 集体输入：点击卡片切换下一个词
+function advanceInputWord() {
+  if (inputWordIndex.value < groupWords.value.length - 1) {
+    stop() // 停止当前TTS
+    inputWordIndex.value++
+    // 新词的TTS 由 watch 自动触发
+  }
+}
+
+// Round 1: 测试答案处理（v5.0 反馈分级集成）
 function handleTestAnswer(opt) {
   if (answeredId.value) return
   answeredId.value = opt.id
-  clearAutoReplayTimer() // 清除自动重读定时器
+  clearAutoReplayTimer()
 
-  const isCorrect = opt.id === currentWord.value?.id
+  const isCorrect = opt.id === testTargetWord.value?.id
 
   if (isCorrect) {
-    feedbackText.value = 'Great!'
+    testCombo.value++
+    groupCorrectCount.value++
+
+    // 计算反馈级别：L2基线 → L3(连击3) → L4(连击5+) → L5(全对通关)
+    const groupSize = groupWords.value.length
+    const allCorrectInGroup = groupCorrectCount.value >= groupSize && testCombo.value >= groupSize
+    let level = 2
+    if (testCombo.value >= 5) level = 4
+    else if (testCombo.value >= 3) level = 3
+    if (allCorrectInGroup && groupSize >= 3) level = Math.max(level, 4)
+
+    playFeedback(level, {
+      mascot: yoyoMood,
+      isCorrect: true,
+      combo: testCombo.value,
+      container: document.body
+    })
+
+    // 文案跟随级别
+    feedbackText.value = level >= 4 ? '🔥 AMAZING!' : (level >= 3 ? '🌟 Excellent!' : 'Great!')
     testFeedbackClass.value = 'feedback-correct'
-    sfxCorrect() // 音效
-    // 随机播放 Great / Good job / Excellent
-    const praises = ['/audio/great.mp3', '/audio/good-job.mp3', '/audio/excellent.mp3']
-    playAudio(praises[Math.floor(Math.random() * praises.length)])
-    setYoyo('happy', '', true)
-    store.completeWordStep(currentWord.value?.id, 2)
+
+    store.completeWordStep(testTargetWord.value?.id, 2)
     store.addStars(1)
 
-    // 1.2秒后自动进入下一步（复用 nextStep 确保状态完整切换）
-    setTimeout(() => nextStep(), 1200)
-  } else {
-    feedbackText.value = 'Try again!'
-    testFeedbackClass.value = 'feedback-wrong'
-    sfxWrong() // 音效
-    playAudio('/audio/try-again.mp3')
-    setYoyo('encourage', 'Try again~')
-    // 不惩罚，短暂显示后清除，允许重试
+    // 里程碑检测（全局已学词数）
+    const todayLearned = store.todayLearnedCount || 0
+    if (todayLearned > 0 && [5, 10, 20].includes(todayLearned)) {
+      setTimeout(() => triggerMilestone(todayLearned, { mascot: yoyoMood }), 600)
+    }
+
     setTimeout(() => {
       answeredId.value = null
       feedbackText.value = ''
       testFeedbackClass.value = ''
-      startAutoReplayTimer() // 重新开始自动重读
+      if (testRoundIndex.value < groupWords.value.length - 1) {
+        testRoundIndex.value++
+        handleRoundEntry()
+      } else {
+        groupCorrectCount.value = 0 // 重置组内计数
+        nextRound()
+      }
+    }, 1200)
+  } else {
+    testCombo.value = 0 // 答错重置连击
+    playFeedback(1, { mascot: yoyoMood, isCorrect: false })
+
+    // P3-3: 动态难度调节 — 根据表现调整呦呦语气
+    const tone = getDynamicTone(0.3, 0, store.masteredWordCount || 0)
+    yoyoMood.value = tone.yoyoMood
+
+    feedbackText.value = 'Try again!'
+    testFeedbackClass.value = 'feedback-wrong'
+    setTimeout(() => {
+      answeredId.value = null
+      feedbackText.value = ''
+      testFeedbackClass.value = ''
+      startAutoReplayTimer()
     }, 1500)
   }
 }
 
-// Step 2 自动重读：4秒无操作重读单词（最多 AUTO_REPLAY_MAX 次）
+// 自动重读
 function startAutoReplayTimer() {
   clearAutoReplayTimer()
-  if (autoReplayCount >= AUTO_REPLAY_MAX) return // 防止无限循环
+  if (autoReplayCount >= AUTO_REPLAY_MAX) return
   autoReplayTimer = setTimeout(() => {
-    if (currentStep.value === 2 && !answeredId.value) {
+    if (currentRound.value === 1 && !answeredId.value) {
       autoReplayCount++
-      playWord() // 重读单词
-      startAutoReplayTimer() // 递归设置下一个
+      if (testTargetWord.value) playWord(testTargetWord.value)
+      startAutoReplayTimer()
     }
   }, 4000)
 }
@@ -508,148 +687,166 @@ function resetAutoReplay() {
   clearAutoReplayTimer()
 }
 
-// Step 3 录音模拟 + 音效反馈 + 自动前进
+// Round 2: 跟读
 function toggleRecord() {
-  if (isRecording.value || step3Done.value) return
+  if (isRecording.value || speakRoundDone.value) return
   isRecording.value = true
-  setYoyo('thinking', 'I\'m listening...')
+  setYoyo('thinking', '我在听你说…')
 
   setTimeout(() => {
     isRecording.value = false
-    step3Done.value = true
-    // 音效 + 英文表扬 + 自动前进
-    sfxCorrect()
-    const praises = ['/audio/great.mp3', '/audio/good-job.mp3', '/audio/excellent.mp3']
-    playAudio(praises[Math.floor(Math.random() * praises.length)])
-    step3Feedback.value = 'Great speaking!'
-    step3FeedbackClass.value = 'feedback-correct'
-    setYoyo('happy', '', true)
-    store.completeWordStep(currentWord.value?.id, 3)
+    speakRoundDone.value = true
+    playFeedback(2, { mascot: yoyoMood, isCorrect: true, container: document.body })
+    speakFeedback.value = '读得真棒！'
+    speakFeedbackClass.value = 'feedback-correct'
+    store.completeWordStep(currentSpeakWord.value?.id, 3)
     store.addStars(1)
-    // 1.5秒后自动进入 Step 4
-    setTimeout(() => nextStep(), 1500)
   }, 2000)
 }
 
-// Step 4 等待计时器（5秒，给小朋友更多时间）
+// Round 3: 回忆等待计时器
 let waitTimer = null
-function startWaitTimer() {
-  step4Phase.value = 'waiting'
-  waitingForAnswer.value = true
+function startRecallWaitTimer() {
+  recallPhase.value = 'waiting'
   waitDot.value = 0
   waitTimer = setInterval(() => {
     waitDot.value++
     if (waitDot.value >= 5) {
       clearInterval(waitTimer)
       waitTimer = null
-      step4Phase.value = 'feedback'
-      isStep4Transitioning.value = true
-      // 5秒后自动揭示答案 + 播放单词
-      playWord()
-      step4Feedback.value = currentWord.value?.en || ''
-      step4FeedbackClass.value = 'feedback-reveal'
-      setTimeout(() => setYoyo('encourage', 'That\'s okay! Listen and remember~'), 400)
-      // 延迟后自动推进
-      setTimeout(() => advanceFromStep4(false), 1500)
+      recallPhase.value = 'feedback'
+      isRecallTransitioning.value = true
+      if (recallTarget.value) playWord(recallTarget.value)
+      recallFeedback.value = recallTarget.value?.zh || ''
+      recallFeedbackClass.value = 'feedback-reveal'
+      setTimeout(() => setYoyo('encourage', yoyoCopy.getWrongBubble()), 400)
+      setTimeout(() => advanceRecall(false), 1500)
     }
   }, 1000)
 }
 
-// Step 4: "I said it!" — 主动完成
-function handleSayDone() {
-  if (step4Phase.value !== 'waiting') return // 状态锁：仅 waiting 可触发
-  isStep4Transitioning.value = true
-  step4Phase.value = 'feedback'
+function handleRecallDone() {
+  if (recallPhase.value !== 'waiting') return
+  isRecallTransitioning.value = true
+  recallPhase.value = 'feedback'
   clearInterval(waitTimer)
   waitTimer = null
-  sfxCorrect()
-  const praises = ['/audio/great.mp3', '/audio/good-job.mp3', '/audio/excellent.mp3']
-  playAudio(praises[Math.floor(Math.random() * praises.length)])
-  step4Feedback.value = 'Awesome!'
-  step4FeedbackClass.value = 'feedback-correct'
-  // 延迟切换吉祥物表情，让反馈动画先稳定
-  setTimeout(() => setYoyo('celebrate', '', true), 400)
-  advanceFromStep4(true)
+  playFeedback(3, { mascot: yoyoMood, isCorrect: true, combo: 0, container: document.body })
+  recallFeedback.value = '太棒了！'
+  recallFeedbackClass.value = 'feedback-correct'
+  advanceRecall(true)
 }
 
-// Step 4: "Skip" — 跳过
-function handleSaySkip() {
-  if (step4Phase.value !== 'waiting') return // 状态锁：仅 waiting 可触发
-  isStep4Transitioning.value = true
-  step4Phase.value = 'feedback'
+function handleRecallSkip() {
+  if (recallPhase.value !== 'waiting') return
+  isRecallTransitioning.value = true
+  recallPhase.value = 'feedback'
   clearInterval(waitTimer)
   waitTimer = null
-  step4Feedback.value = 'OK, let\'s move on!'
-  step4FeedbackClass.value = 'feedback-reveal'
-  // 延迟切换吉祥物表情，让反馈动画先稳定
-  setTimeout(() => setYoyo('idle', 'No worries, next time!'), 400)
-  advanceFromStep4(false)
+  recallFeedback.value = '好的，我们继续！'
+  recallFeedbackClass.value = 'feedback-reveal'
+  setTimeout(() => setYoyo('idle', '没关系，下次再来！'), 400)
+  advanceRecall(false)
 }
 
-// Step 4 统一的推进逻辑（等待揭示后也会调用）
-let isAdvancing = ref(false) // 状态锁：防止重复推进
-function advanceFromStep4(earnedStars) {
-  if (isAdvancing.value) return // 已在推进中，忽略
-  isAdvancing.value = true
-  
-  store.completeWordStep(currentWord.value?.id, 4)
+let isAdvancing = false
+function advanceRecall(earnedStars) {
+  if (isAdvancing) return
+  // 额外保护：如果 recallPhase 已不是 waiting/feedback 说明被 skip 覆盖了
+  if (recallPhase.value !== 'waiting' && recallPhase.value !== 'feedback') return
+  isAdvancing = true
+
+  store.completeWordStep(recallTarget.value?.id, 4)
   if (earnedStars) store.addStars(2)
 
-  if (currentWordIndex.value < words.value.length - 1) {
+  if (recallIndex.value < recallTargets.value.length - 1) {
     setTimeout(() => {
-      resetAutoReplay()
-      currentWordIndex.value++
-      currentStep.value = 1
-      store.incrementTodayLearned()
-      handleStepEntry()
-      isAdvancing.value = false // 重置锁
+      recallIndex.value++
+      recallPhase.value = 'waiting'
+      isRecallTransitioning.value = false
+      recallFeedback.value = ''
+      recallFeedbackClass.value = ''
+      isAdvancing = false
+      handleRoundEntry()
     }, 1500)
   } else {
-    // 全部完成 — 先撒星星庆祝，再弹窗
-    triggerConfetti(50)
-    sfxComplete()
+    // 本轮组完成
     setTimeout(() => {
-      store.markWordMastered(currentWord.value?.id)
-      store.unlockNextCategory()
-      showComplete.value = true
-      setYoyo('celebrate', 'You did it! All words mastered!', true)
-      isAdvancing.value = false // 重置锁
+      isAdvancing = false
+      completeGroup()
     }, 800)
   }
 }
 
-function completeWord() {
-  store.markWordMastered(currentWord.value?.id)
+// 完成一组
+function completeGroup() {
+  // 标记组内所有词已完成 Step 2（听力测试）
+  groupWords.value.forEach(w => {
+    store.completeWordStep(w.id, 2)
+  })
+
+  if (currentGroupIndex.value < groups.value.length - 1) {
+    setTimeout(() => {
+      resetAutoReplay()
+      currentGroupIndex.value++
+      currentRound.value = 0
+      inputWordIndex.value = 0
+      testRoundIndex.value = 0
+      speakWordIndex.value = 0
+      speakRoundDone.value = false
+      showChinese.value = false
+      store.incrementTodayLearned()
+      handleRoundEntry()
+    }, 1500)
+  } else {
+    // 全部分组完成
+    triggerPerfectClear({ container: document.body, mascot: yoyoMood })
+    setTimeout(() => {
+      words.value.forEach(w => store.markWordMastered(w.id))
+      store.unlockNextCategory()
+      showComplete.value = true
+      setYoyo('celebrate', yoyoCopy.getCompleteBubble(category.value?.name || '本节'), true)
+    }, 800)
+  }
 }
 
-// 跳过当前步骤（L1 允许跳 Step 3/4）
+// 跳过（L2 的 Step 3/4）
 function skipStep() {
-  if (currentStep.value === 1 || currentStep.value === 2) {
-    // Step 1/2 不能跳过
-    return
+  if (currentRound.value === 2) {
+    // 跳过跟读 → 回忆
+    // 清除 watch 可能触发的自动切换
+    speakRoundDone.value = false
+    speakFeedback.value = ''
+    speakFeedbackClass.value = ''
+    nextRound()
+  } else if (currentRound.value === 3) {
+    // 跳过回忆 → 下一组
+    // 清理所有计时器
+    clearInterval(waitTimer)
+    waitTimer = null
+    isRecallTransitioning.value = false
+    recallFeedback.value = '好的，我们继续！'
+    recallFeedbackClass.value = 'feedback-reveal'
+    setYoyo('idle', '没关系，下次再来！')
+
+    // 直接调用 completeGroup，避免与 timer 回调中的 advanceRecall 冲突
+    completeGroup()
   }
-  if (currentStep.value === 4 && isStep4Transitioning.value) return // 防抖
-  clearInterval(waitTimer)
-  waitTimer = null
-  isStep4Transitioning.value = true
-  setYoyo('idle', 'No worries, let\'s move on!')
-  store.completeWordStep(currentWord.value?.id, currentStep.value)
-  setTimeout(() => {
-    if (currentStep.value < 4) {
-      currentStep.value++
-      handleStepEntry()
-    } else {
-      advanceFromStep4(false)
-    }
-  }, 400)
 }
 
 function restart() {
-  currentWordIndex.value = 0
-  currentStep.value = 0
+  currentGroupIndex.value = 0
+  currentRound.value = 'intro'
+  inputWordIndex.value = 0
+  testRoundIndex.value = 0
+  speakWordIndex.value = 0
+  speakRoundDone.value = false
   showComplete.value = false
   answeredId.value = null
   feedbackText.value = ''
+  showChinese.value = false
+  recallTargets.value = []
+  recallIndex.value = 0
   setYoyo('idle', '准备好了吗？我们再学一次！')
 }
 
@@ -672,6 +869,52 @@ onUnmounted(() => {
   stop()
   clearInterval(waitTimer)
   clearAutoReplayTimer()
+})
+
+// Watch: 集体输入自动前进（每词播完后自动切下一个）
+watch(inputWordIndex, (newIdx) => {
+  if (currentRound.value === 0) {
+    // 切换新词后自动播放TTS
+    setTimeout(() => {
+      if (currentRound.value !== 0 || inputWordIndex.value !== newIdx) return
+      playInputWord()
+    }, 300)
+    // 不是最后一个词时，播完后自动切下一个
+    if (newIdx < groupWords.value.length - 1) {
+      setTimeout(() => {
+        if (currentRound.value !== 0 || inputWordIndex.value !== newIdx) return
+        inputWordIndex.value++
+      }, 2200)
+    }
+  }
+})
+
+// Watch: 跟读完自动前进到下一个词
+watch(speakRoundDone, (done) => {
+  if (done && currentRound.value === 2) {
+    if (speakWordIndex.value < groupWords.value.length - 1) {
+      // 还有下一个词：自动切换
+      setTimeout(() => {
+        // 保护：可能用户已经跳到下一轮了
+        if (currentRound.value !== 2) return
+        speakWordIndex.value++
+        speakRoundDone.value = false
+        speakFeedback.value = ''
+        speakFeedbackClass.value = ''
+        setTimeout(() => {
+          if (currentRound.value !== 2) return
+          playCurrentSpeakWord()
+          setYoyo('encourage', yoyoCopy.getLearnStepBubble(2, 0))
+        }, 400)
+      }, 1500)
+    } else {
+      // 组内所有词都跟读完了，自动进入 Round 3
+      setTimeout(() => {
+        if (currentRound.value !== 2) return
+        nextRound()
+      }, 1500)
+    }
+  }
 })
 </script>
 
@@ -863,9 +1106,13 @@ onUnmounted(() => {
   50% { transform: translateY(-4px); }
 }
 
-/* ===== Step 1: 听力理解 ===== */
-.step-listen { display: flex; flex-direction: column; align-items: center; gap: var(--space-xl); position: relative; z-index: 1; }
-.listen-card {
+/* ===== Round 0: 集体输入 ===== */
+.step-input-phase { display: flex; flex-direction: column; align-items: center; gap: var(--space-xl); position: relative; z-index: 1; }
+.input-carousel {
+  width: 240px; height: 240px;
+  display: flex; align-items: center; justify-content: center;
+}
+.input-card {
   width: 240px; height: 240px; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: var(--space-md);
   background: var(--bg-card); border-radius: var(--radius-xl);
@@ -873,43 +1120,57 @@ onUnmounted(() => {
   position: relative; overflow: hidden;
   border: 2px solid rgba(255,255,255,0.6);
 }
-.listen-card::before {
+/* 收藏按钮 */
+.btn-favorite {
+  position: absolute; top: 12px; right: 12px;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: rgba(255,255,255,0.9);
+  font-size: 1.2rem; cursor: pointer; z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s, background 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-favorite:hover { transform: scale(1.15); }
+.btn-favorite:active { transform: scale(0.9); }
+.btn-favorite.active {
+  background: rgba(255, 182, 193, 0.9);
+  animation: heartPop 0.4s ease-out;
+}
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+.input-card::before {
   content: ''; position: absolute; inset: 0;
   background: radial-gradient(circle at 30% 40%, rgba(255,140,66,0.08), transparent 60%);
   pointer-events: none;
 }
-.listen-emoji { 
+.input-emoji { 
   font-size: 5rem; 
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
 }
-.listen-card:hover .listen-emoji { transform: scale(1.15) rotate(-5deg); }
-.listen-zh { font-size: var(--font-size-lg); color: var(--text-secondary); }
-.listen-actions { display: flex; gap: var(--space-md); }
-.btn-speaker, .btn-hint {
-  padding: var(--space-sm) var(--space-xl); border-radius: var(--radius-full);
-  font-size: var(--font-size-base); font-weight: 600;
-  display: flex; align-items: center; gap: var(--space-xs);
+.input-card:hover .input-emoji { transform: scale(1.15) rotate(-5deg); }
+.input-zh { font-size: var(--font-size-lg); color: var(--text-secondary); }
+.input-nav { display: flex; gap: var(--space-md); }
+.input-dots { display: flex; gap: var(--space-sm); }
+.input-dot {
+  font-size: 1.5rem;
+  opacity: 0.3;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  position: relative; overflow: hidden;
 }
-.btn-speaker { background: var(--color-primary); color: #fff; }
-.btn-speaker::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-  transform: translateX(-100%);
+.input-dot.active {
+  opacity: 1;
+  transform: scale(1.3);
+  animation: dotPop 0.3s var(--ease-bounce);
 }
-.btn-speaker:hover::after { animation: shimmer 1.2s infinite; }
-.btn-speaker.active { background: var(--color-primary-dark); animation: speakerPulse 1.5s ease-in-out infinite; }
-.btn-speaker:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(255,140,66,0.3); }
-.btn-hint { background: var(--border-light); color: var(--text-primary); }
-.btn-hint:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-@keyframes speakerPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,140,66,0.4); }
-  50% { box-shadow: 0 0 0 10px rgba(255,140,66,0); }
+.input-dot.done {
+  opacity: 0.6;
+  filter: grayscale(0.5);
 }
 
-/* ===== Step 2: 听力测试 ===== */
+/* ===== Round 1: 听力测试 ===== */
 .step-test { display: flex; flex-direction: column; align-items: center; gap: var(--space-lg); position: relative; z-index: 1; }
 .test-prompt { 
   font-size: var(--font-size-2xl); color: var(--text-primary); 
@@ -990,15 +1251,41 @@ onUnmounted(() => {
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* ===== Step 3: 跟读模仿 ===== */
-.step-speak { display: flex; flex-direction: column; align-items: center; gap: var(--space-xl); position: relative; z-index: 1; }
-.speak-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-xs); }
+.test-progress { display: flex; gap: var(--space-sm); margin-top: var(--space-md); }
+.test-dot {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  background: rgba(255,255,255,0.7);
+  border: 2px solid rgba(255,255,255,0.8);
+  transition: all 0.3s;
+}
+.test-dot.done {
+  background: linear-gradient(135deg, var(--color-success), #43A047);
+  border-color: #fff;
+  color: #fff;
+}
+.test-dot.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  border-color: #fff;
+  transform: scale(1.2);
+  animation: nodePulse 2s ease-in-out infinite;
+  color: #fff;
+}
+
+/* ===== Round 2: 集体跟读 (L2) ===== */
+.step-speak-phase { display: flex; flex-direction: column; align-items: center; gap: var(--space-xl); position: relative; z-index: 1; }
+.speak-carousel {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 200px;
+}
+.speak-card-item { display: flex; flex-direction: column; align-items: center; gap: var(--space-xs); }
 .speak-emoji { 
   font-size: 4rem; 
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   filter: drop-shadow(0 3px 6px rgba(0,0,0,0.1));
 }
-.speak-card:hover .speak-emoji { transform: scale(1.1) rotate(-5deg); }
+.speak-card-item:hover .speak-emoji { transform: scale(1.1) rotate(-5deg); }
 .speak-word { font-size: var(--font-size-2xl); font-weight: 800; color: var(--color-primary); }
 .speak-zh { font-size: var(--font-size-base); color: var(--text-hint); }
 .speak-mic {
@@ -1047,35 +1334,33 @@ onUnmounted(() => {
 .speak-actions { display: flex; gap: var(--space-md); }
 .speak-mic.done { border-color: var(--color-success); background: #E8F5E9; pointer-events: none; }
 .speak-mic.done::before { border-color: rgba(76,175,80,0.3); }
-
-/* ===== Step 3/4 共享反馈 ===== */
-.step-feedback {
-  font-size: var(--font-size-xl); font-weight: 700;
-  padding: var(--space-sm) var(--space-xl);
-  border-radius: var(--radius-full);
-  text-align: center;
-  animation: feedbackBounce 0.4s var(--ease-bounce);
+.speak-dots { display: flex; gap: var(--space-sm); }
+.speak-dot {
+  font-size: 1.5rem;
+  opacity: 0.3;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.feedback-correct { color: var(--color-success); background: #E8F5E9; }
-.feedback-reveal { color: var(--color-primary-dark); background: #FFF3E0; }
-.pop-enter-active { animation: pop 0.3s var(--ease-bounce); }
-.pop-leave-active { animation: pop 0.2s ease reverse; }
-@keyframes pop {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+.speak-dot.active {
+  opacity: 1;
+  transform: scale(1.3);
+  animation: dotPop 0.3s var(--ease-bounce);
+}
+.speak-dot.done {
+  opacity: 0.6;
+  filter: grayscale(0.5);
 }
 
-/* ===== Step 4: 独立说出 ===== */
-.step-say {
+/* ===== Round 3: 独立回忆 (L2) ===== */
+.step-recall-phase {
   display: flex; flex-direction: column; align-items: center; gap: var(--space-xl);
   position: relative; z-index: 1;
-  min-height: 420px; /* 稳定布局，防止反馈弹出时容器高度变化 */
+  min-height: 420px;
 }
-.say-card {
+.recall-card {
   display: flex; flex-direction: column; align-items: center; gap: var(--space-lg);
-  min-height: 180px; /* 保持卡片高度稳定 */
+  min-height: 180px;
 }
-.say-emoji { 
+.recall-emoji { 
   font-size: 5rem; 
   animation: sayEmojiFloat 3s ease-in-out infinite;
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
@@ -1084,8 +1369,8 @@ onUnmounted(() => {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
-.say-word { font-size: var(--font-size-2xl); font-weight: 800; color: var(--color-primary); }
-.say-timer { display: flex; flex-direction: column; align-items: center; min-height: 60px; justify-content: center; }
+.recall-word { font-size: var(--font-size-2xl); font-weight: 800; color: var(--color-primary); }
+.recall-timer { display: flex; flex-direction: column; align-items: center; min-height: 60px; justify-content: center; }
 .timer-dots { display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm); }
 .dot { 
   width: 12px; height: 12px; border-radius: 50%; background: var(--border-light); 
@@ -1103,8 +1388,74 @@ onUnmounted(() => {
   100% { transform: scale(1); }
 }
 .timer-text { font-size: var(--font-size-lg); color: var(--text-hint); }
-.say-answered { display: flex; flex-direction: column; align-items: center; gap: var(--space-md); animation: fadeUp 0.5s var(--ease-smooth); min-height: 80px; }
-.say-actions { display: flex; gap: var(--space-md); min-height: 56px; /* 保持按钮区高度稳定 */ }
+.recall-answered { display: flex; flex-direction: column; align-items: center; gap: var(--space-md); animation: fadeUp 0.5s var(--ease-smooth); min-height: 80px; }
+.recall-actions { display: flex; gap: var(--space-md); min-height: 56px; }
+.recall-progress { font-size: var(--font-size-sm); color: var(--text-hint); }
+
+/* ===== 共享反馈 ===== */
+.step-feedback {
+  font-size: var(--font-size-xl); font-weight: 700;
+  padding: var(--space-sm) var(--space-xl);
+  border-radius: var(--radius-full);
+  text-align: center;
+  animation: feedbackBounce 0.4s var(--ease-bounce);
+}
+.feedback-correct { color: var(--color-success); background: #E8F5E9; }
+.feedback-reveal { color: var(--color-primary-dark); background: #FFF3E0; }
+.pop-enter-active { animation: pop 0.3s var(--ease-bounce); }
+.pop-leave-active { animation: pop 0.2s ease reverse; }
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== 通用按钮 ===== */
+.btn-speaker, .btn-hint {
+  padding: var(--space-sm) var(--space-xl); border-radius: var(--radius-full);
+  font-size: var(--font-size-base); font-weight: 600;
+  display: flex; align-items: center; gap: var(--space-xs);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative; overflow: hidden;
+}
+.btn-speaker { background: var(--color-primary); color: #fff; }
+.btn-speaker::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: translateX(-100%);
+}
+.btn-speaker:hover::after { animation: shimmer 1.2s infinite; }
+.btn-speaker.active { background: var(--color-primary-dark); animation: speakerPulse 1.5s ease-in-out infinite; }
+.btn-speaker:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(255,140,66,0.3); }
+.btn-hint { background: var(--border-light); color: var(--text-primary); }
+.btn-hint:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+@keyframes speakerPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,140,66,0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(255,140,66,0); }
+}
+
+.btn-next {
+  padding: var(--space-md) var(--space-xl);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff; font-size: var(--font-size-lg); font-weight: 700;
+  border-radius: var(--radius-full); box-shadow: 0 4px 16px rgba(255, 140, 66, 0.25);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); margin-top: var(--space-xl);
+  position: relative; overflow: hidden;
+}
+.btn-next::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: translateX(-100%);
+}
+.btn-next:hover::after { animation: shimmer 1.2s infinite; }
+.btn-next:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 24px rgba(255, 140, 66, 0.35); }
+.btn-next:active { transform: scale(0.97); }
+.btn-replay {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--border-light); color: var(--text-primary);
+  border-radius: var(--radius-full); font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.btn-replay:hover { background: var(--color-primary-light); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 .btn-speak-done {
   padding: var(--space-md) var(--space-xl);
   background: linear-gradient(135deg, #FFD54F, #FF8C42);
@@ -1133,31 +1484,6 @@ onUnmounted(() => {
   opacity: 0.4; cursor: not-allowed; pointer-events: none;
 }
 .btn-skip-say:hover { color: var(--text-secondary); background: var(--border-light); }
-
-/* ===== 通用按钮 ===== */
-.btn-next {
-  padding: var(--space-md) var(--space-xl);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff; font-size: var(--font-size-lg); font-weight: 700;
-  border-radius: var(--radius-full); box-shadow: 0 4px 16px rgba(255, 140, 66, 0.25);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); margin-top: var(--space-xl);
-  position: relative; overflow: hidden;
-}
-.btn-next::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-  transform: translateX(-100%);
-}
-.btn-next:hover::after { animation: shimmer 1.2s infinite; }
-.btn-next:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 24px rgba(255, 140, 66, 0.35); }
-.btn-next:active { transform: scale(0.97); }
-.btn-replay {
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--border-light); color: var(--text-primary);
-  border-radius: var(--radius-full); font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.btn-replay:hover { background: var(--color-primary-light); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 
 /* ===== 完成弹窗 ===== */
 .complete-overlay {
@@ -1221,6 +1547,12 @@ onUnmounted(() => {
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+/* ===== 卡片切换动画 ===== */
+.card-slide-enter-active { transition: all 0.3s var(--ease-smooth); }
+.card-slide-leave-active { transition: all 0.2s var(--ease-smooth); }
+.card-slide-enter-from { opacity: 0; transform: translateX(30px); }
+.card-slide-leave-to { opacity: 0; transform: translateX(-30px); }
 
 /* ===== 背景浮动装饰 ===== */
 .bg-deco { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
