@@ -555,8 +555,9 @@ onUnmounted(() => {
 .countdown-num { font-size: 8rem; font-weight: 900; color: #7C5CFC; }
 
 .game-footer {
-  position: absolute; bottom: 0; width: 100%;
-  padding: var(--space-sm);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-md) var(--space-xl);
+  background: rgba(255,255,255,0.9); backdrop-filter: blur(8px);
 }
 
 @keyframes starPop {

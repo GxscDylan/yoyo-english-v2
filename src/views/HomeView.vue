@@ -297,7 +297,7 @@ const petLevelDesc = computed(() => {
 const likesToNext = computed(() => petStore.likesToNextLevel.value || 0)
 
 // v5.0: 点赞系统
-const { thumbsUpState, triggerAutoLike } = useThumbsUp()
+const { thumbsUpState, triggerAutoLike, loadFromDB: loadThumbsUpDB } = useThumbsUp()
 const todayLikes = ref(0)
 const showLikeMilestone = ref(false)
 const milestoneThresholds = [10, 25, 50, 100]
@@ -498,10 +498,32 @@ function sceneName(scene) { return sceneLabels[scene] || scene }
 onMounted(async () => {
   await store.loadFromDB()
 
+  // v5.0: 加载点赞数据（先加载，后续才能同步到萌宠）
+  await loadThumbsUpDB()
+
   // v6.0: 加载萌宠数据
   await petStore.loadFromDB()
 
-  // v5.0: 加载今日点赞数
+  // v6.1: 主动同步历史点赞到萌宠（通过 addLikes 走完整升级流程）
+  try {
+    const s = petStore.petState?.value
+    if (s?.enabled) {
+      const historicalTotal = (thumbsUpState.value.likeHistory || []).reduce(
+        (sum, h) => sum + (h.total || 0), 0
+      )
+      const todayLikes = thumbsUpState.value.todayLikes || 0
+      const totalLikes = historicalTotal + todayLikes
+      const diff = totalLikes - (s.petTotalLikes || 0)
+      if (diff > 0) {
+        console.log(`[HomeView] 同步点赞到萌宠: ${s.petTotalLikes} + ${diff} → ${totalLikes}`)
+        petStore.addLikes(diff)
+      }
+    }
+  } catch(e) {
+    console.warn('萌宠点赞同步失败:', e)
+  }
+
+  // v5.0: 更新今日点赞数
   updateTodayLikes()
 
   // Detect if a new category was just unlocked

@@ -176,6 +176,7 @@
           </div>
           <div class="btn-row">
             <button class="btn-act btn-exp" @click="triggerPetHatch" :disabled="petStore.petLevel < 4">🐣 手动破壳</button>
+            <button class="btn-act" @click="forceHatch" style="background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7">🎉 一键破壳</button>
             <button class="btn-act" @click="resetPet" style="background:#FFF3E0;color:#E65100">🔄 重置萌宠</button>
           </div>
         </div>
@@ -641,17 +642,38 @@ function quickSetStars(n) {
 
 function setDebugLikes() {
   if (debugLikesInput.value >= 0 && debugLikesInput.value <= 999) {
-    const { addLikes, persist } = useThumbsUp()
-    // 先重置今日点赞数，然后设置目标值
+    const target = debugLikesInput.value
     const current = thumbsUpState.value.todayLikes || 0
-    const diff = debugLikesInput.value - current
+    const diff = target - current
+    
     if (diff > 0) {
+      const { addLikes } = useThumbsUp()
       addLikes(diff)
     } else if (diff < 0) {
-      // 负数需要直接修改 state
-      thumbsUpState.value.todayLikes = debugLikesInput.value
-      // 同步更新 IndexedDB
+      thumbsUpState.value.todayLikes = target
+      const { persist } = useThumbsUp()
       persist()
+    }
+    
+    // 直接同步到萌宠系统（绕过 addLikes 的间接调用）
+    try {
+      const s = petStore.petState.value
+      if (s?.enabled) {
+        const historicalTotal = (thumbsUpState.value.likeHistory || []).reduce(
+          (sum, h) => sum + (h.total || 0), 0
+        )
+        const todayLikes = thumbsUpState.value.todayLikes || 0
+        const totalLikes = historicalTotal + todayLikes
+        console.log(`[Debug] 同步点赞到萌宠: ${s.petTotalLikes} → ${totalLikes}`)
+        s.petTotalLikes = totalLikes
+        petStore.persist()
+        // 手动检测破壳（Lv5 120 赞）
+        if (totalLikes >= 120 && !s.petSpecies) {
+          petStore.triggerHatch?.()
+        }
+      }
+    } catch(e) {
+      console.error('萌宠同步失败:', e)
     }
   }
 }
@@ -659,12 +681,31 @@ function setDebugLikes() {
 function quickSetLikes(n) {
   debugLikesInput.value = n
   const { addLikes } = useThumbsUp()
-  const current = thumbsUpState.value.todayTotal || 0
+  const current = thumbsUpState.value.todayLikes || 0
   const diff = n - current
   if (diff > 0) {
     addLikes(diff)
-  } else {
-    thumbsUpState.value.todayTotal = n
+  } else if (diff < 0) {
+    thumbsUpState.value.todayLikes = n
+    const { persist } = useThumbsUp()
+    persist()
+  }
+  
+  // 同步到萌宠系统
+  try {
+    const s = petStore.petState.value
+    if (s?.enabled) {
+      const historicalTotal = (thumbsUpState.value.likeHistory || []).reduce(
+        (sum, h) => sum + (h.total || 0), 0
+      )
+      const todayLikes = thumbsUpState.value.todayLikes || 0
+      const totalLikes = historicalTotal + todayLikes
+      console.log(`[Quick] 同步点赞到萌宠: ${s.petTotalLikes} → ${totalLikes}`)
+      s.petTotalLikes = totalLikes
+      petStore.persist()
+    }
+  } catch(e) {
+    console.error('萌宠同步失败:', e)
   }
 }
 
@@ -679,6 +720,15 @@ function togglePetEnabled() {
   if (!s) return
   s.enabled = !s.enabled
   petStore.persist()
+}
+
+/** 🎉 一键破壳（调试用，跳过所有检查） */
+function forceHatch() {
+  const s = petStore.petState.value
+  if (!s?.enabled) return
+  s.petTotalLikes = 120
+  petStore.triggerHatch()
+  alert('🎉 破壳成功！刷新首页查看精灵')
 }
 
 function setPetSpecies(key) {
@@ -1046,6 +1096,8 @@ function doImport(e) {
 function doReset() { store.resetAll(); window.location.reload() }
 onMounted(async () => {
   await store.loadFromDB()
+  // 加载点赞数据（让历史数据补偿生效）
+  await loadThumbsUpDB()
   await petStore.loadFromDB()
 })
 </script>
