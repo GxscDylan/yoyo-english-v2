@@ -1097,7 +1097,8 @@ function doReset() { store.resetAll(); window.location.reload() }
 onMounted(async () => {
   await store.loadFromDB()
   // 加载点赞数据（让历史数据补偿生效）
-  await loadThumbsUpDB()
+  const { loadFromDB: loadThumbsDB } = useThumbsUp()
+  await loadThumbsDB()
   await petStore.loadFromDB()
 })
 </script>

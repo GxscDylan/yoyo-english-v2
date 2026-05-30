@@ -360,8 +360,8 @@ async function loadFromDB() {
       thumbsUpState.value.todayLikes = data.todayLikes || 0
       thumbsUpState.value.todayAutoLikes = data.todayAutoLikes || 0
       thumbsUpState.value.todayManualLikes = data.todayManualLikes || 0
-      thumbsUpState.value.favoriteWords = data.favoriteWords || []
-      thumbsUpState.value.likeHistory = data.likeHistory || []
+      thumbsUpState.value.favoriteWords = Array.isArray(data.favoriteWords) ? data.favoriteWords : []
+      thumbsUpState.value.likeHistory = Array.isArray(data.likeHistory) ? data.likeHistory : []
       thumbsUpState.value.likeMilestone = data.likeMilestone || 'none'
       thumbsUpState.value.lastOpenDate = data.lastOpenDate || ''
     }
