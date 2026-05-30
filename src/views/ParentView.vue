@@ -1044,7 +1044,10 @@ function doImport(e) {
   r.readAsText(f)
 }
 function doReset() { store.resetAll(); window.location.reload() }
-onMounted(() => store.loadFromDB())
+onMounted(async () => {
+  await store.loadFromDB()
+  await petStore.loadFromDB()
+})
 </script>
 
 <style scoped>

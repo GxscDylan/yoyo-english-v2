@@ -540,13 +540,16 @@ onUnmounted(() => {
 .phase-ready, .phase-countdown {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; height: 100%; text-align: center;
+  gap: var(--space-lg);
 }
-.phase-ready h1 { font-size: 2.5rem; margin-bottom: 8px; }
-.phase-ready .desc { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 24px; }
+.phase-ready h1 { font-size: 2.5rem; margin-bottom: 0; }
+.phase-ready .desc { font-size: 1.1rem; color: var(--text-secondary); margin: 0; }
+.phase-ready :deep(.yoyo-mascot) { margin-bottom: var(--space-md); }
 .btn-start {
   padding: 16px 48px; font-size: 1.5rem; border-radius: 32px;
   border: none; background: linear-gradient(135deg, #7C5CFC, #A78BFA);
   color: white; font-weight: 700; cursor: pointer;
+  margin-top: var(--space-lg);
 }
 .btn-start:active { transform: scale(0.95); }
 .countdown-num { font-size: 8rem; font-weight: 900; color: #7C5CFC; }

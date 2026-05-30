@@ -10,6 +10,7 @@
 
 import { ref, computed, watch } from 'vue'
 import { getSharedAudioCtx, sfxStar, sfxThumbsUp, sfxCheer, sfxApplause, sfxFavorite } from './useSfx'
+import { usePetStore } from './usePetStore'
 
 const DB_NAME = 'yoyo-english-v2'
 
@@ -113,6 +114,14 @@ function addLikes(count, type = 'auto') {
   }
   checkMilestone()
   persist()
+  
+  // 同步到萌宠系统
+  try {
+    const petStore = usePetStore()
+    petStore.addLikes(count)
+  } catch(e) {
+    // 萌宠未启用时忽略
+  }
 }
 
 /** 检查点赞里程碑 */
@@ -310,6 +319,16 @@ function recordFavorite() {
   }
 }
 
+/** 获取收藏的单词列表 */
+function getFavoriteWords() {
+  return [...thumbsUpState.value.favoriteWords]
+}
+
+/** 获取点赞历史记录 */
+function getLikeHistory() {
+  return [...thumbsUpState.value.likeHistory]
+}
+
 // ============================================================
 // 持久化
 // ============================================================
@@ -364,6 +383,26 @@ async function loadFromDB() {
   watch(() => thumbsUpState.value.todayLikes, () => {
     persist()
   }, { deep: true })
+
+  // 同步历史总点赞到萌宠系统（修复旧数据）
+  try {
+    const petStore = usePetStore()
+    const s = petStore.petState?.value
+    if (s) {
+      const historicalTotal = (thumbsUpState.value.likeHistory || []).reduce(
+        (sum, h) => sum + (h.total || 0), 0
+      )
+      const todayLikes = thumbsUpState.value.todayLikes || 0
+      const totalLikes = historicalTotal + todayLikes
+      if (totalLikes > (s.petTotalLikes || 0)) {
+        console.log(`[ThumbsUp] 同步历史点赞到萌宠: ${s.petTotalLikes || 0} → ${totalLikes}`)
+        s.petTotalLikes = totalLikes
+        petStore.persist()
+      }
+    }
+  } catch(e) {
+    // 萌宠未启用时忽略
+  }
 }
 
 // ============================================================
@@ -387,6 +426,8 @@ export function useThumbsUp() {
     toggleFavorite,
     isFavorite,
     recordFavorite,
+    getFavoriteWords,
+    getLikeHistory,
 
     // 自动点赞
     triggerAutoLike,
