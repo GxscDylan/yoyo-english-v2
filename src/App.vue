@@ -4,7 +4,10 @@
     <LoadingOverlay :visible="isLoading" @timeout="isLoading = false" />
     
     <router-view v-slot="{ Component, route }">
-      <transition :name="route.meta.transition || 'fade'" mode="out-in" @before-enter="onTransitionStart" @after-enter="onTransitionEnd">
+      <template v-if="route.meta.transition === 'none'">
+        <component :is="Component" :key="route.path" />
+      </template>
+      <transition v-else :name="route.meta.transition || 'fade'" mode="out-in" @before-enter="onTransitionStart" @after-enter="onTransitionEnd">
         <component :is="Component" :key="route.path" />
       </transition>
     </router-view>
@@ -69,6 +72,11 @@ function onTransitionEnd() {
   width: 100vw;
   height: 100dvh;
   overflow: hidden;
+}
+
+.none-enter-active,
+.none-leave-active {
+  transition: none;
 }
 
 .fade-enter-active,

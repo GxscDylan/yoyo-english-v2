@@ -195,6 +195,10 @@ const AUTO_THUMBS_CONFIGS = {
   words10:        { count: 2, message: '10 words today! 👍👍', strength: 2 },
   // 7. 单次会话学会 20 个词
   words20:        { count: 3, message: '20 words! Wow! 🌟👍👍👍', strength: 3 },
+  // 20. 单次会话学会 30 个词
+  words30:        { count: 5, message: '30 words! Star champion! ', strength: 3 },
+  // 21. 单次会话学会 34 个词
+  words34:        { count: 5, message: '34 words! SUPER LEARNER! ', strength: 3 },
   // 8. 每日首次打开 App
   dailyFirst:     { count: 1, message: 'Welcome back! 👍', strength: 1 },
   // 9. 复习了 3 个旧单词
@@ -265,8 +269,12 @@ function recordWordLearned() {
   // 首次学会
   triggerAutoLike('firstLearn')
   
-  // 5/10/20 词里程碑
-  if (wordsLearnedThisSession >= 20 && wordsLearnedThisSession % 20 === 0) {
+  // 5/10/20/30/34 词里程碑
+  if (wordsLearnedThisSession === 34) {
+    triggerAutoLike('words34')
+  } else if (wordsLearnedThisSession === 30) {
+    triggerAutoLike('words30')
+  } else if (wordsLearnedThisSession >= 20 && wordsLearnedThisSession % 20 === 0) {
     triggerAutoLike('words20')
   } else if (wordsLearnedThisSession >= 10 && wordsLearnedThisSession % 10 === 0) {
     triggerAutoLike('words10')

@@ -304,19 +304,29 @@ export function triggerPerfectClear(context = {}) {
   triggerConfetti(50, 'gold')
 }
 
-/** 学习里程碑（5/10/20 词） */
+/** 学习里程碑（5/10/20/30/34 词） */
 export function triggerMilestone(count, context = {}) {
   let message, mood
-  if (count >= 20) {
+  if (count >= 34) {
+    message = '34 words! Super learner unlocked! 👑'
+    mood = 'celebrate'
+    triggerConfetti(40, 'rainbow')
+  } else if (count >= 30) {
+    message = "30 words! You're a star champion! ⭐"
+    mood = 'celebrate'
+    triggerConfetti(30, 'gold')
+  } else if (count >= 20) {
     message = '20 words! Time to take a break? 😊'
     mood = 'celebrate'
     triggerConfetti(20, 'rainbow')
   } else if (count >= 10) {
-    message = "10 words! You're a learning machine! 🤖"
+    message = "10 words! You're a learning machine! "
     mood = 'excited'
+    triggerConfetti(15, 'gold')
   } else {
-    message = `${count} words! Keep going! 💪`
+    message = '5 words! Great start! Keep going! 💪'
     mood = 'happy'
+    triggerConfetti(10, 'yellow')
   }
 
   if (context.mascot) {
@@ -326,14 +336,19 @@ export function triggerMilestone(count, context = {}) {
   }
 
   try {
-    if (count >= 20) sfxComplete()
+    if (count >= 34) sfxComplete()
+    else if (count >= 30) sfxFanfare()
+    else if (count >= 20) sfxComplete()
     else if (count >= 10) sfxFanfare()
     else sfxCorrect()
   } catch(e) {}
 
-  // 底部飘过一排 📚
+  // 底部飘过一排 
   if (count >= 5 && count < 20) {
     spawnFloatingEmojis('📚', 5)
+  }
+  if (count >= 34) {
+    showBanner('👑 SUPER LEARNER!')
   }
 }
 

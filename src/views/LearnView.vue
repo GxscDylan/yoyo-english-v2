@@ -313,7 +313,7 @@ const router = useRouter()
 const store = useLearningStore()
 const { speak, isSpeaking, stop, playAudio } = useSpeech()
 const yoyoCopy = useYoyoCopy(store)
-const { toggleFavorite, isFavorite } = useThumbsUp()
+const { toggleFavorite, isFavorite, recordWordLearned, triggerAutoLike } = useThumbsUp()
 
 // ============ 数据初始化 ============
 const categoryId = computed(() => route.params.categoryId || store.unlockedCategoryList[0]?.id)
@@ -633,7 +633,14 @@ function handleTestAnswer(opt) {
 
     // 里程碑检测（全局已学词数）
     const todayLearned = store.todayLearnedCount || 0
-    if (todayLearned > 0 && [5, 10, 20].includes(todayLearned)) {
+    if (todayLearned > 0 && [5, 10, 20, 30, 34].includes(todayLearned)) {
+      // 30/34 词里程碑额外奖励星星
+      if (todayLearned >= 30) store.addStars(5)
+      if (todayLearned === 34) {
+        store.addStars(10) // 超级学霸额外 10 星
+      }
+      // 触发点赞奖励（通过 useThumbsUp 系统）
+      try { recordWordLearned() } catch(e) {}
       setTimeout(() => triggerMilestone(todayLearned, { mascot: yoyoMood }), 600)
     }
 

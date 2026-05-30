@@ -166,7 +166,8 @@ export function initHoverSfx() {
   document.addEventListener('mouseenter', (e) => {
     if (!hoverSfxEnabled) return
     const target = e.target
-    // 只对按钮和特定可交互元素播放
+    // 确保是元素节点（排除文本节点等）
+    if (target.nodeType !== 1) return
     if (target.matches('button, [role="button"], .explore-card, .today-card, .nav-btn, .theme-option, .diff-option, .pin-key, .btn-elastic')) {
       // 避免频繁触发：距上次至少 100ms
       if (!target._lastHoverSfx || Date.now() - target._lastHoverSfx > 100) {

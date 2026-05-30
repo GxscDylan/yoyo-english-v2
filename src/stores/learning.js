@@ -10,7 +10,7 @@ import { ref, computed, watch } from 'vue'
 import { ALL_CATEGORIES, ALL_WORDS, ALL_L1_WORDS } from '@/data/words'
 
 const DB_NAME = 'yoyo-english-v2'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 /** IndexedDB 工具函数 */
 function openDB() {
@@ -35,6 +35,10 @@ function openDB() {
       // v5.0: 点赞系统
       if (!db.objectStoreNames.contains('thumbs_up')) {
         db.createObjectStore('thumbs_up', { keyPath: 'key' })
+      }
+      // v6.0: 萌宠养成系统
+      if (!db.objectStoreNames.contains('pet')) {
+        db.createObjectStore('pet', { keyPath: 'key' })
       }
     }
   })
@@ -181,8 +185,8 @@ export const useLearningStore = defineStore('learning', () => {
 
   /** 获取 Catch Stars 收集上限 */
   function getCatchStarsLimit() {
-    // L1: 20 个，L2: 30 个
-    return unlockedCategories.value <= 5 ? 20 : 30
+    // L1: 30 个，L2: 30 个
+    return 30
   }
 
   function addCombo() {
@@ -296,6 +300,63 @@ export const useLearningStore = defineStore('learning', () => {
     }
   })
 
+  /** 智能周报评语（基于学习数据自动生成） */
+  const weeklyReportComment = computed(() => {
+    const { totalSteps, totalMastered, totalStars, activeDays } = weeklySummary.value
+    const streak = currentStreak.value
+    const mastered = masteredWordCount.value
+
+    // 空数据
+    if (totalSteps === 0 && totalMastered === 0) {
+      const encouragements = [
+        '新的一周开始啦！今天和呦呦一起学几个单词吧~',
+        '宝贝还没开始学习呢，选个分类开始今天的冒险吧！',
+        '新的学习周，呦呦已经准备好啦，快去学几个单词吧！'
+      ]
+      return encouragements[Math.floor(Math.random() * encouragements.length)]
+    }
+
+    // 构建评语
+    let parts = []
+
+    // 学习量描述
+    if (totalMastered > 0) {
+      parts.push(`本周掌握了 ${totalMastered} 个新单词`)
+    }
+    if (totalSteps > 0) {
+      parts.push(`完成 ${totalSteps} 个学习步骤`)
+    }
+    if (totalStars > 0) {
+      parts.push(`获得 ${totalStars} 颗星星`)
+    }
+
+    // 连续学习
+    if (streak >= 7) {
+      parts.push(`连续学习 ${streak} 天，太棒了`)
+    } else if (streak >= 3) {
+      parts.push(`连续学习 ${streak} 天，继续加油`)
+    } else if (streak >= 1) {
+      parts.push(`已连续学习 ${streak} 天`)
+    }
+
+    // 总体评价
+    let evaluation = ''
+    if (totalMastered >= 10 && activeDays >= 5) {
+      evaluation = '表现非常出色，是学习小达人！'
+    } else if (totalMastered >= 5 && activeDays >= 3) {
+      evaluation = '学得又快又好，呦呦为你骄傲！'
+    } else if (totalMastered >= 1) {
+      evaluation = '每天都在进步，继续保持哦~'
+    } else if (activeDays > 0) {
+      evaluation = '有学习就是好，下周继续加油！'
+    } else {
+      evaluation = '开始学习了，迈出第一步！'
+    }
+
+    const base = parts.length > 0 ? `本周宝贝${parts.join('，')}。` : ''
+    return base + evaluation
+  })
+
   /** 🎩 小帽子（连续学习3天） */
   const showHat = computed(() => consecutiveDays.value >= 3)
   /** 👓 小眼镜（连续学习7天） */
@@ -362,6 +423,59 @@ export const useLearningStore = defineStore('learning', () => {
       return nowMin >= startMin || nowMin < endMin
     }
     return nowMin >= startMin && nowMin < endMin
+  })
+
+  /** 成长里程碑时间线（按时间排序） */
+  const growthMilestones = computed(() => {
+    const milestones = []
+    
+    if (firstUseTime.value) {
+      const d = new Date(firstUseTime.value)
+      milestones.push({
+        icon: '🎉',
+        title: '第一次使用呦呦英语',
+        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+        desc: '开启英语学习之旅'
+      })
+    }
+    
+    if (masteredWordCount.value >= 1) {
+      milestones.push({ icon: '🥇', title: '学会第一个单词', date: '已达成', desc: '迈出第一步！' })
+    }
+    
+    if (masteredWordCount.value >= 10) {
+      milestones.push({ icon: '📚', title: '掌握 10 个单词', date: '已达成', desc: '词汇量初具规模' })
+    }
+    
+    if (masteredWordCount.value >= 50) {
+      milestones.push({ icon: '🦋', title: '掌握 50 个单词', date: '已达成', desc: '单词小飞侠！' })
+    }
+    
+    if (consecutiveDays.value >= 7) {
+      milestones.push({ icon: '👓', title: '连续学习 7 天', date: '已达成', desc: '知识探索家！' })
+    }
+    
+    if (Object.values(gameScores.value).some(s => s > 0)) {
+      milestones.push({ icon: '🎮', title: '第一次玩游戏', date: '已达成', desc: '游戏时间到！' })
+    }
+    
+    if (unlockedCategories.value >= 12) {
+      milestones.push({ icon: '🏅', title: '解锁全部 12 个分类', date: '已达成', desc: '分类探索家！' })
+    }
+    
+    if (totalStars.value >= 30) {
+      milestones.push({ icon: '⭐', title: '累计 30 颗星星', date: '已达成', desc: '星星收集家！' })
+    }
+    
+    if (consecutiveDays.value >= 30) {
+      milestones.push({ icon: '💎', title: '连续学习 30 天', date: '已达成', desc: '月度达人！' })
+    }
+    
+    if (masteredWordCount.value >= 100) {
+      milestones.push({ icon: '👑', title: '掌握 100 个单词', date: '已达成', desc: '词汇大师！' })
+    }
+    
+    return milestones
   })
 
   /** 单次会话开始时间（用于时长检查） */
@@ -697,7 +811,7 @@ export const useLearningStore = defineStore('learning', () => {
     catchStarsCooldown, canTriggerCatchStars, recordCatchStarsTrigger, getCatchStarsLimit,
     // 计算
     isFirstUse, unlockedCategoryList, masteredWordCount, consecutiveDays, currentStreak,
-    weeklyActivity, weeklySummary, isInLockPeriod,
+    weeklyActivity, weeklySummary, weeklyReportComment, isInLockPeriod,
     // 每日打卡
     recordDailyActivity, todayKey,
     // P3: 养成系统
@@ -705,6 +819,7 @@ export const useLearningStore = defineStore('learning', () => {
     // P2-2: 扩展成就配饰
     showComboBadge, showStarBadge, showReviewBadge, showMusicNote, showExplorerBadge,
     achievements,
+    growthMilestones,
     // 限制检查
     resetSessionTimer, isSessionTimeExceeded, checkAllLimits,
     // 单词

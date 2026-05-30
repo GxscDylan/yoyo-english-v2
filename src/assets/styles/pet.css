@@ -1,0 +1,486 @@
+/* ============================================================
+ * 萌宠养成系统 — 动画与样式
+ * ============================================================ */
+
+/* ===== 蛋蛋容器 ===== */
+.pet-egg-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== Lv.1 小蛋蛋 — 呼吸动画 ===== */
+@keyframes egg-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.pet-egg-lv1 .pet-egg-body {
+  animation: egg-breathe 3s ease-in-out infinite;
+}
+
+/* ===== Lv.2 发光蛋 — 脉冲光晕 ===== */
+@keyframes egg-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px 4px rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 24px 10px rgba(255, 215, 0, 0.5);
+  }
+}
+.pet-egg-lv2 .pet-egg-body {
+  animation: egg-breathe 3s ease-in-out infinite, egg-glow-pulse 2s ease-in-out infinite;
+}
+
+/* ===== Lv.3 彩色蛋 — 彩虹边框旋转 ===== */
+@keyframes egg-rainbow-spin {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+.pet-egg-lv3 .pet-egg-body {
+  animation: egg-breathe 3s ease-in-out infinite;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.pet-egg-lv3 .pet-egg-body::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF, #9B59B6, #FF6B6B);
+  z-index: -1;
+  animation: egg-rainbow-spin 4s linear infinite;
+  border-radius: 50%;
+}
+
+/* ===== Lv.4 裂缝蛋 — 震动 + 闪光 ===== */
+@keyframes egg-shake {
+  0%, 100% { transform: translateX(0) scale(1); }
+  10% { transform: translateX(-3px) scale(1.02); }
+  20% { transform: translateX(3px) scale(1.02); }
+  30% { transform: translateX(-2px) scale(1.01); }
+  40% { transform: translateX(2px) scale(1.01); }
+  50% { transform: translateX(0) scale(1); }
+}
+@keyframes egg-crack-flash {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.6; }
+}
+.pet-egg-lv4 .pet-egg-body {
+  animation: egg-shake 2s ease-in-out infinite;
+}
+.pet-egg-lv4 .pet-egg-crack-overlay {
+  animation: egg-crack-flash 1.5s ease-in-out infinite;
+}
+
+/* ===== Lv.5 破壳精灵 — 弹跳诞生 ===== */
+@keyframes hatch-burst {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  40% { transform: scale(1.3) rotate(5deg); opacity: 1; }
+  70% { transform: scale(0.95) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes creature-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.pet-creature {
+  animation: creature-bounce 2s ease-in-out infinite;
+}
+.pet-creature-hatch-enter {
+  animation: hatch-burst 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ===== 心情气泡 ===== */
+@keyframes bubble-float {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-30px) scale(0.6); opacity: 0; }
+}
+.pet-mood-bubble {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 1.4rem;
+  animation: bubble-float 2s ease-out forwards;
+  pointer-events: none;
+}
+
+/* ===== 睡觉 Zzz ===== */
+@keyframes zzz-float {
+  0% { transform: translate(0, 0) scale(0.8); opacity: 0.8; }
+  50% { transform: translate(8px, -12px) scale(1); opacity: 1; }
+  100% { transform: translate(16px, -24px) scale(0.6); opacity: 0; }
+}
+.pet-zzz {
+  position: absolute;
+  top: -4px;
+  right: 0;
+  font-size: 1.2rem;
+  animation: zzz-float 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+.pet-zzz:nth-child(2) { animation-delay: 0.8s; right: 8px; }
+.pet-zzz:nth-child(3) { animation-delay: 1.6s; right: 16px; font-size: 0.9rem; }
+
+/* ===== 饿了 — 颤抖 ===== */
+@keyframes hunger-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-2px) rotate(-2deg); }
+  30% { transform: translateX(2px) rotate(2deg); }
+  45% { transform: translateX(-1px) rotate(-1deg); }
+  60% { transform: translateX(1px) rotate(1deg); }
+  75% { transform: translateX(0); }
+}
+.pet-mood-hungry .pet-egg-body,
+.pet-mood-hungry .pet-creature {
+  animation: hunger-shake 1.5s ease-in-out infinite;
+}
+
+/* ===== 喂食 — 弹跳反馈 ===== */
+@keyframes feed-bounce {
+  0% { transform: scale(1); }
+  20% { transform: scale(1.15) rotate(-5deg); }
+  40% { transform: scale(0.95) rotate(3deg); }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.pet-anim-feed .pet-egg-body,
+.pet-anim-feed .pet-creature {
+  animation: feed-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ===== 蛋壳主体 ===== */
+.pet-egg-body {
+  position: relative;
+  width: 80px;
+  height: 100px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: linear-gradient(180deg, #FFF8E1 0%, #FFE0B2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+.pet-egg-body .egg-face {
+  font-size: 2rem;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* Lv.2 发光蛋壳颜色 */
+.pet-egg-lv2 .pet-egg-body {
+  background: linear-gradient(180deg, #FFFDE7 0%, #FFF59D 100%);
+}
+/* Lv.3 彩色蛋壳颜色 */
+.pet-egg-lv3 .pet-egg-body {
+  background: linear-gradient(135deg, #E1BEE7, #F8BBD0, #BBDEFB, #C8E6C9);
+  background-size: 200% 200%;
+  animation: egg-breathe 3s ease-in-out infinite, rainbowBg 4s ease infinite;
+}
+@keyframes rainbowBg {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Lv.4 裂缝纹理 */
+.pet-egg-crack-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+}
+.pet-egg-crack-overlay::before {
+  content: '';
+  position: absolute;
+  top: 30%;
+  left: 20%;
+  width: 60%;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.15);
+  transform: rotate(-15deg);
+}
+.pet-egg-crack-overlay::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 30%;
+  width: 40%;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.12);
+  transform: rotate(25deg);
+}
+
+/* ===== 精灵主体 ===== */
+.pet-creature-body {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  position: relative;
+}
+.pet-creature-body .creature-face {
+  font-size: 3rem;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== 装扮叠加层 ===== */
+.pet-dress-overlay {
+  position: absolute;
+  top: -12px;
+  right: -6px;
+  font-size: 1.4rem;
+  z-index: 3;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* ===== 进度条 ===== */
+.pet-progress-bar {
+  width: 100px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+.pet-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #FF8C42, #FFB74D);
+  transition: width 0.5s ease;
+}
+
+/* ===== 名称标签 ===== */
+.pet-name-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pet-level-tag {
+  font-size: 0.6rem;
+  color: var(--text-hint);
+  text-align: center;
+}
+
+/* ===== 统计面板 ===== */
+.pet-stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: linear-gradient(135deg, #FFF8E1, #FFFDE7);
+  border-radius: 16px;
+  padding: 12px;
+  border: 2px solid #FFE082;
+  box-shadow: 0 2px 12px rgba(255, 193, 7, 0.12);
+}
+.pet-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.pet-stats-val {
+  font-weight: 800;
+  color: var(--color-primary);
+}
+.pet-actions-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.pet-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 2px solid var(--border-light);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 56px;
+  position: relative;
+}
+.pet-action-btn:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.pet-action-btn:active {
+  transform: scale(0.95);
+}
+.pet-action-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.pet-action-btn .action-emoji {
+  font-size: 1.3rem;
+}
+.pet-action-btn .action-label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.pet-action-btn .action-cost {
+  font-size: 0.5rem;
+  color: var(--text-hint);
+}
+.pet-action-btn .cooldown-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-hint);
+}
+
+/* ===== 破壳仪式全屏 ===== */
+.pet-hatch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #1A1A2E 0%, #0D0D1A 100%);
+  cursor: pointer;
+}
+@keyframes hatchStars {
+  0% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.6; transform: scale(1); }
+}
+.hatch-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.hatch-star {
+  position: absolute;
+  font-size: 1.5rem;
+  animation: hatchStars 1.5s ease-out forwards;
+}
+.hatch-egg-phase {
+  font-size: 6rem;
+  animation: egg-shake 0.5s ease-in-out infinite;
+}
+.hatch-burst-phase {
+  font-size: 8rem;
+  animation: hatch-burst 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.hatch-creature-phase {
+  text-align: center;
+}
+.hatch-creature-face {
+  font-size: 6rem;
+  display: block;
+  animation: creature-bounce 1.5s ease-in-out infinite;
+}
+.hatch-creature-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #FFD54F;
+  margin-top: 16px;
+}
+.hatch-creature-desc {
+  font-size: 1rem;
+  color: #E0E0E0;
+  margin-top: 8px;
+}
+.hatch-dismiss {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 32px;
+  animation: fadeIn 1s ease 3s forwards;
+  opacity: 0;
+}
+
+/* ===== 首页萌宠区域 ===== */
+.home-pet-section {
+  margin: 8px 0;
+  padding: 0 2px;
+}
+.home-pet-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFFDE7 100%);
+  border-radius: 20px;
+  padding: 16px;
+  border: 2px solid #FFE082;
+  box-shadow: 0 2px 12px rgba(255, 193, 7, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.home-pet-card:hover {
+  transform: scale(1.01);
+}
+.home-pet-left {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-pet-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.home-pet-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.home-pet-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-hint);
+}
+.home-pet-progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.home-pet-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #FFD54F, #FF8C42);
+  transition: width 0.5s ease;
+}
+.home-pet-likes {
+  font-size: 0.65rem;
+  color: #F57C00;
+  font-weight: 600;
+  margin-top: 2px;
+}

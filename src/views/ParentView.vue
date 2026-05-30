@@ -136,6 +136,100 @@
         </div>
       </section>
 
+      <!-- v6.0: 萌宠养成控制 -->
+      <section class="section-card" v-if="petStore.petState.value">
+        <h3>🐾 萌宠养成</h3>
+        <div class="setting-row">
+          <div class="setting-info">
+            <span class="setting-label">萌宠开关</span>
+            <span class="setting-desc">{{ petStore.petState.value.enabled ? '萌宠已开启' : '萌宠已关闭' }}</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" :checked="petStore.petState.value.enabled" @change="togglePetEnabled">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div v-if="petStore.petState.value.enabled" class="pet-settings">
+          <div class="pet-status-grid">
+            <div class="pet-stat">
+              <span class="pet-stat-label">当前等级</span>
+              <span class="pet-stat-value">{{ petStore.currentLevelConfig.value.emoji }} {{ petStore.currentLevelConfig.value.name }}</span>
+            </div>
+            <div class="pet-stat">
+              <span class="pet-stat-label">品种</span>
+              <span class="pet-stat-value">{{ petStore.petLevel >= 5 && petStore.currentSpecies.value ? petStore.currentSpecies.value.emoji + ' ' + petStore.currentSpecies.value.name : '未孵化' }}</span>
+            </div>
+            <div class="pet-stat">
+              <span class="pet-stat-label">心情</span>
+              <span class="pet-stat-value">{{ petStore.petState.value.mood || 'idle' }}</span>
+            </div>
+            <div class="pet-stat">
+              <span class="pet-stat-label">总赞数</span>
+              <span class="pet-stat-value">{{ petStore.petState.value.totalLikes || 0 }} 👍</span>
+            </div>
+          </div>
+          <div class="pet-species-select">
+            <label class="pet-species-label">指定品种（破壳后生效）</label>
+            <select class="pet-species-dropdown" :value="petStore.petState.value.petAssignedSpecies || ''" @change="setPetSpecies($event.target.value)">
+              <option v-for="opt in petSpeciesOptions" :key="opt.key" :value="opt.key">{{ opt.label }}</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button class="btn-act btn-exp" @click="triggerPetHatch" :disabled="petStore.petLevel < 4">🐣 手动破壳</button>
+            <button class="btn-act" @click="resetPet" style="background:#FFF3E0;color:#E65100">🔄 重置萌宠</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 🔧 调试工具（测试用） -->
+      <section class="section-card debug-card">
+        <h3>🔧 调试工具</h3>
+        <p class="debug-hint">快速设置星星数和点赞数，方便测试萌宠系统</p>
+        
+        <!-- 星星数设置 -->
+        <div class="debug-row">
+          <div class="debug-info">
+            <span class="debug-label">当前星星数</span>
+            <span class="debug-value">⭐ {{ store.totalStars }}</span>
+          </div>
+          <div class="debug-input-group">
+            <input type="number" v-model.number="debugStarsInput" min="0" max="999" placeholder="输入星星数" class="debug-input">
+            <button class="btn-debug" @click="setDebugStars">设置</button>
+          </div>
+        </div>
+
+        <!-- 点赞数设置 -->
+        <div class="debug-row">
+          <div class="debug-info">
+            <span class="debug-label">今日点赞数</span>
+            <span class="debug-value">👍 {{ todayTotalLikes }}</span>
+          </div>
+          <div class="debug-input-group">
+            <input type="number" v-model.number="debugLikesInput" min="0" max="999" placeholder="输入点赞数" class="debug-input">
+            <button class="btn-debug" @click="setDebugLikes">设置</button>
+          </div>
+        </div>
+
+        <!-- 快捷按钮 -->
+        <div class="debug-quick-btns">
+          <button class="btn-quick" @click="quickSetStars(50)">⭐ 50</button>
+          <button class="btn-quick" @click="quickSetStars(100)">⭐ 100</button>
+          <button class="btn-quick" @click="quickSetStars(300)">⭐ 300</button>
+          <button class="btn-quick" @click="quickSetLikes(30)">👍 30</button>
+          <button class="btn-quick" @click="quickSetLikes(60)">👍 60</button>
+          <button class="btn-quick" @click="quickSetLikes(120)">👍 120</button>
+        </div>
+
+        <!-- 重置每日活动 -->
+        <div class="debug-row debug-danger">
+          <div class="debug-info">
+            <span class="debug-label">每日活动记录</span>
+            <span class="debug-value">清除今日步骤/星星数据</span>
+          </div>
+          <button class="btn-debug-danger" @click="clearDailyActivity">清除今日数据</button>
+        </div>
+      </section>
+
       <section class="section-card">
         <h3>🎯 游戏难度</h3>
         <p class="diff-hint">调整六款游戏的选项数量，适合不同年龄段</p>
@@ -181,11 +275,43 @@
             </span>
           </div>
         </div>
+        <!-- P0-3: 分类掌握雷达图 -->
+        <div class="radar-container" v-if="radarData.length > 0">
+          <svg class="radar-chart" :viewBox="`0 0 ${radarSize} ${radarSize}`" preserveAspectRatio="xMidYMid meet">
+            <!-- 背景网格 -->
+            <polygon v-for="ring in radarRings" :key="'ring' + ring"
+              :points="radarRingPoints(ring)"
+              fill="none" stroke="#E0E0E0" stroke-width="0.5" />
+            <!-- 轴线 -->
+            <line v-for="(axis, i) in radarData" :key="'axis' + i"
+              :x1="radarCx" :y1="radarCy"
+              :x2="radarCx + radarMaxRadius * Math.cos(radarAngle(i))" :y2="radarCy + radarMaxRadius * Math.sin(radarAngle(i))"
+              stroke="#E0E0E0" stroke-width="0.5" />
+            <!-- 数据区域 -->
+            <polygon :points="radarDataPoints"
+              fill="rgba(255, 140, 66, 0.15)" stroke="#FF8C42" stroke-width="2" stroke-linejoin="round" />
+            <!-- 数据点 -->
+            <circle v-for="(pt, i) in radarData" :key="'dot' + i"
+              :cx="radarCx + radarMaxRadius * pt.ratio * Math.cos(radarAngle(i))"
+              :cy="radarCy + radarMaxRadius * pt.ratio * Math.sin(radarAngle(i))"
+              r="3" fill="#FF8C42" />
+            <!-- 标签 -->
+            <text v-for="(axis, i) in radarData" :key="'lbl' + i"
+              :x="radarCx + (radarMaxRadius + 20) * Math.cos(radarAngle(i))"
+              :y="radarCy + (radarMaxRadius + 20) * Math.sin(radarAngle(i))"
+              text-anchor="middle" dominant-baseline="central" font-size="10" fill="#666">{{ axis.label }}</text>
+          </svg>
+        </div>
         </template>
       </section>
 
       <section class="section-card">
         <h3>📅 本周学习</h3>
+        <!-- 智能周报评语 -->
+        <div class="weekly-comment anim-fade-up">
+          <span class="comment-icon">🐯</span>
+          <p class="comment-text">{{ store.weeklyReportComment }}</p>
+        </div>
         <!-- 空状态：呦呦趣味引导 -->
         <div v-if="isWeekEmpty" class="week-empty anim-fade-up">
           <YoyoMascot :mood="'happy'" :bubble-text="weekBubble" class="empty-yoyo" />
@@ -212,6 +338,50 @@
         </template>
       </section>
 
+      <!-- P0-2: 学习趋势折线图 -->
+      <section class="section-card">
+        <h3>📈 学习趋势</h3>
+        <div class="trend-controls">
+          <button class="trend-tab" :class="{ active: trendDays === 7 }" @click="trendDays = 7">7 天</button>
+          <button class="trend-tab" :class="{ active: trendDays === 14 }" @click="trendDays = 14">14 天</button>
+          <button class="trend-tab" :class="{ active: trendDays === 30 }" @click="trendDays = 30">30 天</button>
+        </div>
+        <div class="trend-legend">
+          <span class="legend-item"><span class="legend-dot steps"></span>步骤</span>
+          <span class="legend-item"><span class="legend-dot mastered"></span>掌握</span>
+          <span class="legend-item"><span class="legend-dot stars"></span>星星</span>
+        </div>
+        <svg class="trend-chart" :viewBox="`0 0 ${trendChartWidth} ${trendChartHeight}`" preserveAspectRatio="xMidYMid meet">
+          <!-- 网格线 -->
+          <line v-for="i in 5" :key="'h' + i" :x1="trendMarginLeft" :y1="trendMarginTop + (trendChartHeight - trendMarginTop - trendMarginBottom) * (i - 1) / 4"
+            :x2="trendChartWidth - trendMarginRight" :y2="trendMarginTop + (trendChartHeight - trendMarginTop - trendMarginBottom) * (i - 1) / 4"
+            stroke="#E8E8E8" stroke-width="1" stroke-dasharray="3,3" />
+          <!-- X轴标签 -->
+          <text v-for="(label, i) in trendXLabels" :key="'xl' + i"
+            :x="trendMarginLeft + i * trendXStep" :y="trendChartHeight - 8"
+            text-anchor="middle" font-size="10" fill="#999">{{ label }}</text>
+          <!-- 步骤数折线 -->
+          <polyline v-if="trendMaxSteps > 0"
+            :points="trendStepsData.map((v, i) => `${trendMarginLeft + i * trendXStep},${trendY(v, trendMaxSteps)}`).join(' ')"
+            fill="none" stroke="#FF8C42" stroke-width="2" stroke-linejoin="round" />
+          <!-- 掌握数折线 -->
+          <polyline v-if="trendMaxMastered > 0"
+            :points="trendMasteredData.map((v, i) => `${trendMarginLeft + i * trendXStep},${trendY(v, trendMaxMastered)}`).join(' ')"
+            fill="none" stroke="#4CAF50" stroke-width="2" stroke-linejoin="round" />
+          <!-- 星星数折线 -->
+          <polyline v-if="trendMaxStars > 0"
+            :points="trendStarsData.map((v, i) => `${trendMarginLeft + i * trendXStep},${trendY(v, trendMaxStars)}`).join(' ')"
+            fill="none" stroke="#FFC107" stroke-width="2" stroke-linejoin="round" />
+          <!-- 数据点 -->
+          <circle v-for="(v, i) in trendStepsData" :key="'ps' + i" v-if="trendMaxSteps > 0"
+            :cx="trendMarginLeft + i * trendXStep" :cy="trendY(v, trendMaxSteps)" r="3" fill="#FF8C42" />
+          <circle v-for="(v, i) in trendMasteredData" :key="'pm' + i" v-if="trendMaxMastered > 0"
+            :cx="trendMarginLeft + i * trendXStep" :cy="trendY(v, trendMaxMastered)" r="3" fill="#4CAF50" />
+          <circle v-for="(v, i) in trendStarsData" :key="'pst' + i" v-if="trendMaxStars > 0"
+            :cx="trendMarginLeft + i * trendXStep" :cy="trendY(v, trendMaxStars)" r="3" fill="#FFC107" />
+        </svg>
+      </section>
+
       <section class="section-card">
         <h3>🎮 游戏成绩</h3>
         <div class="row"><span>🔍 找一找</span><span class="score">{{ gameScoreStars('match') }}</span></div>
@@ -220,6 +390,33 @@
         <div class="row"><span>🎈 气球碰碰</span><span class="score">{{ gameScoreStars('balloon') }}</span></div>
         <div class="row"><span>⚡ 快闪速记</span><span class="score">{{ gameScoreStars('speed-rush') }}</span></div>
         <div class="row"><span>🗂️ 分类小达人</span><span class="score">{{ gameScoreStars('sort-it') }}</span></div>
+      </section>
+
+      <!-- P0-4: 学习时间热力图 -->
+      <section class="section-card">
+        <h3>🗓️ 学习热力图</h3>
+        <p class="heatmap-hint">最近 8 周学习活跃度（最近 56 天）</p>
+        <div class="heatmap-legend">
+          <span class="legend-label">少</span>
+          <div class="heatmap-legend-cell" style="background: #EBEDF0"></div>
+          <div class="heatmap-legend-cell" style="background: #9BE9A8"></div>
+          <div class="heatmap-legend-cell" style="background: #40C463"></div>
+          <div class="heatmap-legend-cell" style="background: #30A14E"></div>
+          <div class="heatmap-legend-cell" style="background: #216E39"></div>
+          <span class="legend-label">多</span>
+          <span class="heatmap-total">{{ heatmapTotalDays }} 天活跃</span>
+        </div>
+        <div class="heatmap-grid">
+          <!-- 7 行 = 周日到周六 -->
+          <div v-for="(week, wi) in heatmapWeeks" :key="'w' + wi" class="heatmap-week">
+            <div v-for="day in week" :key="day.date"
+              class="heatmap-cell"
+              :class="{ today: day.isToday }"
+              :style="{ backgroundColor: heatmapColor(day.steps) }"
+              :title="`${day.date}: ${day.steps} 步`">
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- v5.0: BGM 控制 -->
@@ -305,6 +502,25 @@
         </div>
       </section>
 
+      <!-- P1-5: 成长里程碑时间线 -->
+      <section class="section-card">
+        <h3>🌟 成长足迹</h3>
+        <div v-if="store.growthMilestones.length === 0" class="milestone-empty anim-fade-up">
+          <span class="milestone-empty-icon">🌱</span>
+          <p>开始学习后，这里会记录宝贝的成长足迹~</p>
+        </div>
+        <div v-else class="timeline">
+          <div v-for="(m, i) in store.growthMilestones" :key="i" class="timeline-item" :class="{ first: i === 0 }">
+            <div class="timeline-icon">{{ m.icon }}</div>
+            <div class="timeline-content">
+              <div class="timeline-title">{{ m.title }}</div>
+              <div class="timeline-desc">{{ m.desc }}</div>
+              <div class="timeline-date">{{ m.date }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- P2-3: 成就分享卡弹窗 -->
       <div v-if="showAchievementCard" class="achievement-modal-overlay anim-fade-up" @click.self="showAchievementCard = false">
         <AchievementCard
@@ -349,6 +565,7 @@ import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import AchievementCard from '@/components/common/AchievementCard.vue'
 import { playBGM, stopBGM, muteBGM, unmuteBGM, setBGMVolume as _setBGMVolume, isBGMEnabled, isBGMPlaying } from '@/composables/useBGM'
 import { useThumbsUp } from '@/composables/useThumbsUp'
+import { usePetStore } from '@/composables/usePetStore'
 
 // P2-3: 成就分享卡
 const showAchievementCard = ref(false)
@@ -382,9 +599,104 @@ function setBGMVolume(v) {
 
 // v5.0: 点赞统计
 const { thumbsUpState, getFavoriteWords, getLikeHistory } = useThumbsUp()
-const todayTotalLikes = computed(() => thumbsUpState.value.todayTotal || 0)
-const totalAllTimeLikes = computed(() => thumbsUpState.value.totalAllTime || 0)
+const todayTotalLikes = computed(() => thumbsUpState.value.todayLikes || 0)
+const totalAllTimeLikes = computed(() => {
+  // 计算累计点赞：今日 + 历史记录总和
+  const today = thumbsUpState.value.todayLikes || 0
+  const history = (thumbsUpState.value.likeHistory || []).reduce((sum, h) => sum + (h.total || 0), 0)
+  return today + history
+})
 const favoriteWordsList = computed(() => getFavoriteWords())
+
+// v6.0: 萌宠养成系统
+const petStore = usePetStore()
+const petSpeciesOptions = [
+  { key: '', label: '🎲 随机孵化', emoji: '🎲' },
+  { key: 'cat', label: '🐱 小猫咪', emoji: '🐱' },
+  { key: 'dog', label: '🐶 小狗狗', emoji: '🐶' },
+  { key: 'rabbit', label: '🐰 小兔子', emoji: '🐰' },
+  { key: 'dragon', label: '🐲 小龙', emoji: '🐲' },
+  { key: 'unicorn', label: '🦄 独角兽', emoji: '🦄' },
+  { key: 'tiger', label: '🐯 小老虎', emoji: '🐯' },
+  { key: 'lion', label: '🦁 小狮子', emoji: '🦁' },
+  { key: 'sheep', label: '🐑 小绵羊', emoji: '🐑' },
+]
+
+// 🔧 调试工具
+const debugStarsInput = ref(0)
+const debugLikesInput = ref(0)
+
+function setDebugStars() {
+  if (debugStarsInput.value >= 0 && debugStarsInput.value <= 999) {
+    store.totalStars = debugStarsInput.value
+    store.persistAll()
+  }
+}
+
+function quickSetStars(n) {
+  debugStarsInput.value = n
+  store.totalStars = n
+  store.persistAll()
+}
+
+function setDebugLikes() {
+  if (debugLikesInput.value >= 0 && debugLikesInput.value <= 999) {
+    const { addLikes, persist } = useThumbsUp()
+    // 先重置今日点赞数，然后设置目标值
+    const current = thumbsUpState.value.todayLikes || 0
+    const diff = debugLikesInput.value - current
+    if (diff > 0) {
+      addLikes(diff)
+    } else if (diff < 0) {
+      // 负数需要直接修改 state
+      thumbsUpState.value.todayLikes = debugLikesInput.value
+      // 同步更新 IndexedDB
+      persist()
+    }
+  }
+}
+
+function quickSetLikes(n) {
+  debugLikesInput.value = n
+  const { addLikes } = useThumbsUp()
+  const current = thumbsUpState.value.todayTotal || 0
+  const diff = n - current
+  if (diff > 0) {
+    addLikes(diff)
+  } else {
+    thumbsUpState.value.todayTotal = n
+  }
+}
+
+function clearDailyActivity() {
+  const today = new Date().toISOString().slice(0, 10)
+  store.dailyActivity[today] = { steps: 0, mastered: 0, stars: 0 }
+  store.persistAll()
+}
+
+function togglePetEnabled() {
+  const s = petStore.petState.value
+  if (!s) return
+  s.enabled = !s.enabled
+  petStore.persist()
+}
+
+function setPetSpecies(key) {
+  const s = petStore.petState.value
+  if (!s) return
+  s.petAssignedSpecies = key || null
+  petStore.persist()
+}
+
+function triggerPetHatch() {
+  petStore.triggerHatch()
+}
+
+function resetPet() {
+  if (confirm('确定要重置萌宠吗？所有养成进度将丢失。')) {
+    petStore.resetPet()
+  }
+}
 
 // 点赞趋势（最近7天）
 const likeTrend = computed(() => {
@@ -460,6 +772,169 @@ const difficulties = [
 function setDifficulty(key) {
   store.setGameDifficulty(key)
 }
+
+// P0-2: 学习趋势折线图
+const trendDays = ref(7)
+
+const trendChartWidth = 600
+const trendChartHeight = 200
+const trendMarginLeft = 40
+const trendMarginRight = 20
+const trendMarginTop = 20
+const trendMarginBottom = 30
+
+/** 趋势数据源 */
+const trendActivity = computed(() => {
+  const days = trendDays.value
+  const result = []
+  const today = new Date()
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    const record = store.dailyActivity[key] || { steps: 0, mastered: 0, stars: 0 }
+    result.push({
+      date: key,
+      dayLabel: `${d.getMonth() + 1}/${d.getDate()}`,
+      ...record
+    })
+  }
+  return result
+})
+
+const trendStepsData = computed(() => trendActivity.value.map(d => d.steps))
+const trendMasteredData = computed(() => trendActivity.value.map(d => d.mastered))
+const trendStarsData = computed(() => trendActivity.value.map(d => d.stars))
+
+const trendMaxSteps = computed(() => Math.max(1, ...trendStepsData.value))
+const trendMaxMastered = computed(() => Math.max(1, ...trendMasteredData.value))
+const trendMaxStars = computed(() => Math.max(1, ...trendStarsData.value))
+
+const trendXStep = (trendChartWidth - trendMarginLeft - trendMarginRight) / Math.max(1, trendDays.value - 1)
+
+/** X轴标签（间隔显示） */
+const trendXLabels = computed(() => {
+  const data = trendActivity.value
+  const total = data.length
+  // 最多显示 6 个标签
+  const step = Math.max(1, Math.floor(total / 6))
+  return data.map((d, i) => i % step === 0 || i === total - 1 ? d.dayLabel : '')
+})
+
+/** Y 坐标映射 */
+function trendY(value, max) {
+  const chartH = trendChartHeight - trendMarginTop - trendMarginBottom
+  const ratio = value / max
+  return trendMarginTop + chartH * (1 - ratio)
+}
+
+// P0-3: 分类掌握雷达图
+const radarSize = 220
+const radarCx = radarSize / 2
+const radarCy = radarSize / 2
+const radarMaxRadius = 70
+const radarRings = 4
+
+/** 雷达图数据（最多 6 个分类） */
+const radarData = computed(() => {
+  const cats = [...L1_WORDS, ...L2_WORDS].slice(0, 6)
+  return cats.map(cat => ({
+    label: cat.emoji,
+    pct: pct(cat.id),
+    ratio: pct(cat.id) / 100
+  }))
+})
+
+/** 计算角度（从顶部开始，顺时针） */
+function radarAngle(i) {
+  const count = radarData.value.length
+  if (count <= 1) return 0
+  return (2 * Math.PI * i / count) - Math.PI / 2
+}
+
+/** 计算环的多边形点 */
+function radarRingPoints(ring) {
+  const count = radarData.value.length
+  const r = (radarMaxRadius / radarRings) * ring
+  const pts = []
+  for (let i = 0; i < count; i++) {
+    const angle = radarAngle(i)
+    pts.push(`${radarCx + r * Math.cos(angle)},${radarCy + r * Math.sin(angle)}`)
+  }
+  return pts.join(' ')
+}
+
+/** 数据区域的多边形点 */
+const radarDataPoints = computed(() => {
+  const pts = []
+  radarData.value.forEach((pt, i) => {
+    const angle = radarAngle(i)
+    const r = radarMaxRadius * pt.ratio
+    pts.push(`${radarCx + r * Math.cos(angle)},${radarCy + r * Math.sin(angle)}`)
+  })
+  return pts.join(' ')
+})
+
+// P0-4: 学习时间热力图
+const heatmapTotalDays = computed(() => {
+  const data = store.dailyActivity
+  const today = new Date()
+  let count = 0
+  for (let i = 0; i < 56; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    const record = data[key]
+    if (record && (record.steps > 0 || record.mastered > 0)) count++
+  }
+  return count
+})
+
+/** 热力图颜色（类似 GitHub 贡献图） */
+function heatmapColor(steps) {
+  if (steps === 0) return '#EBEDF0'
+  if (steps <= 3) return '#9BE9A8'
+  if (steps <= 8) return '#40C463'
+  if (steps <= 15) return '#30A14E'
+  return '#216E39'
+}
+
+/** 热力图数据：按周排列的 56 天 */
+const heatmapWeeks = computed(() => {
+  const today = new Date()
+  const weeks = []
+  
+  // 获取今天往前 56 天
+  const days = []
+  for (let i = 55; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    const record = store.dailyActivity[key] || { steps: 0, mastered: 0, stars: 0 }
+    days.push({
+      date: key,
+      dayOfWeek: d.getDay(),
+      steps: record.steps || 0,
+      isToday: i === 0
+    })
+  }
+  
+  // 按周分组
+  const weeksArr = []
+  for (let i = 0; i < days.length; i += 7) {
+    weeksArr.push(days.slice(i, i + 7))
+  }
+  
+  // 补齐最后一周（如果不满 7 天）
+  if (weeksArr.length > 0) {
+    const lastWeek = weeksArr[weeksArr.length - 1]
+    while (lastWeek.length < 7) {
+      lastWeek.push({ date: '', dayOfWeek: lastWeek.length, steps: 0, isToday: false, empty: true })
+    }
+  }
+  
+  return weeksArr
+})
 
 /** 周报柱状图高度（相对本周最大 steps） */
 function barHeight(steps) {
@@ -641,7 +1116,89 @@ onMounted(() => store.loadFromDB())
 
 .score { font-weight: 700; color: var(--text-primary); }
 
+/* ===== P0-2: 学习趋势图 ===== */
+.trend-controls { display: flex; gap: var(--space-xs); margin-bottom: var(--space-md); }
+.trend-tab {
+  padding: 4px 14px; border-radius: var(--radius-full);
+  border: 1px solid var(--border-light); background: var(--bg-main);
+  font-size: 0.65rem; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.2s;
+}
+.trend-tab.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+.trend-legend { display: flex; gap: var(--space-md); margin-bottom: var(--space-sm); font-size: 0.65rem; color: var(--text-hint); }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.legend-dot.steps { background: #FF8C42; }
+.legend-dot.mastered { background: #4CAF50; }
+.legend-dot.stars { background: #FFC107; }
+
+.trend-chart {
+  width: 100%; height: auto;
+  max-height: 200px;
+  background: var(--bg-main);
+  border-radius: var(--radius-md);
+}
+
+/* ===== P0-3: 雷达图 ===== */
+.radar-container {
+  display: flex; justify-content: center; align-items: center;
+  margin-top: var(--space-md); padding: var(--space-sm) 0;
+}
+.radar-chart { width: 100%; max-width: 240px; height: auto; }
+
+/* ===== P0-4: 学习时间热力图 ===== */
+.heatmap-hint { font-size: var(--font-size-xs); color: var(--text-hint); margin-top: -8px; margin-bottom: var(--space-md); }
+.heatmap-legend {
+  display: flex; align-items: center; gap: 4px; margin-bottom: var(--space-sm); font-size: 0.6rem; color: var(--text-hint);
+}
+.heatmap-legend-cell { width: 12px; height: 12px; border-radius: 2px; }
+.legend-label { min-width: 20px; }
+.heatmap-total { margin-left: auto; font-weight: 600; color: var(--text-secondary); }
+
+.heatmap-grid {
+  display: flex; gap: 3px;
+  overflow-x: auto; padding-bottom: 4px;
+}
+.heatmap-week {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.heatmap-cell {
+  width: 12px; height: 12px; border-radius: 2px;
+  transition: transform 0.15s ease;
+}
+.heatmap-cell:hover {
+  transform: scale(1.4);
+}
+.heatmap-cell.today {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
 /* ===== 本周学习周报 ===== */
+.weekly-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: linear-gradient(135deg, var(--color-primary-light), #FFF3E0);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-md);
+  border-left: 4px solid var(--color-primary);
+}
+.comment-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.comment-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
+  font-weight: 500;
+}
+
 .week-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-sm); margin-bottom: var(--space-md); }
 .week-stat { background: var(--bg-main); border-radius: var(--radius-md); padding: var(--space-sm); text-align: center; }
 .week-stat-val { font-size: var(--font-size-lg); font-weight: 800; color: var(--color-primary); display: block; }
@@ -930,5 +1487,168 @@ onMounted(() => store.loadFromDB())
 }
 .gender-emoji {
   font-size: 2rem;
+}
+
+/* ===== P1-5: 成长里程碑时间线 ===== */
+.milestone-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); padding: var(--space-lg) 0; text-align: center; }
+.milestone-empty-icon { font-size: 2.5rem; }
+.milestone-empty p { font-size: var(--font-size-sm); color: var(--text-secondary); margin: 0; }
+
+.timeline {
+  position: relative;
+  padding-left: 28px;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--color-primary), var(--border-light));
+}
+.timeline-item {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  position: relative;
+}
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid var(--bg-card);
+}
+.timeline-icon { font-size: 1.3rem; flex-shrink: 0; }
+.timeline-content { flex: 1; }
+.timeline-title { font-size: var(--font-size-sm); font-weight: 700; color: var(--text-primary); }
+.timeline-desc { font-size: 0.65rem; color: var(--text-hint); margin-top: 2px; }
+.timeline-date { font-size: 0.6rem; color: var(--text-hint); margin-top: 2px; font-family: monospace; }
+
+/* ===== 🔧 调试工具 ===== */
+.debug-card {
+  border: 2px dashed #FFB300;
+  background: linear-gradient(135deg, #FFF8E1, #FFF3E0);
+}
+.debug-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-hint);
+  margin-top: -8px;
+  margin-bottom: var(--space-md);
+}
+.debug-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+}
+.debug-row + .debug-row {
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+}
+.debug-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.debug-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.debug-value {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.debug-input-group {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+.debug-input {
+  width: 100px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: center;
+  background: white;
+}
+.debug-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+.btn-debug {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-debug:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+.btn-debug:active {
+  transform: scale(0.95);
+}
+.btn-debug-danger {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: #FF5722;
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-debug-danger:hover {
+  background: #E64A19;
+  transform: scale(1.05);
+}
+.debug-quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+}
+.btn-quick {
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: white;
+  border: 1.5px solid var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-quick:hover {
+  background: var(--color-primary);
+  color: white;
+  transform: scale(1.05);
+}
+.btn-quick:active {
+  transform: scale(0.95);
+}
+.debug-danger .debug-label {
+  color: #FF5722;
+}
+.debug-danger .debug-value {
+  color: #FF5722;
 }
 </style>

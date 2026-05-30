@@ -117,6 +117,32 @@
         </div>
       </section>
 
+      <!-- v6.0: 萌宠养成 -->
+      <section class="home-pet-section" v-if="petStore.petState.value?.enabled && !isLocked">
+        <div class="home-pet-card" @click="showPetPanel = !showPetPanel">
+          <div class="home-pet-left">
+            <PetEgg ref="petEggRef" @tap="handlePetTap" />
+          </div>
+          <div class="home-pet-info">
+            <span class="home-pet-title">{{ petDisplayName }}</span>
+            <span class="home-pet-subtitle">{{ petLevelDesc }}</span>
+            <div class="home-pet-progress">
+              <div class="home-pet-progress-fill" :style="{ width: (petStore.levelProgress.value * 100) + '%' }"></div>
+            </div>
+            <span class="home-pet-likes" v-if="likesToNext > 0">还差 {{ likesToNext }} 赞升级 ✨</span>
+            <span class="home-pet-likes home-pet-max" v-else>已达最高等级 🌟</span>
+          </div>
+          <span class="home-pet-arrow" :class="{ open: showPetPanel }">▾</span>
+        </div>
+        <Transition name="pop">
+          <PetStats
+            v-if="showPetPanel"
+            @action="handlePetAction"
+            @error="handlePetError"
+          />
+        </Transition>
+      </section>
+
       <!-- 今日推荐 -->
       <section class="today-section" v-if="todayCategory">
         <div class="section-header">
@@ -242,10 +268,33 @@ import { useYoyoCopy } from '@/composables/useYoyoCopy'
 import { generateAIBubble } from '@/composables/useYoyoAI'
 import { useThumbsUp } from '@/composables/useThumbsUp'
 import { sfxCheer } from '@/composables/useSfx'
+import '@/assets/styles/pet.css'
+import PetEgg from '@/components/PetEgg.vue'
+import PetStats from '@/components/PetStats.vue'
+import { usePetStore } from '@/composables/usePetStore'
 
 const router = useRouter()
 const store = useLearningStore()
 const mapPathRef = ref(null)
+
+// v6.0: 萌宠养成系统
+const petStore = usePetStore()
+const showPetPanel = ref(false)
+const petEggRef = ref(null)
+
+// 萌宠展示信息
+const petDisplayName = computed(() => {
+  if (!petStore.petState.value) return ''
+  if (petStore.petLevel.value >= 5 && petStore.currentSpecies.value) {
+    return petStore.currentSpecies.value.emoji + ' ' + petStore.currentSpecies.value.name
+  }
+  return petStore.currentLevelConfig.value.emoji + ' ' + petStore.currentLevelConfig.value.name
+})
+const petLevelDesc = computed(() => {
+  if (!petStore.petState.value) return ''
+  return petStore.currentLevelConfig.value.desc
+})
+const likesToNext = computed(() => petStore.likesToNextLevel.value || 0)
 
 // v5.0: 点赞系统
 const { thumbsUpState, triggerAutoLike } = useThumbsUp()
@@ -265,7 +314,7 @@ function dismissMilestone() {
 
 // 更新今日点赞数
 function updateTodayLikes() {
-  todayLikes.value = thumbsUpState.value.todayTotal || 0
+  todayLikes.value = thumbsUpState.value.todayLikes || 0
 
   // 检查里程碑
   for (const threshold of milestoneThresholds) {
@@ -281,7 +330,7 @@ function updateTodayLikes() {
 }
 
 // 监听点赞变化
-watch(() => thumbsUpState.value.todayTotal, updateTodayLikes)
+watch(() => thumbsUpState.value.todayLikes, updateTodayLikes)
 
 // P1-1: 季节节日装饰
 const {
@@ -395,6 +444,32 @@ function catProgress(catId) {
   return Math.min(Math.round((completedSteps / totalSteps) * 100), 100)
 }
 
+// v6.0: 萌宠操作
+function handlePetAction(actionKey) {
+  const result = petStore.doAction(actionKey, store.totalStars)
+  if (result.success) {
+    store.spendStars(result.cost)
+    // 触发动画
+    petEggRef.value?.playActionAnim(petStore.ACTIONS[actionKey]?.animClass)
+  }
+}
+
+function handlePetError(msg) {
+  // 轻量 toast — 复用呦呦气泡
+  yoyoBubble.value = msg
+  yoyoMood.value = 'comfort'
+  setTimeout(() => { yoyoBubble.value = ''; yoyoMood.value = 'idle' }, 2500)
+}
+
+function handlePetTap() {
+  // 点击蛋蛋/精灵 → 小互动
+  yoyoMood.value = 'happy'
+  yoyoBubble.value = petStore.petLevel.value >= 5
+    ? `${petStore.currentSpecies.value?.emoji} 好开心！`
+    : '蛋蛋在动~'
+  setTimeout(() => { yoyoBubble.value = ''; yoyoMood.value = 'idle' }, 2000)
+}
+
 function goLearn(catId) { router.push(`/learn/${catId}`) }
 function goGame(gameId) { router.push(`/game/${gameId}`) }
 function goPlayground() { router.push('/playground') }
@@ -422,6 +497,9 @@ function sceneName(scene) { return sceneLabels[scene] || scene }
 
 onMounted(async () => {
   await store.loadFromDB()
+
+  // v6.0: 加载萌宠数据
+  await petStore.loadFromDB()
 
   // v5.0: 加载今日点赞数
   updateTodayLikes()
@@ -947,6 +1025,55 @@ onMounted(async () => {
   0% { transform: scale(0) rotate(-10deg); opacity: 0; }
   70% { transform: scale(1.1) rotate(2deg); }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ===== v6.0: 萌宠养成区域 ===== */
+.home-pet-section {
+  margin: var(--space-xs) var(--space-xl);
+  animation: fadeUp 0.4s var(--ease-smooth);
+}
+.home-pet-card {
+  display: flex; align-items: center; gap: var(--space-md);
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFF0D4 100%);
+  border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg);
+  border: 2px solid #FFE082; cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.home-pet-card:active { transform: scale(0.98); }
+.home-pet-left {
+  flex: 0 0 72px; display: flex; align-items: center; justify-content: center;
+}
+.home-pet-info {
+  flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
+.home-pet-title {
+  font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary);
+}
+.home-pet-subtitle {
+  font-size: var(--font-size-xs); color: var(--text-hint);
+}
+.home-pet-progress {
+  width: 100%; height: 6px; background: rgba(0,0,0,0.08);
+  border-radius: var(--radius-full); overflow: hidden; margin-top: 2px;
+}
+.home-pet-progress-fill {
+  height: 100%; background: linear-gradient(90deg, #FFB74D, #FF9800);
+  border-radius: var(--radius-full); transition: width 0.5s ease;
+}
+.home-pet-likes {
+  font-size: 0.65rem; color: #F57C00; font-weight: 600;
+}
+.home-pet-likes.home-pet-max {
+  color: #4CAF50;
+}
+.home-pet-arrow {
+  font-size: 1rem; color: var(--text-hint);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+.home-pet-arrow.open {
+  transform: rotate(180deg);
 }
 
 /* ===== P1: 季节节日漂浮粒子 ===== */

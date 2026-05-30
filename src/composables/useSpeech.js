@@ -205,6 +205,11 @@ export function useSpeech() {
       utter.onstart = () => { isSpeaking.value = true }
       utter.onend = () => { isSpeaking.value = false; if (onEnd) onEnd() }
       utter.onerror = (e) => {
+        // interrupted/canceled 是正常现象（新TTS打断旧的），忽略
+        if (e.error === 'interrupted' || e.error === 'canceled') {
+          isSpeaking.value = false
+          return
+        }
         console.error('[TTS Error]', e)
         isSpeaking.value = false
         if (onError) onError()
