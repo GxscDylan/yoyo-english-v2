@@ -45,7 +45,8 @@
           v-for="dress in availableDresses"
           :key="dress.id"
           class="dress-option"
-          :class="{ active: petState.currentDress === dress.id }"
+          :class="{ active: petState.currentDress === dress.id, disabled: dressDisabled }"
+          :title="dressDisabled ? `换装冷却中~ 还需 ${formatCooldown(getActionCooldown('dress'))}` : `${dress.label}`"
           @click.stop="handleDress(dress.id)"
         >
           {{ dress.emoji }}
@@ -53,6 +54,8 @@
         <button
           v-if="petState.currentDress"
           class="dress-option remove"
+          :class="{ disabled: dressDisabled }"
+          title="脱下装扮"
           @click.stop="handleDress(null)"
         >
           ❌
@@ -75,6 +78,9 @@ const {
 } = usePetStore()
 
 const learningStore = useLearningStore()
+
+// 换装按钮是否不可用（冷却中）
+const dressDisabled = computed(() => getActionCooldown('dress') > 0)
 
 // ===== 冷却倒计时 =====
 const cooldowns = ref({ feed: 0, bath: 0, sing: 0, dress: 0 })
@@ -130,6 +136,14 @@ function handleAction(actionKey) {
 // ===== 换装 =====
 function handleDress(dressId) {
   if (petLevel.value < 5) return
+
+  // 检查换装冷却
+  const cd = getActionCooldown('dress')
+  if (cd > 0) {
+    emit('error', `换装冷却中~ 还需 ${formatCooldown(cd)}`)
+    return
+  }
+
   // 换装消耗检查（仅在首次穿戴时）
   if (dressId && dressId !== petState.value?.currentDress) {
     const cost = ACTIONS.dress.cost
@@ -208,5 +222,10 @@ function formatCooldown(ms) {
 }
 .dress-option.remove:hover {
   opacity: 1;
+}
+.dress-option.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 </style>

@@ -444,14 +444,10 @@ function catProgress(catId) {
   return Math.min(Math.round((completedSteps / totalSteps) * 100), 100)
 }
 
-// v6.0: 萌宠操作
+// v6.0: 萌宠操作（仅触发动画，执行和扣星已在 PetStats 内完成）
 function handlePetAction(actionKey) {
-  const result = petStore.doAction(actionKey, store.totalStars)
-  if (result.success) {
-    store.spendStars(result.cost)
-    // 触发动画
-    petEggRef.value?.playActionAnim(petStore.ACTIONS[actionKey]?.animClass)
-  }
+  // 触发动画
+  petEggRef.value?.playActionAnim(petStore.ACTIONS[actionKey]?.animClass)
 }
 
 function handlePetError(msg) {

@@ -153,6 +153,23 @@
   animation: feed-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ===== 洗澡 — 泡泡飘浮 ===== */
+@keyframes bath-bubble-rise {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.1); }
+  100% { transform: translateY(0) scale(1); }
+}
+.pet-anim-bubble .pet-egg-body,
+.pet-anim-bubble .pet-creature {
+  animation: bath-bubble-rise 0.7s ease-in-out;
+}
+
+/* ===== 唱歌/换装 — 弹跳 ===== */
+.pet-anim-creature .pet-egg-body,
+.pet-anim-creature .pet-creature {
+  animation: creature-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* ===== 蛋壳主体 ===== */
 .pet-egg-body {
   position: relative;

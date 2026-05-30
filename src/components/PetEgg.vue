@@ -119,7 +119,10 @@ const displayName = computed(() => {
 // ===== 操作动画 =====
 const animClass = ref('')
 function playActionAnim(actionClass) {
-  animClass.value = `pet-anim-${actionClass}`
+  // actionClass: 'feed-bounce' / 'bubble-float' / 'creature-bounce'
+  // CSS 选择器: .pet-anim-feed / .pet-anim-bubble / .pet-anim-creature
+  const prefix = actionClass.split('-')[0] // feed / bubble / creature
+  animClass.value = `pet-anim-${prefix}`
   setTimeout(() => { animClass.value = '' }, 700)
 }
 defineExpose({ playActionAnim })
