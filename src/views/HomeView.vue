@@ -8,14 +8,19 @@
             <span class="intro-yoyo-face">🐯</span>
           </div>
           <Transition name="pop">
-            <div v-if="introPhase >= 2" class="intro-bubble">
-              <p>Hi~ 我是呦呦！</p>
+            <div v-if="introPhase >= 2" class="intro-bubble intro-title">
+              <p>🌟 YoYo English 🌟</p>
             </div>
           </Transition>
           <Transition name="pop">
-            <div v-if="introPhase >= 3" class="intro-invite">
-              <p>来和我一起玩吧！</p>
-              <span class="intro-arrow">👆</span>
+            <div v-if="introPhase >= 3" class="intro-bubble intro-sub">
+              <p>Hi! I'm YoYo!</p>
+              <p class="intro-sub-text">Let's learn English together!</p>
+            </div>
+          </Transition>
+          <Transition name="pop">
+            <div v-if="introPhase >= 4" class="intro-invite">
+              <p>点击屏幕开始冒险 →</p>
             </div>
           </Transition>
         </div>
@@ -74,7 +79,9 @@
                   locked: i >= store.unlockedCategories,
                   completed: catProgress(cat.id) >= 100,
                   'just-unlocked': i === store.justUnlockedIndex
-                }">
+                }"
+                @click="i < store.unlockedCategories ? goLearn(cat.id) : null"
+                :style="{ cursor: i < store.unlockedCategories ? 'pointer' : 'default' }">
                 <div class="node-icon-wrap">
                   <span class="node-icon">{{ i < store.unlockedCategories ? cat.emoji : '🔒' }}</span>
                   <span v-if="catProgress(cat.id) >= 100" class="node-check">✅</span>
@@ -223,6 +230,10 @@
         <span class="nav-icon">🎵</span>
         <span>Songs</span>
       </button>
+      <button class="nav-btn nav-pet" @click="goPet" v-if="petStore.petState.value?.enabled">
+        <span class="nav-icon">🐾</span>
+        <span>宠物</span>
+      </button>
       <button class="nav-btn nav-sentence" @click="goSentence">
         <span class="nav-icon">💬</span>
         <span>Sentences</span>
@@ -263,6 +274,7 @@ import { ALL_CATEGORIES } from '@/data/words'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import { triggerConfetti } from '@/composables/useConfetti'
 import { useSeasonalDecorations } from '@/composables/useSeasonalDecorations'
+import { useSpeech } from '@/composables/useSpeech'
 import { useEasterEggs } from '@/composables/useEasterEggs'
 import { useYoyoCopy } from '@/composables/useYoyoCopy'
 import { generateAIBubble } from '@/composables/useYoyoAI'
@@ -346,7 +358,8 @@ const { handleYoyoClick: handleEasterEggClick } = useEasterEggs()
 
 // P2: 首次开场动画状态
 const showIntro = ref(false)
-const introPhase = ref(0) // 0=黑屏, 1=呦呦弹入, 2=气泡弹出, 3=邀请+高亮
+const introPhase = ref(0) // 0=黑屏, 1=呦呦弹入, 2=标题, 3=TTS语音+副标题, 4=邀请
+const { speakSentence } = useSpeech()
 
 function dismissIntro() {
   showIntro.value = false
@@ -473,6 +486,7 @@ function goParent() { router.push('/parent') }
 function goReview() { router.push('/review') }
 function goNursery() { router.push('/nursery') }
 function goSentence() { router.push('/sentence') }
+function goPet() { router.push('/pet') }
 
 // 场景名称映射
 const sceneLabels = {
@@ -539,7 +553,7 @@ onMounted(async () => {
     store.consumeJustUnlocked()
   }
 
-  // P2: 首次访问播放开场动画
+  // P2: 首次访问播放开场动画 — 5 秒增强版
   const hasSeenIntro = localStorage.getItem('yoyo-intro-seen')
   if (store.isFirstUse && !hasSeenIntro) {
     showIntro.value = true
@@ -547,11 +561,21 @@ onMounted(async () => {
 
     // 0.3s 呦呦弹入
     setTimeout(() => { introPhase.value = 1 }, 300)
-    // 1.0s 气泡弹出
+    // 1.0s 品牌标题
     setTimeout(() => { introPhase.value = 2 }, 1000)
-    // 2.0s 邀请+高亮
-    setTimeout(() => { introPhase.value = 3 }, 2000)
-    // 4.0s 自动消失
+    // 2.0s TTS 语音 + 副标题
+    setTimeout(() => {
+      introPhase.value = 3
+      // TTS 朗读 "Hi! I'm YoYo!" 和 "Let's learn English together!"
+      speakSentence("Hi! I'm YoYo!", { rate: 0.85 })
+      setTimeout(() => speakSentence("Let's learn English together!", { rate: 0.85 }), 2000)
+    }, 2000)
+    // 3.5s 邀请提示 + 撒星星
+    setTimeout(() => {
+      introPhase.value = 4
+      triggerConfetti(8, { x: '50%', y: '50%' })
+    }, 3500)
+    // 5.5s 自动消失
     setTimeout(() => {
       showIntro.value = false
       localStorage.setItem('yoyo-intro-seen', 'true')
@@ -668,6 +692,7 @@ onMounted(async () => {
 .map-node.current { min-width: 64px; }
 .map-node.unlocked { background: rgba(255,255,255,0.5); }
 .map-node.unlocked:hover { background: rgba(255,255,255,0.85); }
+.map-node.unlocked:active { transform: scale(0.95); }
 .map-node:not(:last-child)::after {
   content: '→';
   position: absolute; right: -8px; top: 28%;
@@ -908,6 +933,8 @@ onMounted(async () => {
 .nav-playground:hover { transform: scale(1.02); }
 .nav-nursery { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); color: #E65100; }
 .nav-nursery:hover { transform: scale(1.02); }
+.nav-pet { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); color: #2E7D32; }
+.nav-pet:hover { transform: scale(1.02); }
 .nav-sentence { background: linear-gradient(135deg, #F3E8FF, #DDD6FE); color: #7C3AED; }
 .nav-sentence:hover { transform: scale(1.02); }
 .nav-review { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); color: #2E7D32; }
@@ -994,6 +1021,50 @@ onMounted(async () => {
   animation: bubblePop 0.4s var(--ease-bounce);
 }
 .intro-bubble p { font-size: var(--font-size-xl); font-weight: 700; color: var(--text-primary); margin: 0; }
+
+/* 品牌标题样式 */
+.intro-bubble.intro-title {
+  background: linear-gradient(135deg, #FF8C42, #FFB74D);
+  border: none;
+  padding: var(--space-md) var(--space-2xl);
+}
+.intro-bubble.intro-title p {
+  font-size: var(--font-size-3xl);
+  color: #FFF;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  letter-spacing: 2px;
+}
+
+/* 副标题样式 */
+.intro-bubble.intro-sub p:first-child {
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary);
+}
+.intro-sub-text {
+  font-size: var(--font-size-md) !important;
+  color: var(--text-hint) !important;
+  margin-top: var(--space-xs) !important;
+  font-weight: 400;
+}
+
+/* 邀请提示样式 */
+.intro-invite {
+  text-align: center;
+  animation: fadeUp 0.5s var(--ease-smooth);
+}
+.intro-invite p {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary);
+  font-weight: 600;
+  animation: introPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes introPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+/* ====== P3: 场景动态插图 ===== */
 
 @keyframes bubblePop {
   0% { transform: scale(0); opacity: 0; }

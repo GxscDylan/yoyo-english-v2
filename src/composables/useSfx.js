@@ -326,3 +326,144 @@ export function sfxFanfare() {
 export function getSharedAudioCtx() {
   return getCtx()
 }
+
+// ============================================================
+// 宠物养成系统专属音效（v6.0 新增）
+// ============================================================
+
+/** 喂食音效：水滴声 + 满足叹息 */
+export function sfxPetFeed() {
+  try {
+    const ctx = getCtx()
+    // 水滴声: 高频正弦波快速衰减
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'
+    const t = ctx.currentTime
+    gain.gain.setValueAtTime(0.25, t)
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15)
+    osc.frequency.setValueAtTime(1500, t)
+    osc.frequency.exponentialRampToValueAtTime(800, t + 0.1)
+    osc.start(t); osc.stop(t + 0.15)
+    
+    // 满足感: 低频长音
+    setTimeout(() => {
+      const osc2 = ctx.createOscillator()
+      const gain2 = ctx.createGain()
+      osc2.connect(gain2); gain2.connect(ctx.destination)
+      osc2.type = 'sine'
+      const t2 = ctx.currentTime
+      gain2.gain.setValueAtTime(0.15, t2)
+      gain2.gain.exponentialRampToValueAtTime(0.01, t2 + 0.3)
+      osc2.frequency.setValueAtTime(330, t2)
+      osc2.start(t2); osc2.stop(t2 + 0.3)
+    }, 150)
+  } catch(e) {}
+}
+
+/** 洗澡音效：泡泡破裂声 */
+export function sfxPetBath() {
+  try {
+    const ctx = getCtx()
+    // 模拟泡泡: 2-3个短促高频正弦波
+    for (let i = 0; i < 3; i++) {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const t = ctx.currentTime + i * 0.08
+      gain.gain.setValueAtTime(0.12, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.06)
+      osc.frequency.setValueAtTime(2000 + Math.random() * 500, t)
+      osc.start(t); osc.stop(t + 0.06)
+    }
+  } catch(e) {}
+}
+
+/** 唱歌音效：呦呦哼唱（柔和正弦波旋律） */
+export function sfxPetSing() {
+  try {
+    const ctx = getCtx()
+    // 轻柔哼唱: C5-D5-E5-C5
+    const notes = [523, 587, 659, 523]
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const t = ctx.currentTime + i * 0.2
+      gain.gain.setValueAtTime(0.08, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18)
+      osc.frequency.setValueAtTime(freq, t)
+      osc.start(t); osc.stop(t + 0.18)
+    })
+  } catch(e) {}
+}
+
+/** 破壳音效：碎裂 + 欢呼 */
+export function sfxPetHatch() {
+  try {
+    const ctx = getCtx()
+    // 蛋壳碎裂: 白噪声短爆发
+    const bufferSize = Math.floor(ctx.sampleRate * 0.15)
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.4
+    }
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    const gain = ctx.createGain()
+    const filter = ctx.createBiquadFilter()
+    filter.type = 'highpass'
+    filter.frequency.value = 1500
+    source.connect(filter)
+    filter.connect(gain)
+    gain.connect(ctx.destination)
+    const t = ctx.currentTime
+    gain.gain.setValueAtTime(0.2, t)
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15)
+    source.start(t)
+    
+    // 欢呼声延迟
+    setTimeout(() => sfxCheer(), 200)
+  } catch(e) {}
+}
+
+/** 换装音效：闪亮变身 */
+export function sfxPetDress() {
+  try {
+    const ctx = getCtx()
+    // 上行音阶: E5-G5-B5-E6
+    ;[659, 784, 988, 1319].forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const t = ctx.currentTime + i * 0.08
+      gain.gain.setValueAtTime(0.12, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12)
+      osc.frequency.setValueAtTime(freq, t)
+      osc.start(t); osc.stop(t + 0.12)
+    })
+  } catch(e) {}
+}
+
+/** 加速成长音效：火箭发射（上行滑音） */
+export function sfxPetAccel() {
+  try {
+    const ctx = getCtx()
+    // 上行滑音: C4→C6
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'
+    const t = ctx.currentTime
+    gain.gain.setValueAtTime(0.2, t)
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4)
+    osc.frequency.setValueAtTime(262, t)
+    osc.frequency.exponentialRampToValueAtTime(1047, t + 0.3)
+    osc.start(t); osc.stop(t + 0.4)
+  } catch(e) {}
+}

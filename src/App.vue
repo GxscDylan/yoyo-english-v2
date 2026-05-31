@@ -15,14 +15,35 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeColorSync } from '@/composables/useThemeColor'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import { playBGM, stopBGM } from '@/composables/useBGM'
+import { usePetStore } from '@/composables/usePetStore.js'
 
 // 启用主题色同步到 meta theme-color
 useThemeColorSync()
+
+// v6.0: 宠物状态定时检测
+const petStore = usePetStore()
+let petMoodTimer = null
+
+onMounted(() => {
+  // 立即检测一次
+  petStore.detectMood()
+  // 每 5 分钟检测一次状态变化
+  petMoodTimer = setInterval(() => {
+    petStore.detectMood()
+  }, 5 * 60 * 1000)
+})
+
+onUnmounted(() => {
+  if (petMoodTimer) {
+    clearInterval(petMoodTimer)
+    petMoodTimer = null
+  }
+})
 
 // 路由监听 BGM 场景切换
 const route = useRoute()
@@ -36,7 +57,8 @@ function getBGMScene(name) {
     review: 'review',
     sentence: 'learn',
     nursery: 'nursery',
-    parent: 'parent'
+    parent: 'parent',
+    pet: 'pet'
   }
   return map[name] || 'home'
 }

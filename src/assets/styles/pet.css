@@ -140,6 +140,40 @@
   animation: hunger-shake 1.5s ease-in-out infinite;
 }
 
+/* ===== 睡觉 — 缓慢呼吸 ===== */
+@keyframes sleeping-breathe {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(0.95) rotate(2deg); }
+}
+.pet-mood-sleeping .pet-egg-body,
+.pet-mood-sleeping .pet-creature {
+  animation: sleeping-breathe 3s ease-in-out infinite;
+  opacity: 0.8;
+}
+
+/* ===== 兴奋 — 跳跃旋转 ===== */
+@keyframes excited-jump {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-15px) scale(1.1) rotate(5deg); }
+  50% { transform: translateY(0) scale(1); }
+  75% { transform: translateY(-8px) scale(1.05) rotate(-3deg); }
+}
+.pet-mood-excited .pet-egg-body,
+.pet-mood-excited .pet-creature {
+  animation: excited-jump 1.2s ease-in-out infinite;
+}
+
+/* ===== 好奇 — 左右摇摆 ===== */
+@keyframes curious-sway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(8deg); }
+  75% { transform: rotate(-8deg); }
+}
+.pet-mood-curious .pet-egg-body,
+.pet-mood-curious .pet-creature {
+  animation: curious-sway 2s ease-in-out infinite;
+}
+
 /* ===== 喂食 — 弹跳反馈 ===== */
 @keyframes feed-bounce {
   0% { transform: scale(1); }

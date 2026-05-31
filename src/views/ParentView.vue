@@ -439,6 +439,60 @@
         </div>
       </section>
 
+      <!-- v6.0: 萌宠养成控制 -->
+      <section class="section-card" v-if="petEnabled">
+        <h3>🐾 萌宠养成</h3>
+        <div class="row">
+          <span>萌宠系统总开关</span>
+          <button class="toggle" :class="{ on: petState?.enabled }" @click="togglePetSetting('enabled')">
+            {{ petState?.enabled ? 'ON' : 'OFF' }}
+          </button>
+        </div>
+        <div class="row">
+          <span>喂养提醒</span>
+          <button class="toggle" :class="{ on: petState?.showHungerAnim }" @click="togglePetSetting('showHungerAnim')">
+            {{ petState?.showHungerAnim ? 'ON' : 'OFF' }}
+          </button>
+        </div>
+        <div class="row">
+          <span>破壳动画</span>
+          <button class="toggle" :class="{ on: petState?.showHatchAnim }" @click="togglePetSetting('showHatchAnim')">
+            {{ petState?.showHatchAnim ? 'ON' : 'OFF' }}
+          </button>
+        </div>
+        <div class="row">
+          <span>指定下一种精灵品种</span>
+          <div class="species-selector">
+            <button v-for="sp in petStore.PET_SPECIES" :key="sp.id"
+              class="species-option"
+              :class="{ active: petState?.petAssignedSpecies === sp.id }"
+              @click="setPetAssignedSpecies(sp.id)">
+              {{ sp.emoji }}
+            </button>
+            <button class="species-option species-clear"
+              :class="{ active: !petState?.petAssignedSpecies }"
+              @click="setPetAssignedSpecies(null)">
+              🔀 随机
+            </button>
+          </div>
+        </div>
+        <div class="row">
+          <span>成长速度</span>
+          <div class="volume-slider">
+            <input type="range" min="50" max="200" step="10"
+              :value="(petState?.growthRate || 1) * 100"
+              @input="setGrowthRate($event.target.value / 100)" class="vol-range">
+            <span class="vol-val">{{ Math.round((petState?.growthRate || 1) * 100) }}%</span>
+          </div>
+        </div>
+        <!-- 宠物当前状态 -->
+        <div class="pet-status-summary" v-if="petState">
+          <span>当前阶段：{{ petStore.currentLevelConfig.value?.name || '小蛋蛋' }}</span>
+          <span>累计点赞：{{ petState.petTotalLikes }}</span>
+          <span v-if="petState.petSpecies">精灵：{{ currentPetSpecies?.emoji }} {{ currentPetSpecies?.name }}</span>
+        </div>
+      </section>
+
       <!-- v5.0: 点赞统计 -->
       <section class="section-card">
         <h3>👍 点赞统计</h3>
@@ -611,6 +665,9 @@ const favoriteWordsList = computed(() => getFavoriteWords())
 
 // v6.0: 萌宠养成系统
 const petStore = usePetStore()
+const petState = computed(() => petStore.petState?.value)
+const petEnabled = computed(() => petStore.petState?.value?.enabled !== false)
+const currentPetSpecies = computed(() => petStore.currentSpecies.value)
 const petSpeciesOptions = [
   { key: '', label: '🎲 随机孵化', emoji: '🎲' },
   { key: 'cat', label: '🐱 小猫咪', emoji: '🐱' },
@@ -622,6 +679,28 @@ const petSpeciesOptions = [
   { key: 'lion', label: '🦁 小狮子', emoji: '🦁' },
   { key: 'sheep', label: '🐑 小绵羊', emoji: '🐑' },
 ]
+
+// 萌宠设置方法
+function togglePetSetting(key) {
+  const s = petStore.petState.value
+  if (!s) return
+  s[key] = !s[key]
+  petStore.persist()
+}
+
+function setPetAssignedSpecies(speciesId) {
+  const s = petStore.petState.value
+  if (!s) return
+  s.petAssignedSpecies = speciesId || null
+  petStore.persist()
+}
+
+function setGrowthRate(rate) {
+  const s = petStore.petState.value
+  if (!s) return
+  s.growthRate = Math.max(0.5, Math.min(2.0, rate))
+  petStore.persist()
+}
 
 // 🔧 调试工具
 const debugStarsInput = ref(0)
@@ -1706,5 +1785,46 @@ onMounted(async () => {
 }
 .debug-danger .debug-value {
   color: #FF5722;
+}
+
+/* ===== v6.0: 萌宠设置 ===== */
+.species-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.species-option {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 2px solid var(--border-light);
+  background: var(--bg-card);
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.species-option.active {
+  border-color: #CE93D8;
+  background: #F3E5F5;
+  box-shadow: 0 2px 8px rgba(206, 147, 216, 0.3);
+}
+.species-option.species-clear {
+  font-size: 0.7rem;
+  width: auto;
+  padding: 0 10px;
+}
+.pet-status-summary {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 </style>

@@ -56,17 +56,22 @@ const ACTIONS = {
   dress: { cost: 10, cooldown: 30 * 60 * 1000, label: '换装', emoji: '👗', animClass: 'creature-bounce' },
 }
 
-/** 装扮列表 */
+/** 装扮列表（GDD 8 款） */
 const DRESS_ITEMS = [
-  { id: 'shell-pattern', emoji: '🐚', label: '蛋壳纹理', level: 1 },
-  { id: 'hat', emoji: '🎩', label: '小帽子', level: 2 },
-  { id: 'bow', emoji: '🎀', label: '蝴蝶结', level: 1 },
-  { id: 'sunglasses', emoji: '🕶️', label: '墨镜', level: 2 },
-  { id: 'crown', emoji: '👑', label: '皇冠', level: 3 },
-  { id: 'necktie', emoji: '👔', label: '领结', level: 1 },
-  { id: 'santa-hat', emoji: '🎅', label: '圣诞帽', level: 2 },
-  { id: 'scarf', emoji: '🧣', label: '围巾', level: 1 },
+  { id: 'hat-grass', emoji: '🧢', label: '草帽', unlockLikes: 15, cssClass: 'hat-grass' },
+  { id: 'bow', emoji: '🎀', label: '蝴蝶结', unlockLikes: 15, cssClass: 'accessory-bow' },
+  { id: 'crown', emoji: '👑', label: '皇冠', unlockLikes: 30, cssClass: 'hat-crown' },
+  { id: 'sunglasses', emoji: '🕶️', label: '墨镜', unlockLikes: 25, cssClass: 'glasses-sunglasses' },
+  { id: 'shirt', emoji: '👔', label: '小衣服', unlockLikes: 20, cssClass: 'clothes-shirt' },
+  { id: 'mask', emoji: '😷', label: '小口罩', unlockLikes: 50, cssClass: 'mask', seasonal: true },
+  { id: 'pacifier', emoji: '🍼', label: '奶嘴', unlockLikes: 20, cssClass: 'pacifier' },
+  { id: 'remove', emoji: '❌', label: '清除', unlockLikes: 0, cssClass: null },
 ]
+
+/** 首次破壳基础精灵（1-4号） */
+const BASE_SPECIES = ['cat', 'dog', 'rabbit', 'dragon']
+/** 全部精灵 */
+const ALL_SPECIES = ['cat', 'dog', 'rabbit', 'dragon', 'unicorn', 'tiger', 'lion', 'sheep']
 
 // ============================================================
 // 状态（模块级单例）
@@ -95,13 +100,20 @@ function createDefaultState() {
     todayBathCount: 0,
     todaySingCount: 0,
     todayDressCount: 0,
+    todayAccelCount: 0,     // 今日加速次数（兼容字段）
     todayLikeCount: 0,
 
-    // 装扮
-    currentDress: null,       // 当前装扮 id
+    // 装扮系统
+    petCosmetics: [],         // 已解锁装扮 ID 列表
+    currentDress: null,       // 当前穿戴装扮 id
+
+    // 加速成长
+    petLastAccelAt: 0,        // 最后加速时间戳
+    petAccelCountToday: 0,    // 今日加速次数
 
     // 家长指定
     petAssignedSpecies: null, // 家长指定的品种，破壳时消费后清除
+    growthRate: 1.0,          // 成长速度倍率（0.5~2.0）
 
     // 系统
     enabled: true,            // 总开关
@@ -175,6 +187,7 @@ function checkDailyReset() {
       s.todaySingCount = 0
       s.todayDressCount = 0
       s.todayLikeCount = 0
+      s.todayAccelCount = 0
     }
     s.lastOpenDate = today
     persist()
@@ -241,11 +254,28 @@ const currentDressItem = computed(() => {
   return DRESS_ITEMS.find(d => d.id === s.currentDress) || null
 })
 
-/** 可用装扮（根据等级过滤） */
+/** 可用装扮（根据等级/解锁状态过滤） */
 const availableDresses = computed(() => {
-  const lv = petLevel.value
-  return DRESS_ITEMS.filter(d => d.level <= lv)
+  const s = petState.value
+  if (!s) return DRESS_ITEMS.filter(d => d.id !== 'remove')
+  // 移除按钮始终可用（如果已穿戴）
+  const unlockable = DRESS_ITEMS.filter(d => {
+    if (d.id === 'remove') return s.currentDress !== null
+    if (d.unlockLikes <= 0) return true // 免费
+    return s.petTotalLikes >= d.unlockLikes
+  })
+  return unlockable
 })
+
+/** 是否已解锁某装扮 */
+function isCosmeticUnlocked(dressId) {
+  const s = petState.value
+  if (!s) return false
+  const item = DRESS_ITEMS.find(d => d.id === dressId)
+  if (!item) return false
+  if (item.unlockLikes <= 0) return true
+  return s.petTotalLikes >= item.unlockLikes || s.petCosmetics.includes(dressId)
+}
 
 /** 操作是否在冷却中 */
 function getActionCooldown(actionKey) {
@@ -390,8 +420,70 @@ function doAction(actionKey, currentStars) {
 function setDress(dressId) {
   const s = petState.value
   if (!s) return
+  // 清除装扮
+  if (dressId === null || dressId === 'remove') {
+    s.currentDress = null
+    persist()
+    return
+  }
+  // 首次穿戴且未解锁
+  if (!s.petCosmetics.includes(dressId)) {
+    const item = DRESS_ITEMS.find(d => d.id === dressId)
+    if (item && item.unlockLikes > 0 && s.petTotalLikes < item.unlockLikes) {
+      return { success: false, reason: 'likes' }
+    }
+    s.petCosmetics.push(dressId)
+  }
   s.currentDress = dressId
   persist()
+  return { success: true }
+}
+
+/** 加速成长 */
+function accel(currentStars, currentTodayLikes) {
+  const s = petState.value
+  if (!s || !s.enabled) return { success: false, reason: 'disabled' }
+
+  const today = new Date().toDateString()
+  const lastDate = s.petLastAccelAt ? new Date(s.petLastAccelAt).toDateString() : null
+  // 每日重置
+  if (today !== lastDate) {
+    s.petAccelCountToday = 0
+  }
+
+  if (s.petAccelCountToday >= 2) {
+    return { success: false, reason: 'limit' }
+  }
+  if (currentStars < 5) {
+    return { success: false, reason: 'stars' }
+  }
+
+  s.petLastAccelAt = Date.now()
+  s.petAccelCountToday++
+
+  const oldLevel = petLevel.value
+  s.petTotalLikes += 10  // 加速 +10 成长
+
+  const newLevel = petLevel.value
+  if (newLevel > oldLevel) {
+    onLevelUp(oldLevel, newLevel)
+  }
+  if (newLevel >= 5 && !s.petSpecies) {
+    triggerHatch()
+  }
+
+  persist()
+  return { success: true, cost: 5 }
+}
+
+/** 是否可加速 */
+function canAccel() {
+  const s = petState.value
+  if (!s) return false
+  const today = new Date().toDateString()
+  const lastDate = s.petLastAccelAt ? new Date(s.petLastAccelAt).toDateString() : null
+  if (today !== lastDate) return true
+  return s.petAccelCountToday < 2
 }
 
 /** 重置萌宠（开始新一轮） */
@@ -405,6 +497,8 @@ function resetPet() {
     showHungerAnim: s.showHungerAnim,
     showHatchAnim: s.showHatchAnim,
     petAssignedSpecies: s.petAssignedSpecies,
+    petCosmetics: s.petCosmetics,
+    growthRate: s.growthRate,
   }
   Object.assign(s, createDefaultState(), preserved)
   s.createdAt = Date.now()
@@ -474,9 +568,12 @@ export function usePetStore() {
     // 操作
     getActionCooldown,
     isActionAvailable,
+    isCosmeticUnlocked,
     addLikes,
     doAction,
     setDress,
+    accel,
+    canAccel,
     detectMood,
     resetPet,
     triggerHatch,

@@ -46,6 +46,12 @@ const router = createRouter({
       meta: { title: '英文童谣', depth: 1 }
     },
     {
+      path: '/pet',
+      name: 'pet',
+      component: () => import('@/views/PetView.vue'),
+      meta: { title: '我的宠物', depth: 1 }
+    },
+    {
       path: '/parent',
       name: 'parent',
       component: () => import('@/views/ParentView.vue'),

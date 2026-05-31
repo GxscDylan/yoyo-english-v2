@@ -71,7 +71,11 @@ const levelClass = computed(() => `pet-egg-lv${level.value}`)
 const mood = computed(() => petState.value?.petMood || 'happy')
 
 const moodClass = computed(() => {
-  if (mood.value === 'hungry') return 'pet-mood-hungry'
+  const m = mood.value
+  if (m === 'hungry') return 'pet-mood-hungry'
+  if (m === 'excited') return 'pet-mood-excited'
+  if (m === 'curious') return 'pet-mood-curious'
+  if (m === 'sleeping') return 'pet-mood-sleeping'
   return ''
 })
 
