@@ -68,18 +68,16 @@
           </span>
         </div>
 
-        <!-- 计时器（Medium/Hard 模式） -->
+        <!-- 计时器（Medium/Hard 模式） - 移到左侧避免和Combo冲突 -->
         <div v-if="store.gameDifficulty !== 'simple'" class="timer-text">
           ⏱️ {{ Math.ceil(timeLeft) }}s
         </div>
 
-        <!-- 得分 -->
+        <!-- 得分 - 游戏化计分板 -->
         <div class="score-display">
-          <div class="score-card">
-            <span class="score-icon">⭐</span>
-            <span class="score-num">{{ score.correct }}</span>
-            <span class="score-divider">/</span>
-            <span class="score-total">{{ totalWords }}</span>
+          <div class="score-badge">
+            <span class="score-star">⭐</span>
+            <span class="score-count"><strong>{{ score.correct }}</strong> / {{ totalWords }}</span>
           </div>
         </div>
 
@@ -101,6 +99,8 @@
             :class="{ 'basket-correct': feedbackResult === 'correct' && feedbackBasket === basket.id,
                        'basket-wrong': feedbackResult === 'wrong' && feedbackBasket === basket.id,
                        'basket-shake': feedbackResult === 'wrong' && feedbackBasket === basket.id }">
+            <!-- 篮子开口装饰 - 让篮子更像容器 -->
+            <div class="basket-rim"></div>
             <div class="basket-inner">
               <span class="basket-emoji">{{ basket.emoji }}</span>
               <span class="basket-label">{{ basket.label }}</span>
@@ -566,21 +566,43 @@ onUnmounted(() => {
   75% { transform: translateY(-18px) rotate(2deg); }
 }
 
-/* 计时器 */
+/* 计时器 - 移到左侧，避免和右上角 Combo 冲突 */
 .timer-text {
-  position: absolute; top: 16px; right: 16px;
+  position: absolute; top: 16px; left: 16px;
   font-size: 1.1rem; font-weight: 700; color: #333;
-  background: rgba(255,255,255,0.9); padding: 4px 12px;
-  border-radius: 12px; z-index: 10;
+  background: rgba(255,255,255,0.9); padding: 6px 14px;
+  border-radius: 20px; z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 2px solid rgba(0,0,0,0.06);
 }
 
-/* 得分 */
+/* 得分 - 游戏化计分板 */
 .score-display {
-  text-align: center; padding: 8px;
-  font-size: 1.1rem; color: var(--text-primary);
+  display: flex; justify-content: center;
+  padding: 4px 0 8px;
 }
-.score-display strong {
+.score-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  border: 2px solid rgba(255,255,255,0.8);
+}
+.score-star {
+  font-size: 1.3rem;
+  animation: scoreStarPulse 2s ease-in-out infinite;
+}
+@keyframes scoreStarPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.15) rotate(10deg); }
+}
+.score-count {
+  font-size: 1.2rem; color: var(--text-primary);
+}
+.score-count strong {
   font-size: 1.5rem; color: #4CAF50;
+  font-weight: 900;
 }
 
 /* 单词显示 */
@@ -642,16 +664,30 @@ onUnmounted(() => {
 .baskets-4 { grid-template-columns: repeat(2, 1fr); }
 
 .basket-card {
-  position: relative; overflow: hidden;
+  position: relative; overflow: visible;
   border-radius: 24px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
-  border: 4px solid rgba(255,255,255,0.8);
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(245,245,245,0.9) 100%);
+  border: none;
   text-align: center;
   transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 6px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.06);
   cursor: pointer;
-  min-height: 140px;
-  display: flex; align-items: center; justify-content: center;
+  min-height: 160px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-top: 20px;
+}
+/* 篮子开口 - 顶部弧形装饰，让篮子像真正的容器 */
+.basket-rim {
+  position: absolute;
+  top: -8px; left: 16px; right: 16px;
+  height: 16px;
+  background: linear-gradient(180deg, rgba(220,220,220,0.8), rgba(240,240,240,0.6));
+  border-radius: 20px 20px 0 0;
+  border: 2px solid rgba(200,200,200,0.5);
+  border-bottom: none;
+  z-index: 2;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.05);
+  pointer-events: none;
 }
 .basket-inner {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
