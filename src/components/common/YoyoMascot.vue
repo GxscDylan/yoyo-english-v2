@@ -164,10 +164,10 @@ const moodStateIcon = computed(() => {
   flex-direction: column;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-md) var(--space-md) 8px;
+  padding: var(--space-md) var(--space-md) 50px;
   position: relative;
   width: 120px;
-  min-height: 200px;
+  min-height: 220px;
   transform-style: preserve-3d;
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible;
@@ -675,17 +675,18 @@ const moodStateIcon = computed(() => {
 
 /* 气泡文字 */
 .yoyo-bubble p {
-  font-size: 11px;
+  font-size: 13px;
   color: #5D4E37;
-  line-height: 1.45;
+  line-height: 1.4;
   margin: 0;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  word-break: break-all;
+  word-break: break-word;
+  min-height: 1em;
 }
 
 /* 气泡高光效果 */

@@ -1728,9 +1728,12 @@ watch(speakRoundDone, (done) => {
 
 /* ===== 底部呦呦 ===== */
 .learn-footer {
-  display: flex; align-items: center; justify-content: center;
-  padding: var(--space-md) var(--space-xl); background: rgba(255,255,255,0.9);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: var(--space-md) var(--space-xl) calc(var(--space-xl) + 40px);
+  background: rgba(255,255,255,0.9);
   backdrop-filter: blur(8px);
+  overflow: visible;
+  min-height: 180px;
 }
 
 /* ===== P1: 场景动态插图 ===== */
