@@ -86,8 +86,10 @@
         </div>
         <!-- 分数显示 -->
         <h2 class="complete-title">
-          答对了 <span class="score-num">{{ score.correct }}</span> 题！
-        </h2>
+            <span class="score-num" :style="{ animationDelay: '0.5s' }">{{ score.correct }}</span>
+            <span class="score-divider">/</span>
+            <span class="score-total">{{ totalRounds }}</span>
+          </h2>
         <!-- 星星依次弹出 -->
         <div class="complete-stars">
           <span v-for="i in 3" :key="i" class="star" :class="i <= starLevel ? 'star-active' : 'star-empty'"
@@ -99,8 +101,8 @@
         <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" class="complete-yoyo" />
         <LikeButton :source="'speed'" class="complete-like" />
         <div class="complete-buttons">
-          <button class="btn-retry" @click="resetGame">🔄 Play again</button>
-          <button class="btn-home" @click="$router.push('/playground')">🏠 Playground</button>
+          <button class="btn-retry" @click="resetGame"><span class="btn-icon">🔄</span><span class="btn-text">Play again</span></button>
+          <button class="btn-home" @click="$router.push('/playground')"><span class="btn-icon">🏠</span><span class="btn-text">Playground</span></button>
         </div>
       </div>
     </div>
@@ -527,10 +529,13 @@ onUnmounted(() => {
 
 .complete-buttons { display: flex; gap: var(--space-md); justify-content: center; position: relative; z-index: 1; }
 .btn-retry, .btn-home {
-  padding: var(--space-md) var(--space-xl); border-radius: var(--radius-full);
-  font-size: var(--font-size-base); font-weight: 700; transition: all 0.2s;
-  border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 10px 24px; border-radius: var(--radius-full);
+  font-size: var(--font-size-sm); font-weight: 700; transition: all 0.2s;
+  border: none; cursor: pointer; min-width: 100px;
 }
+.btn-icon { font-size: 1.2rem; line-height: 1; }
+.btn-text { line-height: 1.2; white-space: nowrap; }
 .btn-retry { background: #7C5CFC; color: white; }
 .btn-retry:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(124,92,252,0.3); }
 .btn-home { background: #F5F5F5; color: var(--text-primary); }

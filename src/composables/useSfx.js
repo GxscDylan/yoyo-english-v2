@@ -467,3 +467,206 @@ export function sfxPetAccel() {
     osc.start(t); osc.stop(t + 0.4)
   } catch(e) {}
 }
+
+/** 摸头音效：咕噜声（低频颤动） */
+export function sfxPetPet() {
+  try {
+    const ctx = getCtx()
+    // 模拟咕噜: 低频颤动 + 柔和包络
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    const lfo = ctx.createOscillator() // 低频颤音
+    const lfoGain = ctx.createGain()
+    // LFO → gain → 颤动
+    lfo.connect(lfoGain)
+    lfoGain.connect(gain.gain)
+    lfoGain.gain.value = 0.05
+    lfo.frequency.value = 20 // 20Hz 咕噜频率
+    lfo.type = 'sine'
+    // 主音
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.value = 150 // 低频
+    const t = ctx.currentTime
+    gain.gain.setValueAtTime(0, t)
+    gain.gain.linearRampToValueAtTime(0.15, t + 0.1)
+    gain.gain.linearRampToValueAtTime(0.12, t + 0.3)
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5)
+    osc.start(t); osc.stop(t + 0.5)
+    lfo.start(t); lfo.stop(t + 0.5)
+  } catch(e) {}
+}
+
+/** 玩耍音效：欢快跳跃音型 */
+export function sfxPetPlay() {
+  try {
+    const ctx = getCtx()
+    // 欢快旋律: E5-G5-B5-C6-G5-B5
+    const notes = [659, 784, 988, 1047, 784, 988]
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = i % 2 === 0 ? 'sine' : 'triangle'
+      const t = ctx.currentTime + i * 0.1
+      gain.gain.setValueAtTime(0.15, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12)
+      osc.frequency.setValueAtTime(freq, t)
+      osc.start(t); osc.stop(t + 0.12)
+    })
+  } catch(e) {}
+}
+
+/** 散步音效：轻快脚步声 */
+export function sfxPetWalk() {
+  try {
+    const ctx = getCtx()
+    // 模拟轻快脚步: 4组短促低音
+    for (let i = 0; i < 4; i++) {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const t = ctx.currentTime + i * 0.15
+      gain.gain.setValueAtTime(0.1, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08)
+      osc.frequency.setValueAtTime(400 + (i % 2) * 100, t)
+      osc.start(t); osc.stop(t + 0.08)
+    }
+    // 结尾上扬
+    setTimeout(() => {
+      const ctx2 = getCtx()
+      const osc = ctx2.createOscillator()
+      const gain = ctx2.createGain()
+      osc.connect(gain); gain.connect(ctx2.destination)
+      osc.type = 'sine'
+      const t = ctx2.currentTime
+      gain.gain.setValueAtTime(0.08, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2)
+      osc.frequency.setValueAtTime(800, t)
+      osc.frequency.linearRampToValueAtTime(1200, t + 0.15)
+      osc.start(t); osc.stop(t + 0.2)
+    }, 600)
+  } catch(e) {}
+}
+
+/** 拥抱音效：温暖和弦 */
+export function sfxPetCuddle() {
+  try {
+    const ctx = getCtx()
+    // 温暖和弦: C4-E4-G4（三音同时）
+    ;[262, 330, 392].forEach((freq) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const t = ctx.currentTime
+      gain.gain.setValueAtTime(0.06, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5)
+      osc.frequency.setValueAtTime(freq, t)
+      osc.start(t); osc.stop(t + 0.5)
+    })
+    // 延迟添加高音
+    setTimeout(() => {
+      const ctx2 = getCtx()
+      const osc = ctx2.createOscillator()
+      const gain = ctx2.createGain()
+      osc.connect(gain); gain.connect(ctx2.destination)
+      osc.type = 'sine'
+      const t = ctx2.currentTime
+      gain.gain.setValueAtTime(0.08, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3)
+      osc.frequency.setValueAtTime(523, t)
+      osc.start(t); osc.stop(t + 0.3)
+    }, 200)
+  } catch(e) {}
+}
+
+/** 欢呼音效：短促上升 */
+export function sfxTada() {
+  try {
+    const ctx = getCtx()
+    const notes = [330, 392, 523]
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const t = ctx.currentTime + i * 0.08
+      gain.gain.setValueAtTime(0.15, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15)
+      osc.frequency.setValueAtTime(freq, t)
+      osc.start(t); osc.stop(t + 0.15)
+    })
+  } catch(e) {}
+}
+
+/** 打哈欠/空闲提醒：低沉渐弱 */
+export function sfxYawn() {
+  try {
+    const ctx = getCtx()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'
+    const t = ctx.currentTime
+    gain.gain.setValueAtTime(0.08, t)
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.8)
+    osc.frequency.setValueAtTime(200, t)
+    osc.frequency.linearRampToValueAtTime(150, t + 0.6)
+    osc.start(t); osc.stop(t + 0.8)
+  } catch(e) {}
+}
+
+/** 探险发现音效：神秘探索感 — 低频脉冲 + 上行滑音 */
+export function sfxPetExplore() {
+  try {
+    const ctx = getCtx()
+    // 探索感: 低频脉冲模拟心跳
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'triangle'
+    const t = ctx.currentTime
+    gain.gain.setValueAtTime(0.1, t)
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.6)
+    osc.frequency.setValueAtTime(180, t)
+    osc.frequency.linearRampToValueAtTime(320, t + 0.4)
+    osc.start(t); osc.stop(t + 0.6)
+    // 惊喜: 高频闪亮
+    setTimeout(() => {
+      const ctx2 = getCtx()
+      const osc2 = ctx2.createOscillator()
+      const gain2 = ctx2.createGain()
+      osc2.connect(gain2); gain2.connect(ctx2.destination)
+      osc2.type = 'sine'
+      const t2 = ctx2.currentTime
+      gain2.gain.setValueAtTime(0.15, t2)
+      gain2.gain.exponentialRampToValueAtTime(0.01, t2 + 0.3)
+      osc2.frequency.setValueAtTime(1200, t2)
+      osc2.frequency.linearRampToValueAtTime(2000, t2 + 0.2)
+      osc2.start(t2); osc2.stop(t2 + 0.3)
+    }, 300)
+  } catch(e) {}
+}
+
+/** 里程碑庆祝音效：五音阶上行 + 凯旋 */
+export function sfxMilestone() {
+  try {
+    const ctx = getCtx()
+    // C5-D5-E5-G5-C6
+    ;[523, 587, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = i < 3 ? 'sine' : 'triangle'
+      const t = ctx.currentTime + i * 0.15
+      gain.gain.setValueAtTime(0.18, t)
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3)
+      osc.frequency.setValueAtTime(freq, t)
+      osc.start(t); osc.stop(t + 0.3)
+    })
+    // 结尾加一个短促欢呼
+    setTimeout(() => sfxTada(), 750)
+  } catch(e) {}
+}

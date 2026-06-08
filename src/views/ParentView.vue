@@ -139,45 +139,45 @@
       <!-- v6.0: 萌宠养成控制 -->
       <section class="section-card" v-if="petStore.petState.value">
         <h3>🐾 萌宠养成</h3>
-        <div class="setting-row">
-          <div class="setting-info">
-            <span class="setting-label">萌宠开关</span>
-            <span class="setting-desc">{{ petStore.petState.value.enabled ? '萌宠已开启' : '萌宠已关闭' }}</span>
+        <!-- 状态概览 -->
+        <div class="pet-status-grid">
+          <div class="pet-stat">
+            <span class="pet-stat-label">当前等级</span>
+            <span class="pet-stat-value">{{ petStore.currentLevelConfig.value.emoji }} {{ petStore.currentLevelConfig.value.name }}</span>
           </div>
-          <label class="toggle-switch">
-            <input type="checkbox" :checked="petStore.petState.value.enabled" @change="togglePetEnabled">
-            <span class="toggle-slider"></span>
-          </label>
+          <div class="pet-stat">
+            <span class="pet-stat-label">品种</span>
+            <span class="pet-stat-value">{{ petStore.petLevel >= 5 && petStore.currentSpecies.value ? petStore.currentSpecies.value.emoji + ' ' + petStore.currentSpecies.value.name : '未孵化' }}</span>
+          </div>
+          <div class="pet-stat">
+            <span class="pet-stat-label">总赞数</span>
+            <span class="pet-stat-value">{{ petStore.petState.value.petTotalLikes || 0 }} 👍</span>
+          </div>
+          <div class="pet-stat">
+            <span class="pet-stat-label">心情</span>
+            <span class="pet-stat-value">{{ petStore.petState.value.petMood || 'idle' }}</span>
+          </div>
         </div>
-        <div v-if="petStore.petState.value.enabled" class="pet-settings">
-          <div class="pet-status-grid">
-            <div class="pet-stat">
-              <span class="pet-stat-label">当前等级</span>
-              <span class="pet-stat-value">{{ petStore.currentLevelConfig.value.emoji }} {{ petStore.currentLevelConfig.value.name }}</span>
+        <!-- 快捷操作 -->
+        <div class="btn-row" style="margin-top: 12px;">
+          <button class="btn-act btn-exp" @click="triggerPetHatch" :disabled="petStore.petLevel < 4"> 手动破壳</button>
+          <button class="btn-act" @click="forceHatch" style="background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7">🎉 一键破壳</button>
+          <button class="btn-act" @click="resetPet" style="background:#FFF3E0;color:#E65100">🔄 重置萌宠</button>
+        </div>
+      </section>
+
+      <!-- v6.0: 养成历史记录 -->
+      <section class="section-card" v-if="petHistoryList.length > 0">
+        <h3>📜 养成记录</h3>
+        <p class="history-hint">宝贝养过的每一只精灵都在这里~</p>
+        <div class="pet-history-list">
+          <div v-for="(h, i) in petHistoryList" :key="i" class="pet-history-item">
+            <span class="history-emoji">{{ getPetSpeciesEmoji(h.species) }}</span>
+            <div class="history-info">
+              <span class="history-name">{{ getPetSpeciesName(h.species) }}</span>
+              <span class="history-meta">{{ formatPetDate(h.hatchedAt) }}</span>
             </div>
-            <div class="pet-stat">
-              <span class="pet-stat-label">品种</span>
-              <span class="pet-stat-value">{{ petStore.petLevel >= 5 && petStore.currentSpecies.value ? petStore.currentSpecies.value.emoji + ' ' + petStore.currentSpecies.value.name : '未孵化' }}</span>
-            </div>
-            <div class="pet-stat">
-              <span class="pet-stat-label">心情</span>
-              <span class="pet-stat-value">{{ petStore.petState.value.mood || 'idle' }}</span>
-            </div>
-            <div class="pet-stat">
-              <span class="pet-stat-label">总赞数</span>
-              <span class="pet-stat-value">{{ petStore.petState.value.totalLikes || 0 }} 👍</span>
-            </div>
-          </div>
-          <div class="pet-species-select">
-            <label class="pet-species-label">指定品种（破壳后生效）</label>
-            <select class="pet-species-dropdown" :value="petStore.petState.value.petAssignedSpecies || ''" @change="setPetSpecies($event.target.value)">
-              <option v-for="opt in petSpeciesOptions" :key="opt.key" :value="opt.key">{{ opt.label }}</option>
-            </select>
-          </div>
-          <div class="btn-row">
-            <button class="btn-act btn-exp" @click="triggerPetHatch" :disabled="petStore.petLevel < 4">🐣 手动破壳</button>
-            <button class="btn-act" @click="forceHatch" style="background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7">🎉 一键破壳</button>
-            <button class="btn-act" @click="resetPet" style="background:#FFF3E0;color:#E65100">🔄 重置萌宠</button>
+            <span class="history-likes">{{ h.totalLikes }} 👍</span>
           </div>
         </div>
       </section>
@@ -243,6 +243,24 @@
             <span class="diff-desc">{{ d.desc }}</span>
             <span v-if="store.gameDifficulty === d.key" class="diff-check">✓</span>
           </button>
+        </div>
+      </section>
+
+      <!-- 接星星冷却控制 -->
+      <section class="section-card">
+        <h3>🌟 接星星奖励</h3>
+        <p class="cooldown-hint">游戏达标后触发接星星小游戏，额外获取星星奖励</p>
+        <div class="cooldown-controls">
+          <div class="cooldown-toggle">
+            <span class="cooldown-label">冷却时间</span>
+            <button class="toggle-switch" :class="{ on: catchStarsCooldownEnabled }" @click="toggleCatchStarsCooldown">
+              <span class="toggle-knob"></span>
+            </button>
+            <span class="cooldown-status">{{ catchStarsCooldownEnabled ? '开启（2分钟）' : '关闭（无限制）' }}</span>
+          </div>
+          <div class="cooldown-reset-row">
+            <button class="btn-cooldown-reset" @click="resetCatchStarsCooldown">⏱️ 立即清除冷却</button>
+          </div>
         </div>
       </section>
 
@@ -439,58 +457,54 @@
         </div>
       </section>
 
-      <!-- v6.0: 萌宠养成控制 -->
+      <!-- v6.0: 萌宠养成设置 -->
       <section class="section-card" v-if="petEnabled">
-        <h3>🐾 萌宠养成</h3>
+        <h3>🐾 萌宠养成设置</h3>
         <div class="row">
           <span>萌宠系统总开关</span>
           <button class="toggle" :class="{ on: petState?.enabled }" @click="togglePetSetting('enabled')">
             {{ petState?.enabled ? 'ON' : 'OFF' }}
           </button>
         </div>
-        <div class="row">
-          <span>喂养提醒</span>
-          <button class="toggle" :class="{ on: petState?.showHungerAnim }" @click="togglePetSetting('showHungerAnim')">
-            {{ petState?.showHungerAnim ? 'ON' : 'OFF' }}
-          </button>
-        </div>
-        <div class="row">
-          <span>破壳动画</span>
-          <button class="toggle" :class="{ on: petState?.showHatchAnim }" @click="togglePetSetting('showHatchAnim')">
-            {{ petState?.showHatchAnim ? 'ON' : 'OFF' }}
-          </button>
-        </div>
-        <div class="row">
-          <span>指定下一种精灵品种</span>
-          <div class="species-selector">
-            <button v-for="sp in petStore.PET_SPECIES" :key="sp.id"
-              class="species-option"
-              :class="{ active: petState?.petAssignedSpecies === sp.id }"
-              @click="setPetAssignedSpecies(sp.id)">
-              {{ sp.emoji }}
-            </button>
-            <button class="species-option species-clear"
-              :class="{ active: !petState?.petAssignedSpecies }"
-              @click="setPetAssignedSpecies(null)">
-              🔀 随机
+        <template v-if="petState?.enabled">
+          <div class="row">
+            <span>喂养提醒</span>
+            <button class="toggle" :class="{ on: petState?.showHungerAnim }" @click="togglePetSetting('showHungerAnim')">
+              {{ petState?.showHungerAnim ? 'ON' : 'OFF' }}
             </button>
           </div>
-        </div>
-        <div class="row">
-          <span>成长速度</span>
-          <div class="volume-slider">
-            <input type="range" min="50" max="200" step="10"
-              :value="(petState?.growthRate || 1) * 100"
-              @input="setGrowthRate($event.target.value / 100)" class="vol-range">
-            <span class="vol-val">{{ Math.round((petState?.growthRate || 1) * 100) }}%</span>
+          <div class="row">
+            <span>破壳动画</span>
+            <button class="toggle" :class="{ on: petState?.showHatchAnim }" @click="togglePetSetting('showHatchAnim')">
+              {{ petState?.showHatchAnim ? 'ON' : 'OFF' }}
+            </button>
           </div>
-        </div>
-        <!-- 宠物当前状态 -->
-        <div class="pet-status-summary" v-if="petState">
-          <span>当前阶段：{{ petStore.currentLevelConfig.value?.name || '小蛋蛋' }}</span>
-          <span>累计点赞：{{ petState.petTotalLikes }}</span>
-          <span v-if="petState.petSpecies">精灵：{{ currentPetSpecies?.emoji }} {{ currentPetSpecies?.name }}</span>
-        </div>
+          <div class="row">
+            <span>指定下一种精灵品种</span>
+            <div class="species-selector">
+              <button v-for="sp in petStore.PET_SPECIES" :key="sp.id"
+                class="species-option"
+                :class="{ active: petState?.petAssignedSpecies === sp.id }"
+                @click="setPetAssignedSpecies(sp.id)">
+                {{ sp.emoji }}
+              </button>
+              <button class="species-option species-clear"
+                :class="{ active: !petState?.petAssignedSpecies }"
+                @click="setPetAssignedSpecies(null)">
+                🔀 随机
+              </button>
+            </div>
+          </div>
+          <div class="row">
+            <span>成长速度</span>
+            <div class="volume-slider">
+              <input type="range" min="50" max="200" step="10"
+                :value="(petState?.growthRate || 1) * 100"
+                @input="setGrowthRate($event.target.value / 100)" class="vol-range">
+              <span class="vol-val">{{ Math.round((petState?.growthRate || 1) * 100) }}%</span>
+            </div>
+          </div>
+        </template>
       </section>
 
       <!-- v5.0: 点赞统计 -->
@@ -668,6 +682,43 @@ const petStore = usePetStore()
 const petState = computed(() => petStore.petState?.value)
 const petEnabled = computed(() => petStore.petState?.value?.enabled !== false)
 const currentPetSpecies = computed(() => petStore.currentSpecies.value)
+
+// 接星星冷却控制
+const catchStarsCooldownEnabled = computed(() => store.settings.catchStarsCooldownEnabled !== false)
+
+function toggleCatchStarsCooldown() {
+  store.updateSettings('catchStarsCooldownEnabled', !catchStarsCooldownEnabled.value)
+}
+
+function resetCatchStarsCooldown() {
+  store.catchStarsCooldown = {}
+  store.persistAll()
+  alert('接星星冷却已清除，下次达标即可触发！')
+}
+
+// 养成历史记录
+const petHistoryList = computed(() => {
+  const s = petStore.petState?.value
+  if (!s?.petHistory || s.petHistory.length === 0) return []
+  // 返回最近的记录（倒序）
+  return [...s.petHistory].reverse()
+})
+
+function getPetSpeciesEmoji(speciesId) {
+  const sp = petStore.PET_SPECIES.find(s => s.id === speciesId)
+  return sp?.emoji || ''
+}
+
+function getPetSpeciesName(speciesId) {
+  const sp = petStore.PET_SPECIES.find(s => s.id === speciesId)
+  return sp?.name || '未知精灵'
+}
+
+function formatPetDate(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 const petSpeciesOptions = [
   { key: '', label: '🎲 随机孵化', emoji: '🎲' },
   { key: 'cat', label: '🐱 小猫咪', emoji: '🐱' },
@@ -710,6 +761,9 @@ function setDebugStars() {
   if (debugStarsInput.value >= 0 && debugStarsInput.value <= 999) {
     store.totalStars = debugStarsInput.value
     store.persistAll()
+    // 🔧 星星设置后同步触发宠物系统检测（宠物操作可用性依赖星星数）
+    // 虽然宠物系统直接读取 learningStore.totalStars，但显式日志方便调试
+    console.log(`[Debug] 设置星星数: ${store.totalStars}，宠物操作将自动更新可用性`)
   }
 }
 
@@ -717,6 +771,7 @@ function quickSetStars(n) {
   debugStarsInput.value = n
   store.totalStars = n
   store.persistAll()
+  console.log(`[Debug] 快速设置星星: ${n}`)
 }
 
 function setDebugLikes() {
@@ -1785,6 +1840,135 @@ onMounted(async () => {
 }
 .debug-danger .debug-value {
   color: #FF5722;
+}
+
+/* ===== v6.0: 萌宠养成记录 ===== */
+.history-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-hint);
+  margin-top: -8px;
+  margin-bottom: var(--space-md);
+}
+.pet-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pet-history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-main);
+  border-radius: 14px;
+  border: 1px solid var(--border-light);
+  transition: all 0.2s;
+}
+.pet-history-item:hover {
+  border-color: #CE93D8;
+  background: #FAFAFE;
+}
+.history-emoji {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+.history-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.history-name {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.history-meta {
+  font-size: 0.6rem;
+  color: var(--text-hint);
+}
+.history-likes {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: #FF9800;
+  flex-shrink: 0;
+}
+
+/* ===== 接星星冷却控制 ===== */
+.cooldown-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-hint);
+  margin-top: -8px;
+  margin-bottom: var(--space-md);
+}
+.cooldown-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cooldown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cooldown-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: #CCC;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  padding: 0;
+  flex-shrink: 0;
+}
+.toggle-switch.on {
+  background: #CE93D8;
+}
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+.toggle-switch.on .toggle-knob {
+  transform: translateX(20px);
+}
+.cooldown-status {
+  font-size: var(--font-size-xs);
+  color: var(--text-hint);
+}
+.cooldown-reset-row {
+  display: flex;
+  gap: 8px;
+}
+.btn-cooldown-reset {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid #CE93D8;
+  background: rgba(206, 147, 216, 0.1);
+  color: #7B1FA2;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-cooldown-reset:hover {
+  background: rgba(206, 147, 216, 0.2);
+}
+.btn-cooldown-reset:active {
+  transform: scale(0.95);
 }
 
 /* ===== v6.0: 萌宠设置 ===== */

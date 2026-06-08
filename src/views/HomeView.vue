@@ -50,6 +50,20 @@
         {{ seasonalGreeting }}
       </div>
 
+      <!-- v6.1: 资源栏（星星 + 今日点赞） -->
+      <div v-if="!isLocked" class="home-resource-bar anim-fade-up">
+        <div class="home-resource-item home-resource-stars">
+          <span class="home-resource-icon">⭐</span>
+          <span class="home-resource-value">{{ store.totalStars }}</span>
+          <span class="home-resource-label">星星</span>
+        </div>
+        <div class="home-resource-item home-resource-likes">
+          <span class="home-resource-icon">👍</span>
+          <span class="home-resource-value" :class="{ 'milestone-reached': isLikeMilestone }">{{ todayLikes }}</span>
+          <span class="home-resource-label">今天收获</span>
+        </div>
+      </div>
+
       <!-- 顶部区域：呦呦 + 冒险地图 -->
       <header class="home-top">
         <div class="hero-left">
@@ -59,14 +73,6 @@
             :show-crown="store.showCrown" :show-halo="store.showHalo"
             :avatar-src="store.avatar"
             @click="handleYoyoInteraction" />
-          <!-- v5.0: 点赞墙 -->
-          <div v-if="!isLocked" class="like-wall">
-            <div class="like-wall-count">
-              <span class="like-wall-icon">👍</span>
-              <span class="like-wall-num" :class="{ 'milestone-reached': isLikeMilestone }">{{ todayLikes }}</span>
-            </div>
-            <span class="like-wall-label">今天收获</span>
-          </div>
         </div>
         <div class="hero-right">
           <div class="adventure-map">
@@ -122,32 +128,6 @@
             <span class="streak-label">{{ day.dayLabel }}</span>
           </div>
         </div>
-      </section>
-
-      <!-- v6.0: 萌宠养成 -->
-      <section class="home-pet-section" v-if="petStore.petState.value?.enabled && !isLocked">
-        <div class="home-pet-card" @click="showPetPanel = !showPetPanel">
-          <div class="home-pet-left">
-            <PetEgg ref="petEggRef" @tap="handlePetTap" />
-          </div>
-          <div class="home-pet-info">
-            <span class="home-pet-title">{{ petDisplayName }}</span>
-            <span class="home-pet-subtitle">{{ petLevelDesc }}</span>
-            <div class="home-pet-progress">
-              <div class="home-pet-progress-fill" :style="{ width: (petStore.levelProgress.value * 100) + '%' }"></div>
-            </div>
-            <span class="home-pet-likes" v-if="likesToNext > 0">还差 {{ likesToNext }} 赞升级 ✨</span>
-            <span class="home-pet-likes home-pet-max" v-else>已达最高等级 🌟</span>
-          </div>
-          <span class="home-pet-arrow" :class="{ open: showPetPanel }">▾</span>
-        </div>
-        <Transition name="pop">
-          <PetStats
-            v-if="showPetPanel"
-            @action="handlePetAction"
-            @error="handlePetError"
-          />
-        </Transition>
       </section>
 
       <!-- 今日推荐 -->
@@ -233,6 +213,11 @@
       <button class="nav-btn nav-pet" @click="goPet" v-if="petStore.petState.value?.enabled">
         <span class="nav-icon">🐾</span>
         <span>宠物</span>
+        <span v-if="petBubble.hasPendingNotification.value" class="nav-pet-badge"></span>
+      </button>
+      <button class="nav-btn nav-adventure" @click="goAdventure">
+        <span class="nav-icon">🗺️</span>
+        <span>冒险</span>
       </button>
       <button class="nav-btn nav-sentence" @click="goSentence">
         <span class="nav-icon">💬</span>
@@ -279,34 +264,17 @@ import { useEasterEggs } from '@/composables/useEasterEggs'
 import { useYoyoCopy } from '@/composables/useYoyoCopy'
 import { generateAIBubble } from '@/composables/useYoyoAI'
 import { useThumbsUp } from '@/composables/useThumbsUp'
-import { sfxCheer } from '@/composables/useSfx'
-import '@/assets/styles/pet.css'
-import PetEgg from '@/components/PetEgg.vue'
-import PetStats from '@/components/PetStats.vue'
+import { usePetBubble } from '@/composables/usePetBubble'
 import { usePetStore } from '@/composables/usePetStore'
+import { sfxCheer } from '@/composables/useSfx'
 
 const router = useRouter()
 const store = useLearningStore()
 const mapPathRef = ref(null)
 
-// v6.0: 萌宠养成系统
+// v6.2: 宠物通知气泡系统
+const petBubble = usePetBubble()
 const petStore = usePetStore()
-const showPetPanel = ref(false)
-const petEggRef = ref(null)
-
-// 萌宠展示信息
-const petDisplayName = computed(() => {
-  if (!petStore.petState.value) return ''
-  if (petStore.petLevel.value >= 5 && petStore.currentSpecies.value) {
-    return petStore.currentSpecies.value.emoji + ' ' + petStore.currentSpecies.value.name
-  }
-  return petStore.currentLevelConfig.value.emoji + ' ' + petStore.currentLevelConfig.value.name
-})
-const petLevelDesc = computed(() => {
-  if (!petStore.petState.value) return ''
-  return petStore.currentLevelConfig.value.desc
-})
-const likesToNext = computed(() => petStore.likesToNextLevel.value || 0)
 
 // v5.0: 点赞系统
 const { thumbsUpState, triggerAutoLike, loadFromDB: loadThumbsUpDB } = useThumbsUp()
@@ -457,28 +425,6 @@ function catProgress(catId) {
   return Math.min(Math.round((completedSteps / totalSteps) * 100), 100)
 }
 
-// v6.0: 萌宠操作（仅触发动画，执行和扣星已在 PetStats 内完成）
-function handlePetAction(actionKey) {
-  // 触发动画
-  petEggRef.value?.playActionAnim(petStore.ACTIONS[actionKey]?.animClass)
-}
-
-function handlePetError(msg) {
-  // 轻量 toast — 复用呦呦气泡
-  yoyoBubble.value = msg
-  yoyoMood.value = 'comfort'
-  setTimeout(() => { yoyoBubble.value = ''; yoyoMood.value = 'idle' }, 2500)
-}
-
-function handlePetTap() {
-  // 点击蛋蛋/精灵 → 小互动
-  yoyoMood.value = 'happy'
-  yoyoBubble.value = petStore.petLevel.value >= 5
-    ? `${petStore.currentSpecies.value?.emoji} 好开心！`
-    : '蛋蛋在动~'
-  setTimeout(() => { yoyoBubble.value = ''; yoyoMood.value = 'idle' }, 2000)
-}
-
 function goLearn(catId) { router.push(`/learn/${catId}`) }
 function goGame(gameId) { router.push(`/game/${gameId}`) }
 function goPlayground() { router.push('/playground') }
@@ -486,7 +432,11 @@ function goParent() { router.push('/parent') }
 function goReview() { router.push('/review') }
 function goNursery() { router.push('/nursery') }
 function goSentence() { router.push('/sentence') }
-function goPet() { router.push('/pet') }
+function goPet() {
+  petBubble.consumeNotification()
+  router.push('/pet')
+}
+function goAdventure() { router.push('/adventure') }
 
 // 场景名称映射
 const sceneLabels = {
@@ -508,29 +458,17 @@ function sceneName(scene) { return sceneLabels[scene] || scene }
 onMounted(async () => {
   await store.loadFromDB()
 
-  // v5.0: 加载点赞数据（先加载，后续才能同步到萌宠）
+  // v5.0: 加载点赞数据
   await loadThumbsUpDB()
 
-  // v6.0: 加载萌宠数据
+  // v6.2: 加载宠物数据并检查通知
   await petStore.loadFromDB()
-
-  // v6.1: 主动同步历史点赞到萌宠（通过 addLikes 走完整升级流程）
-  try {
-    const s = petStore.petState?.value
-    if (s?.enabled) {
-      const historicalTotal = (thumbsUpState.value.likeHistory || []).reduce(
-        (sum, h) => sum + (h.total || 0), 0
-      )
-      const todayLikes = thumbsUpState.value.todayLikes || 0
-      const totalLikes = historicalTotal + todayLikes
-      const diff = totalLikes - (s.petTotalLikes || 0)
-      if (diff > 0) {
-        console.log(`[HomeView] 同步点赞到萌宠: ${s.petTotalLikes} + ${diff} → ${totalLikes}`)
-        petStore.addLikes(diff)
-      }
-    }
-  } catch(e) {
-    console.warn('萌宠点赞同步失败:', e)
+  if (petStore.petState.value?.enabled && petStore.petState.value?.petSpecies) {
+    petBubble.checkPetStatus()
+    // 延迟 1.5s 显示宠物通知（避免和开场动画冲突）
+    setTimeout(async () => {
+      await petBubble.loadAndShow(yoyoBubble, yoyoMood)
+    }, 1500)
   }
 
   // v5.0: 更新今日点赞数
@@ -633,6 +571,54 @@ onMounted(async () => {
 .lock-parent-btn:active { transform: scale(0.97); }
 .parent-shield { stroke: #90CAF9; flex-shrink: 0; }
 
+/* ===== v6.1: 资源栏（星星 + 今日点赞） ===== */
+.home-resource-bar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 10px var(--space-xl) 0;
+  animation: resourceSlideIn 0.5s ease;
+}
+@keyframes resourceSlideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.home-resource-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s;
+  min-width: 100px;
+  justify-content: center;
+}
+.home-resource-item:active { transform: scale(0.96); }
+.home-resource-icon { font-size: 1.4rem; }
+.home-resource-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 0.3s, color 0.3s;
+}
+.home-resource-value.milestone-reached {
+  color: #FF6F00;
+  animation: milestonePulse 0.6s ease-in-out 3;
+}
+.home-resource-label {
+  font-size: 0.6rem;
+  color: var(--text-hint);
+  font-weight: 600;
+}
+.home-resource-stars { border-color: #FFE082; }
+.home-resource-stars .home-resource-value { color: #F57F17; }
+.home-resource-likes { border-color: #90CAF9; }
+.home-resource-likes .home-resource-value { color: #1565C0; }
+
 /* ===== 顶部 ===== */
 .home-top {
   display: flex; gap: var(--space-sm); padding: var(--space-sm) var(--space-xl) 0;
@@ -640,30 +626,6 @@ onMounted(async () => {
 }
 .hero-left { flex: 0 0 140px; min-width: 140px; display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); }
 .hero-right { flex: 1; min-width: 0; }
-
-/* v5.0: 点赞墙 */
-.like-wall {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
-  border-radius: var(--radius-lg); padding: 6px 12px;
-  border: 2px solid #90CAF9; min-width: 80px;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
-}
-.like-wall-count {
-  display: flex; align-items: center; gap: 4px;
-}
-.like-wall-icon { font-size: 1.2rem; }
-.like-wall-num {
-  font-size: var(--font-size-xl); font-weight: 800; color: #1565C0;
-  transition: transform 0.3s, color 0.3s;
-}
-.like-wall-num.milestone-reached {
-  color: #FF6F00;
-  animation: milestonePulse 0.6s ease-in-out 3;
-}
-.like-wall-label {
-  font-size: 0.6rem; color: #1976D2; font-weight: 600;
-}
 
 @keyframes milestonePulse {
   0%, 100% { transform: scale(1); }
@@ -933,12 +895,28 @@ onMounted(async () => {
 .nav-playground:hover { transform: scale(1.02); }
 .nav-nursery { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); color: #E65100; }
 .nav-nursery:hover { transform: scale(1.02); }
-.nav-pet { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); color: #2E7D32; }
+.nav-pet { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); color: #2E7D32; position: relative; }
 .nav-pet:hover { transform: scale(1.02); }
+/* v6.2: 宠物通知红点角标 */
+.nav-pet-badge {
+  position: absolute;
+  top: 2px; right: calc(50% - 14px);
+  width: 8px; height: 8px;
+  background: #FF5252;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 82, 82, 0.6);
+  animation: petBadgePulse 1.5s ease-in-out infinite;
+}
+@keyframes petBadgePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
 .nav-sentence { background: linear-gradient(135deg, #F3E8FF, #DDD6FE); color: #7C3AED; }
 .nav-sentence:hover { transform: scale(1.02); }
 .nav-review { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); color: #2E7D32; }
 .nav-review:hover { transform: scale(1.02); }
+.nav-adventure { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); color: #1565C0; }
+.nav-adventure:hover { transform: scale(1.02); }
 .nav-parent {
   background: var(--border-light); color: var(--text-secondary); flex: 0.8;
   transition: all 0.2s;
@@ -1114,55 +1092,6 @@ onMounted(async () => {
   0% { transform: scale(0) rotate(-10deg); opacity: 0; }
   70% { transform: scale(1.1) rotate(2deg); }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-/* ===== v6.0: 萌宠养成区域 ===== */
-.home-pet-section {
-  margin: var(--space-xs) var(--space-xl);
-  animation: fadeUp 0.4s var(--ease-smooth);
-}
-.home-pet-card {
-  display: flex; align-items: center; gap: var(--space-md);
-  background: linear-gradient(135deg, #FFF8E1 0%, #FFF0D4 100%);
-  border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg);
-  border: 2px solid #FFE082; cursor: pointer;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.home-pet-card:active { transform: scale(0.98); }
-.home-pet-left {
-  flex: 0 0 72px; display: flex; align-items: center; justify-content: center;
-}
-.home-pet-info {
-  flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;
-}
-.home-pet-title {
-  font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary);
-}
-.home-pet-subtitle {
-  font-size: var(--font-size-xs); color: var(--text-hint);
-}
-.home-pet-progress {
-  width: 100%; height: 6px; background: rgba(0,0,0,0.08);
-  border-radius: var(--radius-full); overflow: hidden; margin-top: 2px;
-}
-.home-pet-progress-fill {
-  height: 100%; background: linear-gradient(90deg, #FFB74D, #FF9800);
-  border-radius: var(--radius-full); transition: width 0.5s ease;
-}
-.home-pet-likes {
-  font-size: 0.65rem; color: #F57C00; font-weight: 600;
-}
-.home-pet-likes.home-pet-max {
-  color: #4CAF50;
-}
-.home-pet-arrow {
-  font-size: 1rem; color: var(--text-hint);
-  transition: transform 0.3s ease;
-  flex-shrink: 0;
-}
-.home-pet-arrow.open {
-  transform: rotate(180deg);
 }
 
 /* ===== P1: 季节节日漂浮粒子 ===== */

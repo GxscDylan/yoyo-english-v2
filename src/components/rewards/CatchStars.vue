@@ -105,7 +105,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { useSpeech } from '@/composables/useSpeech'
-import { sfxStar, sfxMatch, sfxComplete, sfxTick } from '@/composables/useSfx'
+import { sfxStar, sfxMatch, sfxComplete, sfxTick, sfxWrong } from '@/composables/useSfx'
 
 const store = useLearningStore()
 const { speak, playAudio } = useSpeech()

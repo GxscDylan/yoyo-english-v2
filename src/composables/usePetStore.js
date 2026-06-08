@@ -10,6 +10,7 @@
  */
 
 import { ref, computed, watch } from 'vue'
+import { useLearningStore } from '@/stores/learning.js'
 
 // ============================================================
 // 常量
@@ -48,12 +49,17 @@ const PET_MOODS = {
   curious: { emoji: '❓', label: '好奇' },
 }
 
-/** 操作消耗与冷却 */
+/** 操作消耗与冷却（v6.1: 冷却从分钟改为秒，适合幼儿节奏） */
 const ACTIONS = {
-  feed:  { cost: 5, cooldown: 10 * 60 * 1000, label: '喂食', emoji: '🍎', animClass: 'feed-bounce' },
-  bath:  { cost: 3, cooldown: 15 * 60 * 1000, label: '洗澡', emoji: '🛁', animClass: 'bubble-float' },
-  sing:  { cost: 2, cooldown: 10 * 60 * 1000, label: '唱歌', emoji: '🎵', animClass: 'creature-bounce' },
-  dress: { cost: 10, cooldown: 30 * 60 * 1000, label: '换装', emoji: '👗', animClass: 'creature-bounce' },
+  feed:  { cost: 5, cooldown: 15 * 1000, label: '喂食', emoji: '🍎', animClass: 'feed-bounce' },
+  bath:  { cost: 3, cooldown: 20 * 1000, label: '洗澡', emoji: '🛁', animClass: 'bubble-float' },
+  sing:  { cost: 2, cooldown: 10 * 1000, label: '唱歌', emoji: '🎵', animClass: 'creature-bounce' },
+  pet:   { cost: 1, cooldown: 10 * 1000, label: '摸头', emoji: '✋', animClass: 'pet-purr' },
+  play:  { cost: 8, cooldown: 20 * 1000, label: '玩耍', emoji: '🎾', animClass: 'pet-play' },
+  walk:  { cost: 4, cooldown: 15 * 1000, label: '散步', emoji: '🌿', animClass: 'pet-walk' },
+  cuddle:{ cost: 3, cooldown: 15 * 1000, label: '拥抱', emoji: '🫂', animClass: 'pet-cuddle' },
+  explore:{cost: 6, cooldown: 30 * 1000, label: '探险', emoji: '🗺️', animClass: 'pet-explore' },
+  dress: { cost: 10, cooldown: 10 * 1000, label: '换装', emoji: '👗', animClass: 'creature-bounce' },
 }
 
 /** 装扮列表（GDD 8 款） */
@@ -94,6 +100,11 @@ function createDefaultState() {
     lastBathTime: 0,
     lastSingTime: 0,
     lastDressTime: 0,
+    lastPetTime: 0,
+    lastPlayTime: 0,
+    lastWalkTime: 0,
+    lastCuddleTime: 0,
+    lastExploreTime: 0,
 
     // 今日统计
     todayFeedCount: 0,
@@ -102,6 +113,14 @@ function createDefaultState() {
     todayDressCount: 0,
     todayAccelCount: 0,     // 今日加速次数（兼容字段）
     todayLikeCount: 0,
+    todayPetCount: 0,       // 今日摸头次数
+    todayPlayCount: 0,      // 今日玩耍次数
+    todayWalkCount: 0,      // 今日散步次数
+    todayCuddleCount: 0,    // 今日拥抱次数
+    todayExploreCount: 0,   // 今日探险次数
+
+    // 探险奖励记录
+    exploreRewards: [],      // 探险带回的奖励 [{ type: 'star'|'likes'|'surprise', amount: N, at: timestamp }]
 
     // 装扮系统
     petCosmetics: [],         // 已解锁装扮 ID 列表
@@ -188,6 +207,12 @@ function checkDailyReset() {
       s.todayDressCount = 0
       s.todayLikeCount = 0
       s.todayAccelCount = 0
+      s.todayPetCount = 0
+      s.todayPlayCount = 0
+      s.todayWalkCount = 0
+      s.todayCuddleCount = 0
+      s.todayExploreCount = 0
+      s.exploreRewards = [] // 清空今日探险奖励
     }
     s.lastOpenDate = today
     persist()
@@ -347,6 +372,19 @@ function onLevelUp(from, to) {
   const s = petState.value
   if (s) {
     s.petMood = 'excited'
+    // 🎁 升级奖励：额外星星回馈
+    const starReward = [0, 0, 5, 10, 15, 20] // Lv1→Lv2:5, Lv2→Lv3:10, Lv3→Lv4:15, Lv4→Lv5:20
+    const rewardStars = starReward[to] || 0
+    if (rewardStars > 0) {
+      try {
+        const learningStore = useLearningStore()
+        learningStore.totalStars += rewardStars
+        learningStore.persistAll()
+        console.log(`[PetStore] 🎁 升级奖励：+${rewardStars} 星星`)
+      } catch (e) {
+        console.warn('[PetStore] 星星奖励同步失败:', e)
+      }
+    }
     setTimeout(() => {
       if (s.petMood === 'excited') detectMood()
     }, 10000)
@@ -401,6 +439,23 @@ function doAction(actionKey, currentStars) {
   s[`last${capitalize(actionKey)}Time`] = now
   s[`today${capitalize(actionKey)}Count`]++
 
+  // 🎁 宠物操作回馈：每次操作返还少量星星（1-2颗），形成经济闭环
+  // 设计意图：避免星星只减不增导致玩家无法继续互动
+  const starReturnMap = {
+    feed: 1, bath: 1, sing: 1, pet: 2, play: 2, walk: 1, cuddle: 2, explore: 3, dress: 0
+  }
+  const starReturn = starReturnMap[actionKey] || 0
+  if (starReturn > 0) {
+    try {
+      const learningStore = useLearningStore()
+      learningStore.totalStars += starReturn
+      learningStore.persistAll()
+      console.log(`[PetStore] 🎁 ${action.label}回馈：+${starReturn} 星星`)
+    } catch (e) {
+      console.warn('[PetStore] 操作回馈星星同步失败:', e)
+    }
+  }
+
   // 喂食/洗澡 → 心情变开心
   if (actionKey === 'feed' || actionKey === 'bath') {
     s.petMood = 'happy'
@@ -410,6 +465,51 @@ function doAction(actionKey, currentStars) {
   if (actionKey === 'sing') {
     s.petMood = 'curious'
     setTimeout(() => { if (s.petMood === 'curious') detectMood() }, 8000)
+  }
+
+  // 摸头 → 开心（短暂兴奋）
+  if (actionKey === 'pet') {
+    s.petMood = 'excited'
+    setTimeout(() => { if (s.petMood === 'excited') detectMood() }, 6000)
+  }
+
+  // 玩耍 → 兴奋
+  if (actionKey === 'play') {
+    s.petMood = 'excited'
+    setTimeout(() => { if (s.petMood === 'excited') detectMood() }, 10000)
+  }
+
+  // 散步 → 开心
+  if (actionKey === 'walk') {
+    s.petMood = 'happy'
+  }
+
+  // 拥抱 → 幸福（持续兴奋）
+  if (actionKey === 'cuddle') {
+    s.petMood = 'excited'
+    setTimeout(() => { if (s.petMood === 'excited') detectMood() }, 8000)
+  }
+
+  // 探险 → 好奇（带回惊喜）
+  if (actionKey === 'explore') {
+    s.petMood = 'curious'
+    // 探险奖励随机生成（延迟 3 秒后带回）
+    setTimeout(() => {
+      if (!s) return
+      const rewards = generateExploreReward(s)
+      s.exploreRewards.push(rewards)
+      if (rewards.type === 'likes') {
+        s.petTotalLikes += rewards.amount
+        // 检查升级
+        const newLevel = petLevel.value
+        if (newLevel > currentLevelConfig.value.level) {
+          onLevelUp(currentLevelConfig.value.level, newLevel)
+        }
+        if (newLevel >= 5 && !s.petSpecies) triggerHatch()
+      }
+      // 探险星星由 PetView.vue 的 watch 处理同步到 learningStore（避免双重同步）
+      persist()
+    }, 3000)
   }
 
   persist()
@@ -512,6 +612,31 @@ function resetPet() {
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+/** 探险奖励随机生成 */
+function generateExploreReward(state) {
+  const rand = Math.random()
+  if (rand < 0.4) {
+    // 40% 概率带回 2-5 个点赞
+    const amount = 2 + Math.floor(Math.random() * 4)
+    return { type: 'likes', amount, desc: `探险带回了 ${amount} 个点赞！`, emoji: '👍' }
+  } else if (rand < 0.7) {
+    // 30% 概率带回星星
+    const amount = 3 + Math.floor(Math.random() * 5)
+    return { type: 'stars', amount, desc: `探险带回了 ${amount} 颗星星！`, emoji: '⭐' }
+  } else if (rand < 0.9) {
+    // 20% 概率带回惊喜（随机单词 +1 点赞）
+    return { type: 'surprise', amount: 1, desc: '探险带回了一个惊喜！', emoji: '🎁' }
+  } else {
+    // 10% 概率带回装扮碎片
+    const unlocked = DRESS_ITEMS.filter(d => d.id !== 'remove' && !state.petCosmetics.includes(d.id) && state.petTotalLikes >= d.unlockLikes)
+    if (unlocked.length > 0) {
+      const item = unlocked[Math.floor(Math.random() * unlocked.length)]
+      return { type: 'cosmetic', amount: 0, desc: `探险发现了 ${item.emoji} ${item.label}！`, emoji: item.emoji }
+    }
+    return { type: 'likes', amount: 3, desc: '探险带回了 3 个点赞！', emoji: '👍' }
+  }
 }
 
 // ============================================================

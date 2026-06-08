@@ -52,6 +52,12 @@ const router = createRouter({
       meta: { title: '我的宠物', depth: 1 }
     },
     {
+      path: '/adventure',
+      name: 'adventure',
+      component: () => import('@/views/AdventureMapView.vue'),
+      meta: { title: '冒险地图', depth: 1 }
+    },
+    {
       path: '/parent',
       name: 'parent',
       component: () => import('@/views/ParentView.vue'),

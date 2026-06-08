@@ -35,7 +35,7 @@
         <h1>快分类</h1>
         <p class="lock-desc">先学完 1 个新分类再来玩分类游戏吧！</p>
         <p class="lock-hint">当前解锁：{{ store.unlockedCategories }} / 2</p>
-        <button class="btn-home" @click="$router.push('/playground')">🏠 游乐场</button>
+        <button class="btn-home" @click="$router.push('/playground')">🏠 Playground</button>
       </div>
 
       <!-- 准备 -->
@@ -102,23 +102,25 @@
         <!-- 全局 confetti 由 useConfetti 管理 -->
         <div class="complete-card" :class="`complete-${starLevel >= 3 ? 'gold' : starLevel >= 2 ? 'silver' : 'bronze'}`">
           <div class="trophy-wrapper">
-            <span class="complete-trophy anim-bounce">{{ starLevel >= 3 ? '🏆' : starLevel >= 2 ? '🥈' : '️' }}</span>
+            <span class="complete-trophy anim-bounce">{{ starLevel === 3 ? '🏆' : starLevel === 2 ? '🥈' : '🎖️' }}</span>
           </div>
-          <h2 class="complete-title">分类完成！</h2>
-          <div class="final-score">
-            答对了 <strong>{{ score.correct }}</strong> / {{ totalWords }} 题
-          </div>
+          <h2 class="complete-title">Sorted!</h2>
+          <h2 class="complete-title">
+            <span class="score-num" :style="{ animationDelay: '0.5s' }">{{ score.correct }}</span>
+            <span class="score-divider">/</span>
+            <span class="score-total">{{ totalWords }}</span>
+          </h2>
           <div class="complete-stars">
             <span v-for="i in 3" :key="i" class="star"
               :class="i <= starLevel ? 'star-active' : 'star-empty'"
-              :style="{ animationDelay: (0.5 + i * 0.3) + 's' }">⭐</span>
+              :style="{ animationDelay: (0.8 + i * 0.3) + 's' }">⭐</span>
           </div>
           <p class="complete-msg">{{ starMessage }}</p>
           <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" class="complete-yoyo" />
           <LikeButton :source="'sort'" class="complete-like" />
           <div class="complete-buttons">
-            <button class="btn-retry" @click="resetGame">🔄 再来一次</button>
-            <button class="btn-home" @click="$router.push('/playground')">🏠 游乐场</button>
+            <button class="btn-retry" @click="resetGame"><span class="btn-icon">🔄</span><span class="btn-text">Play again</span></button>
+            <button class="btn-home" @click="$router.push('/playground')"><span class="btn-icon">🏠</span><span class="btn-text">Playground</span></button>
           </div>
         </div>
       </div>
@@ -656,10 +658,13 @@ onUnmounted(() => {
 .complete-buttons { display: flex; gap: var(--space-md); justify-content: center; position: relative; z-index: 1; }
 
 .btn-retry, .btn-home {
-  padding: var(--space-md) var(--space-xl); border-radius: var(--radius-full);
-  font-size: var(--font-size-base); font-weight: 700; transition: all 0.2s;
-  border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 10px 24px; border-radius: var(--radius-full);
+  font-size: var(--font-size-sm); font-weight: 700; transition: all 0.2s;
+  border: none; cursor: pointer; min-width: 100px;
 }
+.btn-icon { font-size: 1.2rem; line-height: 1; }
+.btn-text { line-height: 1.2; white-space: nowrap; }
 .btn-retry { background: linear-gradient(135deg, #4CAF50, #8BC34A); color: #fff; box-shadow: 0 4px 16px rgba(76,175,80,0.3); }
 .btn-retry:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 20px rgba(76,175,80,0.4); }
 .btn-home { background: var(--border-light); color: var(--text-primary); }

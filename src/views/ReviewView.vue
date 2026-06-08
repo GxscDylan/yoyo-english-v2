@@ -123,6 +123,12 @@
       :is-speaking="isSpeaking"
       class="review-yoyo" :show-hat="store.showHat" :show-glasses="store.showGlasses"
       :show-crown="store.showCrown" />
+
+    <!-- 宠物学习伴侣 -->
+    <PetCompanion
+      :show-bubble="companion.showPetBubble"
+      :reaction="companion.activeReaction"
+    />
   </div>
 </template>
 
@@ -134,7 +140,11 @@ import { ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
 import { useSpeech } from '@/composables/useSpeech'
 import { sfxCorrect, sfxWrong, sfxComplete } from '@/composables/useSfx'
 import { triggerConfetti } from '@/composables/useConfetti'
+import { usePetCompanion } from '@/composables/usePetCompanion.js'
+import PetCompanion from '@/components/PetCompanion.vue'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
+
+const companion = usePetCompanion()
 
 const router = useRouter()
 const store = useLearningStore()
@@ -225,6 +235,7 @@ function pickOption(opt) {
     feedback.value = 'correct'
     feedbackText.value = 'Great! 答对了！🌟'
     sfxCorrect()
+    companion.onAnswerCorrect()
     setYoyo('happy', '太厉害了！', true)
     
     setTimeout(() => {
@@ -237,6 +248,7 @@ function pickOption(opt) {
     feedback.value = 'wrong'
     feedbackText.value = '再想想~'
     sfxWrong()
+    companion.onAnswerWrong()
     setYoyo('encourage', '没关系，再试试！')
     
     setTimeout(() => {
@@ -330,6 +342,7 @@ function showCompleteScreen() {
   store.settings.reviewCount = (store.settings.reviewCount || 0) + 1
   store.persistSettings?.()
   showComplete.value = true
+  companion.onLessonComplete({ category: 'review' })
   setYoyo('celebrate', '全部复习完成！🎉', true)
 }
 

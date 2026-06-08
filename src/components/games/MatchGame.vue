@@ -119,8 +119,8 @@
           <ResultAvatar :bubble-text="yoyoBubble" :avatar-src="store.avatar" class="complete-yoyo" />
           <LikeButton :source="'match'" class="complete-like" />
           <div class="complete-buttons">
-            <button class="btn-retry" @click="resetGame">🔄 Play again</button>
-            <button class="btn-home" @click="$router.push('/playground')">🏠 Playground</button>
+            <button class="btn-retry" @click="resetGame"><span class="btn-icon">🔄</span><span class="btn-text">Play again</span></button>
+            <button class="btn-home" @click="$router.push('/playground')"><span class="btn-icon">🏠</span><span class="btn-text">Playground</span></button>
           </div>
         </div>
       </div>
@@ -679,10 +679,13 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer); clearAutoReplay() })
 
 .complete-buttons { display: flex; gap: var(--space-md); justify-content: center; position: relative; z-index: 1; }
 .btn-retry, .btn-home {
-  padding: var(--space-md) var(--space-xl); border-radius: var(--radius-full);
-  font-size: var(--font-size-base); font-weight: 700; transition: all 0.2s;
-  border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 10px 24px; border-radius: var(--radius-full);
+  font-size: var(--font-size-sm); font-weight: 700; transition: all 0.2s;
+  border: none; cursor: pointer; min-width: 100px;
 }
+.btn-icon { font-size: 1.2rem; line-height: 1; }
+.btn-text { line-height: 1.2; white-space: nowrap; }
 .btn-retry { background: linear-gradient(135deg, #7C5CFC, #A78BFA); color: #fff; box-shadow: 0 4px 16px rgba(124,92,252,0.3); }
 .btn-home { background: var(--border-light); color: var(--text-primary); }
 .btn-retry:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 20px rgba(124,92,252,0.4); }

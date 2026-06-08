@@ -10,7 +10,7 @@ import { ref, computed, watch } from 'vue'
 import { ALL_CATEGORIES, ALL_WORDS, ALL_L1_WORDS } from '@/data/words'
 
 const DB_NAME = 'yoyo-english-v2'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 /** IndexedDB 工具函数 */
 function openDB() {
@@ -97,7 +97,8 @@ const DEFAULT_SETTINGS = {
   lockEndTime: '07:00',
   learningMode: 'fourStep', // 'fourStep' | 'card'
   reviewCount: 0, // P2-2: 复习次数统计
-  nurseryListened: 0 // P2-2: 童谣听过数统计
+  nurseryListened: 0, // P2-2: 童谣听过数统计
+  catchStarsCooldownEnabled: true // 接星星冷却开关（默认开启）
 }
 
 export const useLearningStore = defineStore('learning', () => {
@@ -172,10 +173,14 @@ export const useLearningStore = defineStore('learning', () => {
   const catchStarsCooldown = ref({})
 
   function canTriggerCatchStars(categoryIndex) {
+    // 检查冷却开关：如果关闭，无视冷却
+    if (!settings.value.catchStarsCooldownEnabled) {
+      return true
+    }
     const lastTime = catchStarsCooldown.value[categoryIndex] || 0
     const now = Date.now()
-    // 30 分钟冷却：每次触发后 30 分钟可再次触发
-    return now - lastTime > 30 * 60 * 1000
+    // 2 分钟冷却：每次触发后 2 分钟可再次触发
+    return now - lastTime > 2 * 60 * 1000
   }
 
   function recordCatchStarsTrigger(categoryIndex) {

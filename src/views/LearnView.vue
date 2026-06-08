@@ -268,6 +268,12 @@
       </div>
       </Transition>
 
+      <!-- 宠物学习伴侣气泡 -->
+      <PetCompanion
+        :show-bubble="companion.showPetBubble"
+        :reaction="companion.activeReaction"
+      />
+
       <!-- 完成弹窗 -->
       <div v-if="showComplete" class="complete-overlay anim-fade-in" @click.self="goHome">
         <div class="complete-modal anim-bounce">
@@ -307,6 +313,8 @@ import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import { useYoyoCopy } from '@/composables/useYoyoCopy'
 import { generateAIBubble, getDynamicTone, generateReviewFeedback } from '@/composables/useYoyoAI'
 import { useThumbsUp } from '@/composables/useThumbsUp'
+import { usePetCompanion } from '@/composables/usePetCompanion.js'
+import PetCompanion from '@/components/PetCompanion.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -314,6 +322,7 @@ const store = useLearningStore()
 const { speak, isSpeaking, stop, playAudio } = useSpeech()
 const yoyoCopy = useYoyoCopy(store)
 const { toggleFavorite, isFavorite, recordWordLearned, triggerAutoLike } = useThumbsUp()
+const companion = usePetCompanion()
 
 // ============ 数据初始化 ============
 const categoryId = computed(() => route.params.categoryId || store.unlockedCategoryList[0]?.id)
@@ -619,6 +628,9 @@ function handleTestAnswer(opt) {
       container: document.body
     })
 
+    // 宠物学习伴侣：答对反馈
+    companion.onAnswerCorrect()
+
     // P3-3: 动态难度调节 — 根据表现调整呦呦语气
     const accuracy = testCombo.value / Math.max(1, testCombo.value + testWrongCount.value)
     const tone = getDynamicTone(accuracy, testCombo.value, store.masteredWordCount || 0)
@@ -642,6 +654,8 @@ function handleTestAnswer(opt) {
       // 触发点赞奖励（通过 useThumbsUp 系统）
       try { recordWordLearned() } catch(e) {}
       setTimeout(() => triggerMilestone(todayLearned, { mascot: yoyoMood }), 600)
+      // 宠物学习伴侣：里程碑庆祝
+      companion.onMilestone({ text: `🎉 ${todayLearned} words learned!` })
     }
 
     setTimeout(() => {
@@ -660,6 +674,9 @@ function handleTestAnswer(opt) {
     testCombo.value = 0 // 答错重置连击
     testWrongCount.value++ // P3-3: 累计答错次数
     playFeedback(1, { mascot: yoyoMood, isCorrect: false })
+
+    // 宠物学习伴侣：答错安慰
+    companion.onAnswerWrong()
 
     // P3-3: 动态难度调节 — 根据表现调整呦呦语气
     const tone = getDynamicTone(0.3, 0, store.masteredWordCount || 0)
@@ -820,6 +837,8 @@ function completeGroup() {
       store.unlockNextCategory()
       showComplete.value = true
       setYoyo('celebrate', yoyoCopy.getCompleteBubble(category.value?.name || '本节'), true)
+      // 宠物学习伴侣：课程完成庆祝
+      companion.onLessonComplete({ category: category.value?.name })
     }, 800)
   }
 }
