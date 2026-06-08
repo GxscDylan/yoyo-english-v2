@@ -1,15 +1,34 @@
 <template>
   <div class="adventure-map">
     <!-- 顶部标题 -->
-    <div class="map-header">
-      <h2 class="map-title">{{ mapData.title }}</h2>
-      <p class="map-desc">{{ mapData.description }}</p>
-      <div class="map-stats">
-        <span class="stat">📚 {{ completedCount }}/{{ totalNodes }} 完成</span>
-        <span class="stat">⭐ {{ totalStars }} 星星</span>
+    <header class="map-header">
+      <div class="header-content">
+        <div class="header-left">
+          <button class="btn-back" @click="$router.push('/playground')">
+            <span class="back-icon">🏠</span>
+          </button>
+          <div class="header-text">
+            <h2 class="map-title">{{ mapData.title }}</h2>
+            <p class="map-desc">{{ mapData.description }}</p>
+          </div>
+        </div>
+        <div class="header-stats">
+          <span class="stat-chip progress-chip">
+            <span class="chip-icon">📚</span>
+            <span class="chip-num">{{ completedCount }}</span>
+            <span class="chip-total">/{{ totalNodes }}</span>
+          </span>
+          <span class="stat-chip stars-chip">
+            <span class="chip-icon">⭐</span>
+            <span class="chip-num">{{ totalStars }}</span>
+          </span>
+        </div>
       </div>
-      <div class="map-theme-badge">{{ currentTheme.name }}</div>
-    </div>
+      <div class="theme-bar" :style="{ background: currentTheme.bgGradient }">
+        <span class="theme-icon">{{ currentTheme.icon }}</span>
+        <span class="theme-name">{{ currentTheme.name }}</span>
+      </div>
+    </header>
 
     <!-- SVG 地图 -->
     <div class="map-container">
@@ -18,51 +37,175 @@
         class="map-svg"
         preserveAspectRatio="xMidYMid meet"
       >
-        <!-- 背景装饰 -->
         <defs>
-          <linearGradient id="bg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#E3F2FD" />
-            <stop offset="100%" stop-color="#BBDEFB" />
+          <!-- 天空渐变 -->
+          <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" :stop-color="currentTheme.skyTop" />
+            <stop offset="60%" :stop-color="currentTheme.skyMid" />
+            <stop offset="100%" :stop-color="currentTheme.skyBottom" />
           </linearGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="blur" />
+
+          <!-- 草地渐变 -->
+          <linearGradient id="grassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" :stop-color="currentTheme.grassTop" />
+            <stop offset="100%" :stop-color="currentTheme.grassBottom" />
+          </linearGradient>
+
+          <!-- 路径渐变（完成/可用/锁定） -->
+          <linearGradient id="pathCompleted" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4CAF50" />
+            <stop offset="100%" stop-color="#66BB6A" />
+          </linearGradient>
+          <linearGradient id="pathAvailable" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" :stop-color="currentTheme.pathColor" />
+            <stop offset="100%" stop-color="#FFB74D" />
+          </linearGradient>
+          <linearGradient id="pathLocked" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#BDBDBD" />
+            <stop offset="100%" stop-color="#E0E0E0" />
+          </linearGradient>
+
+          <!-- 节点阴影 -->
+          <filter id="nodeShadow">
+            <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.15" />
+          </filter>
+          <filter id="nodeGlow">
+            <feGaussianBlur stdDeviation="4" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          <filter id="shadow">
-            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.2" />
+          <filter id="bossGlow">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.6" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
+
+          <!-- Boss节点渐变 -->
+          <radialGradient id="bossBg" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#FFD54F" />
+            <stop offset="100%" stop-color="#FF9800" />
+          </radialGradient>
+
+          <!-- 完成节点渐变 -->
+          <radialGradient id="completedBg" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#A5D6A7" />
+            <stop offset="100%" stop-color="#66BB6A" />
+          </radialGradient>
+
+          <!-- 可用节点渐变 -->
+          <radialGradient id="availableBg" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#FFE0B2" />
+            <stop offset="100%" stop-color="#FF9800" />
+          </radialGradient>
+
+          <!-- 锁定节点渐变 -->
+          <radialGradient id="lockedBg" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#EEEEEE" />
+            <stop offset="100%" stop-color="#BDBDBD" />
+          </radialGradient>
+
+          <!-- 当前节点渐变 -->
+          <radialGradient id="currentBg" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" :stop-color="currentTheme.glowColor || '#FFC107'" stop-opacity="0.6" />
+            <stop offset="100%" :stop-color="currentTheme.nodeColor || '#FF9800'" />
+          </radialGradient>
+
+          <!-- 路径流动动画 -->
+          <pattern id="pathFlowPattern" width="20" height="10" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="5" x2="10" y2="5" stroke="white" stroke-width="2" opacity="0.4" />
+          </pattern>
         </defs>
 
-        <!-- 背景 -->
-        <rect x="0" y="0" width="800" height="1200" :fill="themeGradient" rx="24" />
+        <!-- 天空背景 -->
+        <rect x="0" y="0" width="800" height="1200" fill="url(#skyGrad)" rx="0" />
 
-        <!-- 地图装饰元素 -->
-        <g class="decorations" font-size="24" opacity="0.4">
-          <template v-for="(decor, di) in mapData.decorations" :key="'d' + di">
-            <template v-for="(pos, pi) in decor.positions" :key="'p' + pi">
-              <text
-                :x="pos.x * 8"
-                :y="pos.y * 12"
-                text-anchor="middle"
-              >{{ decor.emoji }}</text>
-            </template>
-          </template>
+        <!-- 远山/云朵装饰 -->
+        <g class="sky-decorations" font-size="40" opacity="0.35">
+          <text x="100" y="120" font-size="50" opacity="0.5">☁️</text>
+          <text x="350" y="80" font-size="60" opacity="0.4">☁️</text>
+          <text x="600" y="140" font-size="45" opacity="0.45">☁️</text>
+          <text x="700" y="200" font-size="35" opacity="0.3">️</text>
+          <text x="50" y="300" font-size="30" opacity="0.3">☁️</text>
+          <text x="450" y="250" font-size="40" opacity="0.35">☁️</text>
+        </g>
+
+        <!-- 星星装饰 -->
+        <g class="sky-stars" font-size="20" opacity="0.5">
+          <text x="200" y="60" opacity="0.6">⭐</text>
+          <text x="550" y="90" opacity="0.4">✨</text>
+          <text x="720" y="350" opacity="0.5">⭐</text>
+          <text x="80" y="500" opacity="0.3">✨</text>
+          <text x="680" y="600" opacity="0.4">⭐</text>
+        </g>
+
+        <!-- 草地地面 -->
+        <ellipse cx="400" cy="1200" rx="500" ry="300" fill="url(#grassGrad)" />
+
+        <!-- 地面装饰元素 -->
+        <g class="ground-decorations" font-size="24">
+          <!-- 花朵/草丛 -->
+          <text x="60" y="850" font-size="30" opacity="0.6">🌸</text>
+          <text x="720" y="780" font-size="28" opacity="0.5">🌻</text>
+          <text x="150" y="700" font-size="22" opacity="0.4">🍄</text>
+          <text x="650" y="900" font-size="26" opacity="0.45"></text>
+          <text x="350" y="950" font-size="20" opacity="0.35">🌿</text>
+          <text x="100" y="600" font-size="24" opacity="0.4"></text>
+          <text x="700" y="550" font-size="22" opacity="0.35">🌼</text>
+          <!-- 蝴蝶 -->
+          <text x="180" y="400" font-size="22" opacity="0.5">🦋</text>
+          <text x="620" y="450" font-size="20" opacity="0.4">🦋</text>
+          <text x="400" y="350" font-size="18" opacity="0.3">🦋</text>
+          <!-- 小蘑菇/石头 -->
+          <text x="300" y="800" font-size="20" opacity="0.35">🪨</text>
+          <text x="500" y="750" font-size="18" opacity="0.3">🪨</text>
+        </g>
+
+        <!-- 主题区域色带（背景装饰条） -->
+        <g class="zone-bands" opacity="0.12">
+          <!-- L1 绿色区域 -->
+          <rect x="120" y="650" width="560" height="350" rx="40" fill="#4CAF50" />
+          <!-- L2 蓝色区域 -->
+          <rect x="100" y="200" width="600" height="420" rx="40" fill="#2196F3" />
+          <!-- L2.5 紫色区域 -->
+          <rect x="140" y="50" width="520" height="180" rx="30" fill="#9C27B0" />
+          <!-- Boss 金色区域 -->
+          <rect x="200" y="0" width="400" height="120" rx="25" fill="#FF9800" />
         </g>
 
         <!-- 连接线 -->
-        <g class="lines" :style="{ transition: 'opacity 0.3s' }">
+        <g class="lines">
           <template v-for="line in lines" :key="line.id">
+            <!-- 路径底色 -->
             <path
               :d="line.path"
-              :stroke="line.status === 'completed' ? '#4CAF50' : '#9E9E9E'"
-              :stroke-width="line.status === 'completed' ? 4 : 2"
-              :stroke-dasharray="line.status === 'locked' ? '8,4' : 'none'"
+              :stroke="line.status === 'completed' ? 'url(#pathCompleted)' : line.status === 'available' || line.status === 'current' ? 'url(#pathAvailable)' : 'url(#pathLocked)'"
+              stroke-width="6"
               fill="none"
               stroke-linecap="round"
+              :stroke-dasharray="line.status === 'locked' ? '8,6' : 'none'"
+              opacity="0.35"
             />
+            <!-- 路径高亮线 -->
+            <path
+              :d="line.path"
+              :stroke="line.status === 'completed' ? '#4CAF50' : line.status === 'available' || line.status === 'current' ? '#FF9800' : '#BDBDBD'"
+              stroke-width="3"
+              fill="none"
+              stroke-linecap="round"
+              :stroke-dasharray="line.status === 'locked' ? '8,6' : 'none'"
+            />
+            <!-- 流动光点（仅完成路径） -->
+            <circle v-if="line.status === 'completed'" r="3" fill="#81C784">
+              <animateMotion :path="line.path" dur="2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
+            </circle>
           </template>
         </g>
 
@@ -72,86 +215,113 @@
             v-for="node in nodes"
             :key="node.id"
             :transform="`translate(${node.svgX}, ${node.svgY})`"
-            :class="`node-group node-${node.status}`"
+            :class="`node-group node-${node.status} node-type-${node.type}`"
             @click="handleNodeClick(node)"
           >
-            <g class="node-content">
-              <!-- 节点圆形背景 -->
-              <circle
-                :r="node.isBoss ? 42 : 36"
-                :fill="getNodeBgColor(node)"
-                :stroke="getNodeStrokeColor(node)"
-                :stroke-width="node.status === 'current' ? 4 : 2"
-                :filter="node.status === 'current' ? 'url(#glow)' : 'url(#shadow)'"
-                :class="`node-circle node-${node.status}`"
-              />
+            <g class="node-content" :style="node.isBoss ? 'filter: url(#bossGlow)' : ''">
+              <!-- Boss节点特殊造型 -->
+              <g v-if="node.isBoss" class="boss-node">
+                <!-- 外圈装饰 -->
+                <circle :r="52" fill="none" :stroke="node.status === 'locked' ? '#E0E0E0' : '#FFB300'" stroke-width="4" stroke-dasharray="6,3" opacity="0.6">
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="0 0 0"
+                    to="360 0 0"
+                    dur="20s"
+                    repeatCount="indefinite"
+                  />
+                </circle>
+                <!-- 主圆形 -->
+                <circle
+                  :r="44"
+                  :fill="node.status === 'locked' ? 'url(#lockedBg)' : node.status === 'completed' ? 'url(#completedBg)' : 'url(#bossBg)'"
+                  :stroke="node.status === 'locked' ? '#BDBDBD' : '#FF9800'"
+                  :stroke-width="node.status === 'current' ? 5 : 3"
+                  filter="url(#nodeShadow)"
+                />
+                <!-- 皇冠装饰 -->
+                <text y="-55" text-anchor="middle" font-size="28">👑</text>
+              </g>
+
+              <!-- 普通节点 -->
+              <template v-else>
+                <!-- 脉冲光环（当前节点） -->
+                <circle
+                  v-if="node.status === 'current' || node.status === 'available'"
+                  :r="44"
+                  fill="none"
+                  :stroke="NODE_STYLES[node.type]?.color || '#FF9800'"
+                  stroke-width="2"
+                  opacity="0.6"
+                  class="pulse-ring"
+                />
+
+                <!-- 主圆形 -->
+                <circle
+                  :r="node.isBoss ? 44 : 36"
+                  :fill="node.status === 'locked' ? 'url(#lockedBg)' : node.status === 'completed' ? 'url(#completedBg)' : node.status === 'available' ? 'url(#availableBg)' : 'url(#currentBg)'"
+                  :stroke="node.status === 'locked' ? '#BDBDBD' : node.status === 'completed' ? '#4CAF50' : NODE_STYLES[node.type]?.color || '#FF9800'"
+                  :stroke-width="node.status === 'current' ? 4 : node.status === 'completed' ? 3 : 2"
+                  filter="url(#nodeShadow)"
+                />
+              </template>
 
               <!-- 节点图标 -->
               <text
                 y="-2"
                 text-anchor="middle"
-                font-size="28"
-                :opacity="node.status === 'locked' ? 0.4 : 1"
+                :font-size="node.isBoss ? 32 : 26"
+                :opacity="node.status === 'locked' ? 0.35 : 1"
               >
                 {{ node.status === 'locked' ? '🔒' : node.emoji }}
               </text>
 
-              <!-- 节点类型标签 -->
-              <text
-                v-if="node.status !== 'locked'"
-                y="22"
-                text-anchor="middle"
-                font-size="10"
-                :fill="getNodeStrokeColor(node)"
-                font-weight="600"
-              >
-                {{ NODE_STYLES[node.type]?.emoji || '' }}
-              </text>
+              <!-- 类型小标签（右下角） -->
+              <g v-if="node.status !== 'locked' && !node.isBoss" transform="translate(18, 18)">
+                <circle r="10" :fill="NODE_STYLES[node.type]?.color || '#9E9E9E'" opacity="0.9" />
+                <text y="3.5" text-anchor="middle" font-size="10" fill="white" font-weight="bold">
+                  {{ getNodeIcon(node.type) }}
+                </text>
+              </g>
 
-              <!-- 状态指示器 -->
-              <circle
-                v-if="node.status === 'completed'"
-                cx="24" cy="-24" r="10"
-                fill="#4CAF50"
-              />
-              <text
-                v-if="node.status === 'completed'"
-                x="24" y="-20"
-                text-anchor="middle"
-                font-size="12"
-                fill="white"
-                font-weight="bold"
-              >✓</text>
-
-              <!-- 进行中脉冲环 -->
-              <circle
-                v-if="node.status === 'current'"
-                :r="node.isBoss ? 48 : 42"
-                fill="none"
-                :stroke="NODE_STYLES[node.type]?.color || '#FF9800'"
-                stroke-width="2"
-                class="pulse-ring"
-              />
+              <!-- 完成标记 -->
+              <g v-if="node.status === 'completed'">
+                <circle cx="26" cy="-26" r="12" fill="#4CAF50" filter="url(#nodeShadow)" />
+                <text x="26" y="-22" text-anchor="middle" font-size="14" fill="white" font-weight="bold">✓</text>
+              </g>
 
               <!-- 标签 -->
               <text
-                y="56"
+                y="54"
                 text-anchor="middle"
-                font-size="12"
-                font-weight="700"
-                fill="#424242"
+                font-size="13"
+                font-weight="800"
+                :fill="node.status === 'locked' ? '#9E9E9E' : '#424242'"
               >
                 {{ node.label }}
               </text>
               <!-- 单词数量 -->
               <text
                 v-if="node.words > 0 && node.status !== 'locked'"
-                y="70"
+                y="68"
                 text-anchor="middle"
-                font-size="9"
+                font-size="10"
                 fill="#9E9E9E"
+                font-weight="600"
               >
-                {{ node.words }}词
+                {{ node.words }} 词
+              </text>
+              <!-- Boss奖励提示 -->
+              <text
+                v-if="node.isBoss && node.status !== 'locked'"
+                y="68"
+                text-anchor="middle"
+                font-size="10"
+                fill="#FF9800"
+                font-weight="700"
+              >
+                🏆 终极挑战
               </text>
             </g>
           </g>
@@ -166,7 +336,7 @@
           <span class="panel-emoji">{{ selectedNode.emoji }}</span>
           <div class="panel-info">
             <h3 class="panel-title">{{ selectedNode.label }}</h3>
-            <span class="panel-type">{{ NODE_STYLES[selectedNode.type]?.label || '' }}</span>
+            <span class="panel-type" :style="{ background: NODE_STYLES[selectedNode.type]?.color + '22', color: NODE_STYLES[selectedNode.type]?.color }">{{ NODE_STYLES[selectedNode.type]?.label || '' }}</span>
           </div>
           <button class="close-btn" @click="selectedNode = null">✕</button>
         </div>
@@ -250,6 +420,12 @@ const selectedNode = ref(null)
 
 const mapData = ADVENTURE_MAP
 
+// 类型图标映射
+function getNodeIcon(type) {
+  const icons = { learn: '📚', review: '🔄', boss: '⭐', rest: '🎁' }
+  return icons[type] || '?'
+}
+
 // 当前主题（根据已完成节点数量判断）
 const currentTheme = computed(() => {
   const count = completedNodes.value.size
@@ -257,13 +433,6 @@ const currentTheme = computed(() => {
   if (count >= 8) return mapData.themes.l2_5
   if (count >= 4) return mapData.themes.l2
   return mapData.themes.l1
-})
-
-// 动态背景渐变（computed 不直接用在 SVG，但可以用于主题切换提示）
-const themeGradient = computed(() => {
-  const theme = currentTheme.value
-  // 解析 bgGradient 字符串中的颜色
-  return theme.skyColor || '#87CEEB'
 })
 
 const completedCount = computed(() => completedNodes.value.size)
@@ -277,11 +446,9 @@ const completedNodes = computed(() => {
   const completed = new Set()
   const records = store.wordRecords || {}
   mapData.nodes.forEach(node => {
-    // Boss/Review/Rest 节点特殊处理
-    if (node.type === 'boss') return // boss 节点需要单独判断
-    if (node.type === 'rest') return // 休息节点自动解锁
+    if (node.type === 'boss') return
+    if (node.type === 'rest') return
     if (node.type === 'review') {
-      // 复习节点：检查对应等级的所有学习节点是否完成
       const levelNodes = mapData.nodes.filter(n => n.level === node.level && n.type === 'learn')
       const allLevelDone = levelNodes.every(n => {
         const catId = n.categoryId || n.scene
@@ -293,7 +460,6 @@ const completedNodes = computed(() => {
       if (allLevelDone) completed.add(node.id)
       return
     }
-    // 学习节点：检查对应分类是否完成
     if (!node.scene && !node.categoryId) return
     const catId = node.categoryId || node.scene
     const cat = ALL_CATEGORIES.find(c => c.id === catId)
@@ -311,12 +477,12 @@ const nodes = computed(() =>
   mapData.nodes.map(node => {
     const status = getNodeStatus(node, completedNodes.value)
     const x = node.position.x
-    const y = Math.max(8, 95 - node.position.y) // 翻转 Y 轴，使 Y 越大越靠上
+    const y = Math.max(8, 95 - node.position.y)
     return {
       ...node,
       status,
-      svgX: x * 8, // 百分比转像素 (800 / 100 = 8)
-      svgY: y * 12, // 百分比转像素 (1200 / 100 = 12)
+      svgX: x * 8,
+      svgY: y * 12,
       isBoss: node.type === 'boss'
     }
   })
@@ -349,19 +515,6 @@ function getLinePath(from, to) {
   const midY = (y1 + y2) / 2
   const dx = Math.abs(x2 - x1) * 0.3
   return `M ${x1} ${y1} C ${x1} ${y1 - dx}, ${x2} ${y2 + dx}, ${x2} ${y2}`
-}
-
-function getNodeBgColor(node) {
-  if (node.status === 'locked') return '#F5F5F5'
-  if (node.status === 'completed') return '#E8F5E9'
-  if (node.status === 'current' || node.status === 'available') return NODE_STYLES[node.type].color + '33'
-  return '#FFF'
-}
-
-function getNodeStrokeColor(node) {
-  if (node.status === 'locked') return '#E0E0E0'
-  if (node.status === 'completed') return '#4CAF50'
-  return NODE_STYLES[node.type].color
 }
 
 function handleNodeClick(node) {
@@ -400,88 +553,146 @@ function continueLearning() {
 <style scoped>
 .adventure-map {
   min-height: 100vh;
-  background: linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 100%);
+  background: #E3F2FD;
   position: relative;
   padding-bottom: 20px;
 }
 
+/* ===== 顶部栏 ===== */
 .map-header {
-  text-align: center;
-  padding: 16px 20px 12px;
-  background: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
   border-bottom: 2px solid #E3F2FD;
-}
-.map-title {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin: 0 0 4px;
-}
-.map-desc {
-  font-size: 0.75rem;
-  color: var(--text-hint);
-  margin: 0 0 8px;
-}
-.map-stats {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-}
-.stat {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  padding: 4px 10px;
-  background: #FFF8E1;
-  border-radius: 12px;
-}
-.map-theme-badge {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 4px 14px;
-  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #2E7D32;
-  border: 1px solid #A5D6A7;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-back {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); border: 2px solid var(--border-light);
+  border-radius: 50%; font-size: var(--font-size-lg); cursor: pointer;
+  transition: all 0.2s; padding: 0;
+}
+.btn-back:hover { border-color: #2196F3; transform: scale(1.08); }
+.btn-back:active { transform: scale(0.95); }
+
+.header-text { display: flex; flex-direction: column; }
+.map-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+.map-desc {
+  font-size: 0.7rem;
+  color: var(--text-hint);
+  margin: 2px 0 0;
+}
+
+.header-stats {
+  display: flex;
+  gap: 8px;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.progress-chip {
+  background: #FFF8E1;
+  color: #F57C00;
+}
+.stars-chip {
+  background: #E3F2FD;
+  color: #1565C0;
+}
+.chip-icon { font-size: 0.9rem; }
+.chip-num { font-size: 0.85rem; }
+.chip-total { opacity: 0.6; font-weight: 500; }
+
+.theme-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.theme-icon { font-size: 1rem; }
+
+/* ===== SVG地图容器 ===== */
 .map-container {
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding: 8px;
+  padding: 4px 8px 20px;
 }
 .map-svg {
   width: 100%;
   display: block;
 }
 
+/* ===== 节点 ===== */
 .node-group {
   cursor: pointer;
 }
 .node-content {
-  transition: transform 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-origin: center;
 }
 .node-group:hover:not(.node-locked) .node-content {
-  transform: scale(1.1);
+  transform: scale(1.12);
 }
 .node-group:active:not(.node-locked) .node-content {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 .node-locked {
   cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .pulse-ring {
   animation: pulse 2s ease-in-out infinite;
   transform-origin: center;
+  /* 悬停时暂停脉冲动画，避免与 hover scale 冲突 */
+}
+.node-group:hover .pulse-ring {
+  animation-play-state: paused;
 }
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.15); }
+  0%, 100% { opacity: 0.6; r: 44; }
+  50% { opacity: 0.2; r: 50; }
+}
+
+.boss-node circle {
+  transition: all 0.3s;
+}
+.node-group:hover:not(.node-locked) .boss-node circle {
+  transform: scale(1.08);
 }
 
 /* ===== 底部操作面板 ===== */
@@ -492,7 +703,7 @@ function continueLearning() {
   right: 0;
   background: white;
   border-radius: 20px 20px 0 0;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
   z-index: 100;
   max-width: 500px;
   margin: 0 auto;
@@ -518,10 +729,9 @@ function continueLearning() {
 }
 .panel-type {
   font-size: 0.65rem;
-  color: var(--text-hint);
-  background: #F5F5F5;
-  padding: 2px 8px;
+  padding: 2px 10px;
   border-radius: 8px;
+  font-weight: 700;
 }
 .close-btn {
   width: 28px;

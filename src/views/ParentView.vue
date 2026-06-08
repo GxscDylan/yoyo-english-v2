@@ -455,6 +455,21 @@
             <span class="vol-val">{{ Math.round(bgmVolume * 100) }}%</span>
           </div>
         </div>
+        <!-- BGM 场景切换 -->
+        <div class="row">
+          <span>当前场景</span>
+          <select class="bgm-select" v-model="currentBGMScene" @change="switchBGMScene">
+            <option value="">自动（跟随页面）</option>
+            <option v-for="scene in bgmScenes" :key="scene.key" :value="scene.key">
+              {{ scene.label }}
+            </option>
+          </select>
+        </div>
+        <div class="row" v-if="currentBGMScene">
+          <span></span>
+          <span class="text-hint">已手动锁定 BGM 场景</span>
+          <button class="btn-reset-bgm" @click="resetBGMScene">恢复自动</button>
+        </div>
       </section>
 
       <!-- v6.0: 萌宠养成设置 -->
@@ -626,13 +641,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { ALL_CATEGORIES, L1_WORDS, L2_WORDS } from '@/data/words'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import YoyoMascot from '@/components/common/YoyoMascot.vue'
 import AchievementCard from '@/components/common/AchievementCard.vue'
-import { playBGM, stopBGM, muteBGM, unmuteBGM, setBGMVolume as _setBGMVolume, isBGMEnabled, isBGMPlaying } from '@/composables/useBGM'
+import { playBGM, stopBGM, muteBGM, unmuteBGM, setBGMVolume as _setBGMVolume, isBGMEnabled, isBGMPlaying, getBGMScenes, getCurrentBGMScene } from '@/composables/useBGM'
 import { useThumbsUp } from '@/composables/useThumbsUp'
 import { usePetStore } from '@/composables/usePetStore'
 
@@ -650,13 +665,19 @@ const store = useLearningStore()
 // v5.0: BGM 控制
 const bgmEnabled = ref(isBGMEnabled())
 const bgmVolume = ref(0.6)
+const bgmScenes = getBGMScenes()
+const currentBGMScene = ref(getCurrentBGMScene() || '')
 
 function toggleBGM() {
   if (bgmEnabled.value) {
     muteBGM()
   } else {
     unmuteBGM()
-    playBGM('parent')
+    if (currentBGMScene.value) {
+      playBGM(currentBGMScene.value)
+    } else {
+      playBGM('parent')
+    }
   }
   bgmEnabled.value = isBGMEnabled()
 }
@@ -664,6 +685,26 @@ function toggleBGM() {
 function setBGMVolume(v) {
   bgmVolume.value = v
   _setBGMVolume(v)
+}
+
+function switchBGMScene() {
+  if (!bgmEnabled.value) {
+    unmuteBGM()
+    bgmEnabled.value = true
+  }
+  if (currentBGMScene.value) {
+    playBGM(currentBGMScene.value)
+  }
+}
+
+function resetBGMScene() {
+  currentBGMScene.value = ''
+  // 恢复自动场景切换逻辑由 App.vue 路由监听处理
+  // 只需通知 App.vue 取消手动锁定
+  // 此处播放首页 BGM 作为恢复
+  const { currentRoute } = useRouter()
+  const routeName = currentRoute.value?.name || 'home'
+  playBGM(routeName)
 }
 
 // v5.0: 点赞统计
@@ -857,12 +898,15 @@ function togglePetEnabled() {
 }
 
 /** 🎉 一键破壳（调试用，跳过所有检查） */
-function forceHatch() {
+async function forceHatch() {
   const s = petStore.petState.value
   if (!s?.enabled) return
   s.petTotalLikes = 120
   petStore.triggerHatch()
-  alert('🎉 破壳成功！刷新首页查看精灵')
+  await petStore.persist()
+  // 等待 Vue 响应式更新完成后再 alert，否则 alert 会阻塞 DOM 渲染
+  await nextTick()
+  alert('🎉 破壳成功！请刷新页面查看精灵')
 }
 
 function setPetSpecies(key) {
@@ -1581,6 +1625,19 @@ onMounted(async () => {
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
 .vol-val { font-size: var(--font-size-xs); color: var(--text-hint); min-width: 36px; }
+.bgm-select {
+  padding: 6px 12px; border-radius: var(--radius-md); border: 2px solid var(--border-light);
+  background: var(--bg-card); font-size: var(--font-size-sm); color: var(--text-primary);
+  cursor: pointer; outline: none;
+}
+.bgm-select:focus { border-color: var(--color-primary); }
+.text-hint { font-size: var(--font-size-xs); color: var(--text-hint); }
+.btn-reset-bgm {
+  padding: 4px 12px; border-radius: var(--radius-md); border: 1px dashed var(--border-light);
+  background: transparent; color: var(--text-hint); font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+.btn-reset-bgm:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 /* ===== v5.0: 点赞趋势图 ===== */
 .like-trend-chart {

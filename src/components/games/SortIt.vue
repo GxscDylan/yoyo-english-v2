@@ -75,14 +75,23 @@
 
         <!-- 得分 -->
         <div class="score-display">
-          ✅ <strong>{{ score.correct }}</strong> / {{ totalWords }}
+          <div class="score-card">
+            <span class="score-icon">⭐</span>
+            <span class="score-num">{{ score.correct }}</span>
+            <span class="score-divider">/</span>
+            <span class="score-total">{{ totalWords }}</span>
+          </div>
         </div>
 
         <!-- 当前单词 -->
         <div class="word-display" v-if="currentWord">
-          <span class="word-emoji">{{ currentWord.emoji }}</span>
-          <span class="word-en">{{ currentWord.en }}</span>
-          <span class="word-zh">{{ currentWord.zh }}</span>
+          <div class="word-card-inner">
+            <span class="word-emoji">{{ currentWord.emoji }}</span>
+            <span class="word-en">{{ currentWord.en }}</span>
+            <span class="word-zh">{{ currentWord.zh }}</span>
+          </div>
+          <!-- 发光边框效果 -->
+          <div class="word-glow"></div>
         </div>
 
         <!-- 分类篮子 -->
@@ -90,9 +99,17 @@
           <button v-for="basket in baskets" :key="basket.id" class="basket-card"
             @click="handleSort(basket)"
             :class="{ 'basket-correct': feedbackResult === 'correct' && feedbackBasket === basket.id,
-                       'basket-wrong': feedbackResult === 'wrong' && feedbackBasket === basket.id }">
-            <span class="basket-emoji">{{ basket.emoji }}</span>
-            <span class="basket-label">{{ basket.label }}</span>
+                       'basket-wrong': feedbackResult === 'wrong' && feedbackBasket === basket.id,
+                       'basket-shake': feedbackResult === 'wrong' && feedbackBasket === basket.id }">
+            <div class="basket-inner">
+              <span class="basket-emoji">{{ basket.emoji }}</span>
+              <span class="basket-label">{{ basket.label }}</span>
+            </div>
+            <!-- 反馈动画层 -->
+            <div v-if="feedbackResult && feedbackBasket === basket.id" class="basket-feedback">
+              <span v-if="feedbackResult === 'correct'" class="feedback-icon">✅</span>
+              <span v-else class="feedback-icon">❌</span>
+            </div>
           </button>
         </div>
       </div>
@@ -128,7 +145,7 @@
 
     <!-- 底部吉祥物 -->
     <footer class="game-footer" v-if="phase !== 'complete'">
-      <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
+      <GameMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
     </footer>
   </div>
 </template>
@@ -137,11 +154,11 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { useSpeech } from '@/composables/useSpeech'
-import { sfxCorrect, sfxWrong, sfxComplete } from '@/composables/useSfx'
+import { sfxCorrect, sfxWrong, sfxComplete, sfxCheer, sfxApplause, sfxFanfare } from '@/composables/useSfx'
 import { triggerConfetti } from '@/composables/useConfetti'
 import { triggerPerfectClear } from '@/composables/useFeedback'
 import { ALL_CATEGORIES } from '@/data/words'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import GameMascot from '@/components/common/GameMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
 import LikeButton from '@/components/common/LikeButton.vue'
 import ComboDisplay from '@/components/common/ComboDisplay.vue'
@@ -389,6 +406,11 @@ function finishGame() {
   if (phase.value === 'complete') return
   clearInterval(gameTimer)
   sfxComplete()
+  // 结算欢呼：凯旋号角 + 高分时追加掌声
+  sfxFanfare()
+  if (score.value.correct >= 8) {
+    setTimeout(() => sfxApplause(), 600)
+  }
   phase.value = 'complete'
   store.updateGameScore('sort-it', score.value.correct)
 
@@ -563,14 +585,53 @@ onUnmounted(() => {
 
 /* 单词显示 */
 .word-display {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 24px; background: white; border-radius: 20px;
-  margin: 16px auto; max-width: 300px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  position: relative;
+  padding: 8px;
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border-radius: 24px;
+  margin: 16px auto;
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06);
+  overflow: hidden;
 }
-.word-emoji { font-size: 4rem; }
-.word-en { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin-top: 8px; }
-.word-zh { font-size: 1rem; color: var(--text-secondary); margin-top: 4px; }
+.word-glow {
+  position: absolute; inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(76,175,80,0.08), rgba(139,195,74,0.05), rgba(76,175,80,0.08));
+  opacity: 0;
+  animation: wordGlow 3s ease-in-out infinite;
+}
+@keyframes wordGlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+.word-card-inner {
+  position: relative;
+  z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px;
+}
+.word-emoji {
+  font-size: 4.5rem;
+  animation: wordFloat 3s ease-in-out infinite;
+}
+@keyframes wordFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.word-en {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 12px;
+  letter-spacing: 0.5px;
+}
+.word-zh {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  font-weight: 500;
+}
 
 /* 篮子网格 */
 .baskets-grid {
@@ -581,17 +642,90 @@ onUnmounted(() => {
 .baskets-4 { grid-template-columns: repeat(2, 1fr); }
 
 .basket-card {
-  padding: 24px; border-radius: 20px;
-  background: white; border: 3px solid transparent;
-  text-align: center; transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: relative; overflow: hidden;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+  border: 4px solid rgba(255,255,255,0.8);
+  text-align: center;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.06);
+  cursor: pointer;
+  min-height: 140px;
+  display: flex; align-items: center; justify-content: center;
+}
+.basket-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.basket-card:hover .basket-inner { transform: translateY(-4px); }
+.basket-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);
+  border-color: rgba(76,175,80,0.3);
 }
 .basket-card:active { transform: scale(0.95); }
-.basket-card.basket-correct { border-color: #4CAF50; background: #E8F5E9; }
-.basket-card.basket-wrong { border-color: #FF5252; background: #FFEBEE; animation: shake 0.4s ease; }
-.basket-emoji { font-size: 3rem; display: block; }
-.basket-label { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-top: 8px; }
+.basket-card.basket-correct {
+  border-color: #4CAF50;
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+  box-shadow: 0 6px 24px rgba(76,175,80,0.25);
+  animation: basketPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.basket-card.basket-wrong {
+  border-color: #FF5252;
+  background: linear-gradient(135deg, #FFEBEE, #FFCDD2);
+  box-shadow: 0 6px 24px rgba(255,82,82,0.2);
+  animation: basketShake 0.5s ease;
+}
+@keyframes basketPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes basketShake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px) rotate(-1deg); }
+  30% { transform: translateX(6px) rotate(1deg); }
+  45% { transform: translateX(-4px) rotate(-0.5deg); }
+  60% { transform: translateX(4px) rotate(0.5deg); }
+  75% { transform: translateX(-2px); }
+}
+.basket-emoji {
+  font-size: 3.2rem;
+  display: block;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+.basket-card:hover .basket-emoji { transform: scale(1.1); }
+.basket-label {
+  font-size: 1.2rem; font-weight: 700; color: var(--text-primary);
+  margin-top: 4px;
+  transition: color 0.25s;
+}
 
+/* 反馈动画层 */
+.basket-feedback {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(4px);
+  border-radius: 24px;
+  animation: feedbackFade 0.6s ease-out forwards;
+}
+.feedback-icon {
+  font-size: 3.5rem;
+  animation: feedbackPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes feedbackFade {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes feedbackPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
 /* ===== 准备/倒计时/锁定 ===== */
 .phase-ready, .phase-countdown, .phase-locked {
   text-align: center; position: relative; z-index: 1;
@@ -672,15 +806,13 @@ onUnmounted(() => {
 
 /* ===== 底部 ===== */
 .game-footer {
-  display: flex; align-items: center; justify-content: center;
-  padding: var(--space-md) var(--space-xl);
-  background: rgba(255,255,255,0.9); backdrop-filter: blur(8px);
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px var(--space-xl) 12px;
+  background: transparent;
+  overflow: visible;
+  position: relative;
 }
 
 .pop-enter-active, .pop-leave-active { transition: all 0.3s ease; }

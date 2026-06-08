@@ -162,7 +162,12 @@
             {{ w.emoji }}
           </span>
         </div>
-        <button class="btn-next" @click="nextRound">听懂了！→</button>
+        <button
+          class="btn-next"
+          :class="nextButtonClass"
+          :disabled="isNextButtonDisabled"
+          @click="handleNextRound"
+        >{{ nextButtonText }}</button>
       </div>
 
       <!-- ===== L1 & L2 通用：Round 1 听力测试 ===== -->
@@ -406,6 +411,11 @@ let autoReplayTimer = null
 let autoReplayCount = 0
 const AUTO_REPLAY_MAX = 10
 
+// ============ 按钮状态机 (音频驱动) ============
+// Round 0 "听懂了"按钮：播放中=灰色呼吸不可点，播完=绿色脉冲可点
+const nextButtonState = ref('disabled') // 'disabled' | 'active'
+const nextButtonPulseCount = ref(0) // 记录脉冲次数，3次后停止
+
 // ============ Computed ============
 const groupWords = computed(() => groups.value[currentGroupIndex.value] || [])
 const currentInputWord = computed(() => groupWords.value[inputWordIndex.value])
@@ -470,6 +480,19 @@ const starRating = computed(() => {
   return 1
 })
 
+// ============ 按钮状态机 computed ============
+const isNextButtonDisabled = computed(() => nextButtonState.value === 'disabled')
+
+const nextButtonClass = computed(() => {
+  if (currentRound.value !== 0) return ''
+  return nextButtonState.value === 'disabled' ? 'btn-disabled' : 'btn-active'
+})
+
+const nextButtonText = computed(() => {
+  if (currentRound.value === 0) return '听懂了！→'
+  return '下一组 →'
+})
+
 // ============ 方法 ============
 function playWord(word) {
   if (!word) return
@@ -494,6 +517,29 @@ function setYoyo(mood, text, stars = false) {
   showYoyoStars.value = stars
 }
 
+// ============ 按钮状态机方法 ============
+function handleNextRound() {
+  if (nextButtonState.value === 'disabled') return
+  nextRound()
+}
+
+// 激活"听懂了"按钮：绿色 + 脉冲动画
+function activateNextButton() {
+  nextButtonState.value = 'active'
+  nextButtonPulseCount.value = 0
+  // 触发CSS脉冲动画
+  const btn = document.querySelector('.btn-next.btn-active')
+  if (btn) {
+    btn.classList.add('pulse-trigger')
+    setTimeout(() => btn.classList.remove('pulse-trigger'), 2000)
+  }
+}
+
+// 禁用"听懂了"按钮：灰色 + 呼吸动画
+function disableNextButton() {
+  nextButtonState.value = 'disabled'
+}
+
 // 开始学习
 function startLearning() {
   resetAutoReplay()
@@ -501,6 +547,8 @@ function startLearning() {
   currentRound.value = 0
   inputWordIndex.value = 0
   showChinese.value = false
+  // 初始状态：禁用（等待音频播放完）
+  disableNextButton()
   setYoyo('idle', `今天我们来认识 ${category.value?.name}！`)
   setTimeout(() => {
     if (currentRound.value === 0 && currentInputWord.value) {
@@ -902,6 +950,19 @@ onUnmounted(() => {
   stop()
   clearInterval(waitTimer)
   clearAutoReplayTimer()
+})
+
+// Watch: 音频播放状态 → 控制"听懂了"按钮可用性
+watch(isSpeaking, (speaking) => {
+  if (currentRound.value === 0) {
+    if (!speaking) {
+      // 音频播放完毕 → 激活按钮
+      activateNextButton()
+    } else {
+      // 音频开始播放 → 禁用按钮
+      disableNextButton()
+    }
+  }
 })
 
 // Watch: 集体输入自动前进（每词播完后自动切下一个）
@@ -1482,6 +1543,62 @@ watch(speakRoundDone, (done) => {
 .btn-next:hover::after { animation: shimmer 1.2s infinite; }
 .btn-next:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 24px rgba(255, 140, 66, 0.35); }
 .btn-next:active { transform: scale(0.97); }
+
+/* 引导动画：自动 shimmer + 呼吸脉冲，吸引幼儿点击 */
+.btn-next.guided {
+  animation: btnGuidePulse 2s ease-in-out infinite;
+}
+.btn-next.guided::after {
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+@keyframes btnGuidePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(255, 140, 66, 0.25); }
+  50% { transform: scale(1.03); box-shadow: 0 6px 24px rgba(255, 140, 66, 0.45); }
+}
+
+/* ===== 按钮状态机：音频驱动 ===== */
+
+/* 禁用状态：灰色 + 呼吸动画 */
+.btn-next.btn-disabled {
+  background: linear-gradient(135deg, #BDBDBD, #9E9E9E) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  animation: btnBreathe 2s ease-in-out infinite;
+  box-shadow: none !important;
+}
+.btn-next.btn-disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+.btn-next.btn-disabled::after {
+  display: none;
+}
+@keyframes btnBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(0.98); opacity: 0.65; }
+}
+
+/* 激活状态：绿色 + 脉冲动画 */
+.btn-next.btn-active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  opacity: 1;
+  cursor: pointer;
+  animation: btnPulse 0.4s ease-in-out 3; /* 脉冲3次 */
+}
+.btn-next.btn-active.pulse-trigger {
+  animation: btnPulse 0.4s ease-in-out 3;
+}
+.btn-next.btn-active::after {
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+@keyframes btnPulse {
+  0% { transform: scale(1); box-shadow: 0 4px 16px rgba(255, 140, 66, 0.25); }
+  50% { transform: scale(1.08); box-shadow: 0 0 24px rgba(255, 140, 66, 0.6), 0 8px 32px rgba(255, 140, 66, 0.3); }
+  100% { transform: scale(1); box-shadow: 0 4px 16px rgba(255, 140, 66, 0.25); }
+}
 .btn-replay {
   padding: var(--space-sm) var(--space-lg);
   background: var(--border-light); color: var(--text-primary);

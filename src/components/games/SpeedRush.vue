@@ -16,7 +16,7 @@
     <div v-if="phase === 'ready'" class="phase-ready anim-fade-up">
       <h1>⚡ 速度大挑战</h1>
       <p class="desc">听音选图，越快越好！答对能加时间哦~</p>
-      <YoyoMascot :mood="'idle'" :bubble-text="'Ready to race?'" :show-stars="false" />
+      <GameMascot :mood="'idle'" :bubble-text="'Ready to race?'" :show-stars="false" />
       <button class="btn-start" @click="startCountdown">🚀 Start!</button>
     </div>
 
@@ -46,8 +46,11 @@
 
       <!-- 单词卡片 -->
       <div class="target-section">
-        <button class="btn-replay" @click="playTarget" :class="{ active: isSpeaking }">
-          🔊 Listen
+        <button class="btn-replay" @click="playTarget" :class="{ active: isSpeaking }" aria-label="Listen again">
+          <svg class="replay-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+          <span class="replay-text">Listen Again</span>
         </button>
       </div>
 
@@ -109,7 +112,7 @@
 
     <!-- 呦呦（仅游戏中/反馈阶段显示） -->
     <footer class="game-footer" v-if="phase === 'playing' || phase === 'feedback'">
-      <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
+      <GameMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
     </footer>
   </div>
 </template>
@@ -118,11 +121,11 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { useSpeech } from '@/composables/useSpeech'
-import { sfxCorrect, sfxWrong, sfxComplete, sfxTick } from '@/composables/useSfx'
+import { sfxCorrect, sfxWrong, sfxComplete, sfxCheer, sfxApplause, sfxFanfare, sfxTick } from '@/composables/useSfx'
 import { triggerConfetti } from '@/composables/useConfetti'
 import { triggerPerfectClear } from '@/composables/useFeedback'
 import { ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import GameMascot from '@/components/common/GameMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
 import LikeButton from '@/components/common/LikeButton.vue'
 import ComboDisplay from '@/components/common/ComboDisplay.vue'
@@ -306,10 +309,8 @@ function finishGame() {
   clearInterval(gameTimer)
   clearTimeout(countdownTimer)
   sfxComplete()
-  phase.value = 'complete'
-  store.updateGameScore('speed-rush', score.value.correct)
-
-  // 动态阈值与 starLevel 一致
+  // 结算欢呼：凯旋号角 + 高分时追加掌声
+  sfxFanfare()
   const diff = store.gameDifficulty || 'medium'
   const thresholds = {
     simple: { three: 10, two: 5, pass: 4 },
@@ -317,6 +318,11 @@ function finishGame() {
     hard: { three: 20, two: 12, pass: 8 }
   }
   const t = thresholds[diff] || thresholds.medium
+  if (score.value.correct >= t.three) {
+    setTimeout(() => sfxApplause(), 600)
+  }
+  phase.value = 'complete'
+  store.updateGameScore('speed-rush', score.value.correct)
 
   if (score.value.correct >= t.three) {
     setYoyo('celebrate', starMessages[2])
@@ -434,26 +440,59 @@ onUnmounted(() => {
 .target-section { text-align: center; }
 
 .btn-replay {
-  padding: var(--space-sm) var(--space-xl);
-  background: var(--bg-card); border: 2px solid #7C5CFC;
-  border-radius: var(--radius-full); font-size: var(--font-size-lg); font-weight: 700;
-  color: #7C5CFC; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 2px 8px rgba(124,92,252,0.1); position: relative; overflow: hidden;
+  padding: 16px 32px; 
+  background: linear-gradient(180deg, #FFB347 0%, #FF8C00 100%);
+  border: none;
+  border-radius: 50px;
+  box-shadow: 0 6px 0 #CC7000, 0 10px 20px rgba(255,140,0,0.3);
+  color: white;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: visible;
+  min-height: 56px;
 }
-.btn-replay::before {
-  content: ''; position: absolute; inset: 0; border-radius: var(--radius-full);
-  background: radial-gradient(circle at center, rgba(124,92,252,0.2), transparent 70%);
-  opacity: 0; transition: opacity 0.3s;
+.replay-icon-svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
 }
-.btn-replay:hover { border-color: #5A3FD6; transform: scale(1.05); box-shadow: 0 4px 16px rgba(124,92,252,0.2); }
-.btn-replay:hover::before { opacity: 1; }
+.btn-replay:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 #CC7000, 0 14px 24px rgba(255,140,0,0.35);
+}
+.btn-replay:hover .replay-icon-svg {
+  transform: rotate(-20deg);
+}
+.btn-replay:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #CC7000, 0 4px 8px rgba(255,140,0,0.3);
+}
 .btn-replay.active {
-  animation: pulse-ring 1s ease infinite;
+  background: linear-gradient(180deg, #FF8C00 0%, #FF7000 100%);
+  box-shadow: 0 6px 0 #CC7000, 0 10px 20px rgba(255,112,0,0.4);
+  animation: soundWave3D 1.2s ease-in-out infinite;
 }
-@keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(124,92,252,0.3); }
-  70% { box-shadow: 0 0 0 12px rgba(124,92,252,0); }
-  100% { box-shadow: 0 0 0 0 rgba(124,92,252,0); }
+.btn-replay.active .replay-icon-svg {
+  animation: iconPulse 0.6s ease-in-out infinite;
+}
+@keyframes soundWave3D {
+  0%, 100% { 
+    box-shadow: 0 6px 0 #CC7000, 0 10px 20px rgba(255,140,0,0.3), 0 0 0 0 rgba(255,140,0,0.4); 
+  }
+  50% { 
+    box-shadow: 0 6px 0 #CC7000, 0 10px 20px rgba(255,140,0,0.3), 0 0 0 16px rgba(255,140,0,0); 
+  }
+}
+@keyframes iconPulse {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(-15deg) scale(1.1); }
 }
 
 /* 选项网格 */
@@ -560,9 +599,13 @@ onUnmounted(() => {
 .countdown-num { font-size: 8rem; font-weight: 900; color: #7C5CFC; }
 
 .game-footer {
-  display: flex; align-items: center; justify-content: center;
-  padding: var(--space-md) var(--space-xl);
-  background: rgba(255,255,255,0.9); backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px var(--space-xl) 12px;
+  background: transparent;
+  overflow: visible;
+  position: relative;
 }
 
 @keyframes starPop {

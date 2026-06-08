@@ -715,7 +715,7 @@ watch(() => petStore.petState?.value?.petSpecies, (species) => {
     showHatching.value = true
     setTimeout(() => { hatchTriggered = false }, 10000)
   }
-})
+}, { immediate: true })
 
 // ===== 破壳动画关闭回调 =====
 function onHatchDismiss() {
@@ -728,6 +728,15 @@ onMounted(async () => {
   await petStore.loadFromDB()
   updateCooldowns()
   cooldownTimer = setInterval(updateCooldowns, 1000)
+
+  // 修复：从 IndexedDB 加载后，如果已有 petSpecies 但破壳动画未展示过，主动触发
+  if (petState.value?.petSpecies && !showHatching.value && !hatchTriggered) {
+    hatchTriggered = true
+    hatchingSpecies.value = petState.value.petSpecies
+    showHatching.value = true
+    try { sfxFanfare() } catch(e) {}
+    setTimeout(() => { hatchTriggered = false }, 10000)
+  }
 })
 
 onUnmounted(() => {
@@ -741,11 +750,12 @@ onUnmounted(() => {
 <style scoped>
 .pet-page {
   width: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
   background: linear-gradient(180deg, #FFF8F0 0%, #FFFDF7 40%, #F5F0FF 100%);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 /* ===== 顶部导航 ===== */

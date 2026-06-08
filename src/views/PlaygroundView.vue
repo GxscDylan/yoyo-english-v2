@@ -244,7 +244,7 @@ function playGame(id) {
 /* ===== 呦呦 ===== */
 .pg-yoyo {
   position: fixed;
-  bottom: 16px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;

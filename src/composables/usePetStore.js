@@ -646,15 +646,20 @@ function generateExploreReward(state) {
 async function loadFromDB() {
   try {
     const data = await dbGetPet()
-    if (data) {
-      // 合并默认值（兼容旧版数据）
-      petState.value = { ...createDefaultState(), ...data }
+    const merged = { ...createDefaultState(), ...data }
+    if (petState.value) {
+      // 保持响应式代理不变，只更新内部属性
+      Object.assign(petState.value, merged)
     } else {
-      petState.value = createDefaultState()
+      petState.value = merged
     }
   } catch (e) {
     console.warn('[PetStore] 加载失败:', e)
-    petState.value = createDefaultState()
+    if (petState.value) {
+      Object.assign(petState.value, createDefaultState())
+    } else {
+      petState.value = createDefaultState()
+    }
   }
 
   checkDailyReset()

@@ -84,7 +84,7 @@
     </main>
 
     <footer class="game-footer" v-if="phase !== 'complete'">
-      <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
+      <GameMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
     </footer>
   </div>
 </template>
@@ -93,11 +93,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { useSpeech } from '@/composables/useSpeech'
-import { sfxMatch, sfxWrong, sfxComplete, sfxFlip } from '@/composables/useSfx'
+import { sfxMatch, sfxWrong, sfxComplete, sfxFlip, sfxCheer, sfxApplause, sfxFanfare } from '@/composables/useSfx'
 import { triggerConfetti } from '@/composables/useConfetti'
 import { playFeedback, triggerPerfectClear } from '@/composables/useFeedback'
 import { ALL_CATEGORIES, ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import GameMascot from '@/components/common/GameMascot.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
 import LikeButton from '@/components/common/LikeButton.vue'
 import ComboDisplay from '@/components/common/ComboDisplay.vue'
@@ -231,6 +231,11 @@ function flipCard(card) {
         feedbackText.value = ''; feedbackClass.value = ''
         if (matchedPairs.value >= currentConfig.value.pairs) {
           setTimeout(() => {
+            // 结算欢呼：凯旋号角 + 高分时追加掌声
+            sfxFanfare()
+            if (starLevel.value >= 3) {
+              setTimeout(() => sfxApplause(), 600)
+            }
             phase.value = 'complete'
             setYoyo('celebrate', 'You found them all!', true)
             store.updateGameScore('memory', starLevel.value)
@@ -453,7 +458,7 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer) })
 .btn-retry:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 20px rgba(124,92,252,0.4); }
 .btn-home:hover { transform: translateY(-2px); }
 
-.game-footer { display: flex; align-items: center; justify-content: center; padding: var(--space-md) var(--space-xl); background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); }
+.game-footer { display: flex; align-items: center; justify-content: center; padding: 8px var(--space-xl) 12px; background: transparent; overflow: visible; position: relative; }
 
 .feedback-bar {
   font-size: var(--font-size-xl); font-weight: 700; padding: var(--space-sm) var(--space-xl);

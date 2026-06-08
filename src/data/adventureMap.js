@@ -27,10 +27,62 @@ export const ADVENTURE_MAP = {
   
   // 地图主题
   themes: {
-    l1: { name: '新手村', bgGradient: 'linear-gradient(180deg, #E8F5E9 0%, #C8E6C9 100%)', skyColor: '#87CEEB' },
-    l2: { name: '奇幻镇', bgGradient: 'linear-gradient(180deg, #BBDEFB 0%, #90CAF9 100%)', skyColor: '#64B5F6' },
-    l2_5: { name: '星空顶', bgGradient: 'linear-gradient(180deg, #D1C4E9 0%, #B39DDB 100%)', skyColor: '#7E57C2' },
-    boss: { name: '城堡', bgGradient: 'linear-gradient(180deg, #FFCCBC 0%, #FFAB91 100%)', skyColor: '#FF7043' }
+    l1: {
+      name: '新手村',
+      icon: '🌿',
+      bgGradient: 'linear-gradient(180deg, #E8F5E9 0%, #C8E6C9 100%)',
+      skyTop: '#C8E6C9',
+      skyMid: '#A5D6A7',
+      skyBottom: '#81C784',
+      grassTop: '#66BB6A',
+      grassBottom: '#43A047',
+      pathColor: '#66BB6A',
+      nodeColor: '#4CAF50',
+      glowColor: '#81C784',
+      skyColor: '#87CEEB'
+    },
+    l2: {
+      name: '奇幻镇',
+      icon: '🏘️',
+      bgGradient: 'linear-gradient(180deg, #BBDEFB 0%, #90CAF9 100%)',
+      skyTop: '#BBDEFB',
+      skyMid: '#90CAF9',
+      skyBottom: '#64B5F6',
+      grassTop: '#42A5F5',
+      grassBottom: '#1E88E5',
+      pathColor: '#42A5F5',
+      nodeColor: '#2196F3',
+      glowColor: '#64B5F6',
+      skyColor: '#64B5F6'
+    },
+    l2_5: {
+      name: '星空顶',
+      icon: '🌌',
+      bgGradient: 'linear-gradient(180deg, #D1C4E9 0%, #B39DDB 100%)',
+      skyTop: '#D1C4E9',
+      skyMid: '#B39DDB',
+      skyBottom: '#9575CD',
+      grassTop: '#7E57C2',
+      grassBottom: '#673AB7',
+      pathColor: '#9575CD',
+      nodeColor: '#7E57C2',
+      glowColor: '#B39DDB',
+      skyColor: '#7E57C2'
+    },
+    boss: {
+      name: '城堡',
+      icon: '🏰',
+      bgGradient: 'linear-gradient(180deg, #FFCCBC 0%, #FFAB91 100%)',
+      skyTop: '#FFCCBC',
+      skyMid: '#FFAB91',
+      skyBottom: '#FF8A65',
+      grassTop: '#FF7043',
+      grassBottom: '#E64A19',
+      pathColor: '#FF8A65',
+      nodeColor: '#FF5722',
+      glowColor: '#FFB74D',
+      skyColor: '#FF7043'
+    }
   },
 
   // 地图节点

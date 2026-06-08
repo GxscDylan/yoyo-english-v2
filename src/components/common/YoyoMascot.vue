@@ -59,8 +59,16 @@
           <span v-if="isSpeaking" class="yoyo-mouth-anim"></span>
         </div>
 
+        <!-- 状态指示器 -->
+        <span v-if="moodStateIcon" class="yoyo-status-badge" :class="`status--${mood}`">
+          {{ moodStateIcon }}
+        </span>
+
         <!-- 正面气泡 -->
         <div v-if="bubbleText && !showBack" class="yoyo-bubble" :class="`bubble--${mood}`">
+          <div class="bubble-shine"></div>
+          <div class="bubble-sparkle sparkle-1"></div>
+          <div class="bubble-sparkle sparkle-2"></div>
           <p>{{ bubbleText }}</p>
         </div>
 
@@ -86,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const emit = defineEmits(['click'])
 const showBack = ref(false)
@@ -128,6 +136,23 @@ const animationMap = {
   cheer: 'happy',
   comfort: 'encourage'
 }
+
+const moodStateIcon = computed(() => {
+  const icons = {
+    happy: '😊',
+    celebrate: '🎉',
+    encourage: '💪',
+    sleepy: '💤',
+    summon: '👋',
+    excited: '✨',
+    proud: '😎',
+    cheer: '📣',
+    comfort: '💕',
+    idle: '',
+    thinking: '🤔'
+  }
+  return icons[props.mood] || ''
+})
 </script>
 
 <style scoped>
@@ -139,12 +164,13 @@ const animationMap = {
   flex-direction: column;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-md);
+  padding: var(--space-md) var(--space-md) 8px;
   position: relative;
   width: 120px;
-  min-height: 140px;
+  min-height: 200px;
   transform-style: preserve-3d;
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible;
 }
 .yoyo-wrapper.yoyo-flipped .yoyo-mascot {
   transform: rotateY(180deg);
@@ -167,39 +193,42 @@ const animationMap = {
   transform: translateX(-50%) rotateY(180deg);
 }
 
-/* ===== 老虎身体（渐变圆球 + 光影） ===== */
+/* ===== 老虎身体（渐变圆球 + 光影 + 3D立体） ===== */
 .yoyo-body {
-  width: 90px;
-  height: 90px;
+  width: 95px;
+  height: 95px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #FFB74D 0%, #FF8F00 60%, #F57C00 100%);
+  background: linear-gradient(145deg, #FFC060 0%, #FF9500 40%, #F57C00 80%, #E65100 100%);
   border-radius: 50%;
   box-shadow:
-    0 6px 20px rgba(255, 140, 66, 0.4),
-    inset 0 -4px 8px rgba(0, 0, 0, 0.1),
-    inset 0 4px 8px rgba(255, 255, 255, 0.2);
+    0 10px 30px rgba(255, 140, 66, 0.5),
+    0 4px 15px rgba(255, 140, 66, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.15),
+    inset 0 6px 12px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
   transition: all 0.3s var(--ease-smooth);
   position: relative;
 }
 
-/* 呼吸动效 */
+/* 呼吸动效 — 增强幅度 */
 .yoyo-body.anim-breathe {
   animation: yoyoBreathe 2.5s ease-in-out infinite;
 }
 
 @keyframes yoyoBreathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.04) translateY(-3px); }
 }
 
 /* ===== 老虎脸部容器 ===== */
 .tiger-face {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -356,18 +385,190 @@ const animationMap = {
   border-radius: 1px;
 }
 
-/* ===== 配饰：帽子 ===== */
+/* 交互反馈增强 - 点击效果 */
+.yoyo-mascot {
+  cursor: pointer;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.yoyo-mascot:active {
+  transform: scale(0.95);
+}
+
+/* 状态指示器 - 悬浮在头像右上角 */
+.yoyo-status-badge {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 14px;
+  line-height: 1;
+  z-index: 50;
+  pointer-events: none;
+  animation: badgePop 0.4s var(--ease-bounce);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* 配饰动画增强 - 帽子摇摆效果 */
 .yoyo-hat {
   position: absolute;
   top: -22px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 1.6rem;
-  animation: hatBounce 0.5s var(--ease-bounce);
+  animation: hatBounceEnhanced 0.6s var(--ease-bounce), hatSway 2s ease-in-out infinite 0.6s;
   pointer-events: none;
   z-index: 20;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+  transform-origin: center bottom;
 }
+
+@keyframes hatBounceEnhanced {
+  0% { transform: translateX(-50%) translateY(-15px) rotate(-15deg) scale(0.5); opacity: 0; }
+  60% { transform: translateX(-50%) translateY(2px) rotate(5deg) scale(1.1); }
+  100% { transform: translateX(-50%) translateY(0) rotate(0deg) scale(1); opacity: 1; }
+}
+
+@keyframes hatSway {
+  0%, 100% { transform: translateX(-50%) rotate(-3deg); }
+  50% { transform: translateX(-50%) rotate(3deg); }
+}
+
+/* 配饰动画增强 - 翅膀振动 — 左移+缩小，避免遮挡头像 */
+.yoyo-wings {
+  position: absolute;
+  top: 45%;
+  left: -12px;
+  transform: translateX(-50%);
+  font-size: 1.2rem;
+  animation: wingsFlutter 0.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+  opacity: 0.5;
+}
+
+@keyframes wingsFlutter {
+  0%, 100% { 
+    transform: translateX(-50%) translateY(0) scaleX(0.85) scaleY(0.9); 
+    opacity: 0.4;
+  }
+  50% { 
+    transform: translateX(-50%) translateY(-3px) scaleX(1.05) scaleY(0.95); 
+    opacity: 0.6;
+  }
+}
+
+/* 配饰动画增强 - 皇冠闪耀 */
+.yoyo-crown {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.6rem;
+  animation: crownGleam 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 20;
+  filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.4));
+}
+
+@keyframes crownGleam {
+  0%, 100% { 
+    transform: translateX(-50%) translateY(0) scale(1); 
+    filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.4)) brightness(1);
+  }
+  25% {
+    transform: translateX(-50%) translateY(-5px) scale(1.05); 
+    filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.6)) brightness(1.1);
+  }
+  50% { 
+    transform: translateX(-50%) translateY(-3px) scale(1); 
+    filter: drop-shadow(0 2px 10px rgba(255, 215, 0, 0.8)) brightness(1.2);
+  }
+  75% {
+    transform: translateX(-50%) translateY(-5px) scale(1.05); 
+    filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.6)) brightness(1.1);
+  }
+}
+
+/* 配饰动画增强 - 光环脉动 */
+.yoyo-halo {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 215, 0, 0.7) 0%, transparent 70%);
+  animation: haloPulse 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes haloPulse {
+  0%, 100% { 
+    opacity: 0.6; 
+    transform: translateX(-50%) scaleX(0.9) scaleY(0.8); 
+  }
+  50% { 
+    opacity: 1; 
+    transform: translateX(-50%) scaleX(1.15) scaleY(1); 
+  }
+}
+
+/* 配饰动画增强 - 眼镜反光 */
+.yoyo-glasses {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 20px;
+  z-index: 10;
+  pointer-events: none;
+  animation: glassesShine 3s ease-in-out infinite;
+}
+
+.glass-frame {
+  position: absolute;
+  top: 0;
+  width: 22px;
+  height: 18px;
+  border: 2.5px solid #42A5F5;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+.glass-frame::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: -10px;
+  width: 10px;
+  height: 14px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transform: rotate(25deg);
+  animation: lensFlare 4s ease-in-out infinite;
+}
+.glass-left::after { animation-delay: 0s; }
+.glass-right::after { animation-delay: 2s; }
+
+@keyframes lensFlare {
+  0%, 100% { left: -10px; opacity: 0; }
+  10%, 30% { opacity: 1; }
+  40% { left: 32px; opacity: 0; }
+}
+
+@keyframes glassesShine {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.1); }
+}
+
 @keyframes hatBounce {
   0% { transform: translateX(-50%) translateY(-10px) rotate(-10deg); opacity: 0; }
   100% { transform: translateX(-50%) translateY(0) rotate(0deg); opacity: 1; }
@@ -426,65 +627,160 @@ const animationMap = {
   50% { opacity: 1; transform: translateX(-50%) scaleX(1.1); }
 }
 
-/* 气泡 */
+/* 气泡 - 紧凑设计，位于头像下方居中 */
 .yoyo-bubble {
-  position: relative;
-  background: var(--bg-card);
-  border: 2px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  padding: 10px var(--space-md) 12px;
-  max-width: 260px;
-  box-shadow: var(--shadow-card);
-  animation: fadeUp 0.3s var(--ease-smooth);
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF9E6 100%);
+  border: 2px solid #FFD93D;
+  border-radius: 16px 16px 16px 4px;
+  padding: 8px 12px 11px;
+  max-width: 130px;
+  box-shadow: 
+    0 3px 12px rgba(255, 217, 61, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  animation: bubblePop 0.35s var(--ease-bounce);
   text-align: center;
+  z-index: 100;
 }
 
+/* 气泡三角箭头 - 向上指向头像 */
 .yoyo-bubble::before {
   content: '';
   position: absolute;
-  top: -8px;
+  top: -9px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 0; height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid var(--border-light);
+  transform: translateX(-50%) rotate(180deg);
+  width: 0; 
+  height: 0; 
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 9px solid #FFD93D;
 }
 
 .yoyo-bubble::after {
   content: '';
   position: absolute;
-  top: -5px;
+  top: -6px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 0; height: 0;
+  transform: translateX(-50%) rotate(180deg);
+  width: 0; 
+  height: 0; 
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-bottom: 8px solid var(--bg-card);
+  border-bottom: 8px solid #FFF9E6;
 }
 
+/* 气泡文字 */
 .yoyo-bubble p {
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  line-height: 1.5;
-  white-space: pre-line;
+  font-size: 11px;
+  color: #5D4E37;
+  line-height: 1.45;
   margin: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
 }
 
-/* 金色气泡 */
+/* 气泡高光效果 */
+.bubble-shine {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  width: 28px;
+  height: 8px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.7), rgba(255,255,255,0));
+  border-radius: 50%;
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+
+/* 气泡闪烁星星 - 缩小版 */
+.bubble-sparkle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #FFD93D;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+.bubble-sparkle.sparkle-1 {
+  top: 5px;
+  right: 10px;
+  animation-delay: 0s;
+}
+
+.bubble-sparkle.sparkle-2 {
+  bottom: 8px;
+  right: 6px;
+  animation-delay: 1s;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* 不同心情的气泡样式 */
 .bubble--happy {
-  background: #FFF8E1;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF8E1 100%);
   border-color: #FFD54F;
-}
-.bubble--celebrate {
-  background: #FFF8E1;
-  border-color: #FFD54F;
+  box-shadow: 
+    0 6px 20px rgba(255, 213, 79, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 温暖气泡 */
+.bubble--celebrate {
+  background: linear-gradient(180deg, #FFF9C4 0%, #FFEB3B 100%);
+  border-color: #FFC107;
+  box-shadow: 
+    0 8px 24px rgba(255, 193, 7, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .bubble--encourage {
-  background: #FFF3E0;
-  border-color: #FFCC80;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF3E0 100%);
+  border-color: #FFAB91;
+  box-shadow: 
+    0 6px 20px rgba(255, 171, 145, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bubble--idle {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F3E5F5 100%);
+  border-color: #CE93D8;
+  box-shadow: 
+    0 6px 20px rgba(206, 147, 216, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 气泡弹出动画 */
+@keyframes bubblePop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.6);
+  }
+  60% {
+    transform: translateX(-50%) translateY(-2px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
 }
 
 /* 星星飞出 */
