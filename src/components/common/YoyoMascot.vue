@@ -677,16 +677,13 @@ const moodStateIcon = computed(() => {
 .yoyo-bubble p {
   font-size: 13px;
   color: #5D4E37;
-  line-height: 1.4;
+  line-height: 1.45;
   margin: 0;
   font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
   word-break: break-word;
+  overflow-wrap: anywhere;
   min-height: 1em;
+  white-space: normal;
 }
 
 /* 气泡高光效果 */

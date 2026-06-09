@@ -363,18 +363,15 @@ defineProps({
 
 /* 气泡文字 */
 .gm-bubble p {
-  font-size: 11px; /* 增大字号提升可读性 */
+  font-size: 11.5px;
   color: #5D4E37;
-  line-height: 1.4;
+  line-height: 1.45;
   margin: 0;
   font-weight: 600;
-  display: -webkit-box;
-  -webkit-line-clamp: 3; /* 从2增加到3，支持更长文本 */
-  -webkit-box-orient: vertical;
-  overflow: visible; /* 移除 hidden，允许完整显示 */
-  text-overflow: clip; /* 不使用省略号 */
-  word-break: break-word; /* 单词级别断行，避免截断 */
+  word-break: break-word; /* 单词级别断行 */
+  overflow-wrap: anywhere; /* 允许在任何位置换行 */
   min-height: 1em;
+  white-space: normal; /* 允许正常换行 */
 }
 
 /* 气泡心情主题色 */
