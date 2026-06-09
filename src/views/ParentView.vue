@@ -483,7 +483,7 @@
         </div>
         <template v-if="petState?.enabled">
           <div class="row">
-            <span>喂养提醒</span>
+            <span>饥饿动画</span>
             <button class="toggle" :class="{ on: petState?.showHungerAnim }" @click="togglePetSetting('showHungerAnim')">
               {{ petState?.showHungerAnim ? 'ON' : 'OFF' }}
             </button>
@@ -721,7 +721,11 @@ const favoriteWordsList = computed(() => getFavoriteWords())
 // v6.0: 萌宠养成系统
 const petStore = usePetStore()
 const petState = computed(() => petStore.petState?.value)
-const petEnabled = computed(() => petStore.petState?.value?.enabled !== false)
+const petEnabled = computed(() => {
+  const s = petStore.petState?.value
+  // 只有 state 已加载且 enabled 不为 false 时才显示
+  return !!s && s.enabled !== false
+})
 const currentPetSpecies = computed(() => petStore.currentSpecies.value)
 
 // 接星星冷却控制

@@ -136,6 +136,16 @@ function confirmNaming() {
   // 保存到 petStore
   if (petState.value) {
     petState.value.petName = name
+
+    // 🛡️ P1 修复: 更新历史记录中最新条目的名字（triggerHatch 先推入了默认名）
+    const history = petState.value.petHistory
+    if (history && history.length > 0) {
+      const latest = history[history.length - 1]
+      if (latest.species === props.species && (!latest.name || latest.name === getDefaultSpeciesName(props.species))) {
+        latest.name = name
+      }
+    }
+
     persist()
   }
 
@@ -174,6 +184,21 @@ function handleOverlayClick(e) {
 }
 
 onMounted(() => {
+  // 🛡️ 附带修复: 家长关闭了破壳动画 → 直接跳过动画展示结果
+  if (petState.value?.showHatchAnim === false) {
+    phase.value = 4
+    const sp = PET_SPECIES.find(s => s.id === props.species)
+    if (sp) {
+      speciesEmoji.value = sp.emoji
+      speciesName.value = sp.name
+    }
+    confirmedName.value = getDefaultName(props.species)
+    hatchDate.value = new Date().toLocaleDateString('zh-CN', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    })
+    return // 不启动定时动画
+  }
+
   // 确定精灵
   const sp = PET_SPECIES.find(s => s.id === props.species)
   if (sp) {

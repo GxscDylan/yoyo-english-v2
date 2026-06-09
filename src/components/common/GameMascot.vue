@@ -68,9 +68,9 @@ defineProps({
 .game-mascot {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse; /* 气泡在头像上方 */
   align-items: center;
-  padding-bottom: 4px;
+  padding: 12px 0;
 }
 
 /* ===== 老虎身体（渐变圆球） ===== */
@@ -304,12 +304,12 @@ defineProps({
 /* ===== 气泡 ===== */
 .gm-bubble {
   position: absolute;
-  top: calc(100% + 4px);
+  bottom: calc(100% + 8px); /* 气泡在头像上方 */
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(180deg, #FFFFFF 0%, #FFF9E6 100%);
   border: 1.5px solid #FFD93D;
-  border-radius: 12px 12px 12px 3px;
+  border-radius: 12px 12px 3px 12px; /* 右下角为尖角 */
   padding: 5px 9px 7px;
   max-width: 110px;
   box-shadow:
@@ -324,13 +324,13 @@ defineProps({
   100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
-/* 气泡三角箭头 */
+/* 气泡三角箭头 - 指向下方 */
 .gm-bubble::before {
   content: '';
   position: absolute;
-  top: -7px;
-  left: 50%;
-  transform: translateX(-50%) rotate(180deg);
+  bottom: -7px; /* 箭头在底部 */
+  left: 16px; /* 箭头偏左，对应圆角位置 */
+  transform: rotate(180deg);
   width: 0; height: 0;
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
@@ -339,9 +339,9 @@ defineProps({
 .gm-bubble::after {
   content: '';
   position: absolute;
-  top: -5px;
-  left: 50%;
-  transform: translateX(-50%) rotate(180deg);
+  bottom: -5px;
+  left: 16px;
+  transform: rotate(180deg);
   width: 0; height: 0;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;

@@ -698,6 +698,19 @@ function showToast(msg) {
 
 // ===== 破壳动画触发 =====
 let hatchTriggered = false
+
+/** 核心修复 P0 #2: 监听 petHatching 标志位（store 驱动） */
+watch(() => s.value?.petHatching, (isHatching) => {
+  if (isHatching && !showHatching.value && !hatchTriggered) {
+    hatchTriggered = true
+    hatchingSpecies.value = s.value?.petSpecies
+    showHatching.value = true
+    try { sfxFanfare() } catch(e) {}
+    setTimeout(() => { hatchTriggered = false }, 10000)
+  }
+})
+
+/** 兼容旧逻辑: 直接检测 level 变化（兜底） */
 watch(() => petLevel.value, (newLevel) => {
   if (newLevel >= 5 && petState.value?.petSpecies && !hatchTriggered) {
     hatchTriggered = true
@@ -720,7 +733,8 @@ watch(() => petStore.petState?.value?.petSpecies, (species) => {
 // ===== 破壳动画关闭回调 =====
 function onHatchDismiss() {
   showHatching.value = false
-  persistPet()
+  hatchTriggered = false
+  petStore.dismissHatchAnim()
 }
 
 // ===== 生命周期 =====

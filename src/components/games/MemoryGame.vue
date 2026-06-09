@@ -458,7 +458,7 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer) })
 .btn-retry:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 20px rgba(124,92,252,0.4); }
 .btn-home:hover { transform: translateY(-2px); }
 
-.game-footer { display: flex; align-items: center; justify-content: center; padding: 8px var(--space-xl) 12px; background: transparent; overflow: visible; position: relative; }
+.game-footer { display: flex; align-items: center; justify-content: center; padding: 8px var(--space-xl) 60px; background: transparent; overflow: visible; position: relative; }
 
 .feedback-bar {
   font-size: var(--font-size-xl); font-weight: 700; padding: var(--space-sm) var(--space-xl);

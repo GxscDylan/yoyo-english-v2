@@ -385,9 +385,13 @@ function addLikes(count) {
     return
   }
 
+  // 🛡️ 附带修复: 应用 growthRate 成长速度倍率
+  const rate = s.growthRate || 1.0
+  const adjustedCount = Math.round(count * rate)
+
   const oldLevel = petLevel.value
-  s.petTotalLikes += count
-  s.todayLikeCount += count
+  s.petTotalLikes += adjustedCount
+  s.todayLikeCount += adjustedCount
 
   // 检测升级
   const newLevel = petLevel.value
@@ -648,8 +652,12 @@ function accel(currentStars, currentTodayLikes) {
   s.petLastAccelAt = Date.now()
   s.petAccelCountToday++
 
+  // 🛡️ 附带修复: 加速成长也应用 growthRate
+  const rate = s.growthRate || 1.0
+  const accelLikes = Math.round(10 * rate)
+
   const oldLevel = petLevel.value
-  s.petTotalLikes += 10  // 加速 +10 成长
+  s.petTotalLikes += accelLikes
 
   const newLevel = petLevel.value
   if (newLevel > oldLevel) {
