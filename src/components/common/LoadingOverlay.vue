@@ -4,7 +4,7 @@
       <div class="loading-content">
         <!-- 呦呦思考动画 -->
         <div class="yoyo-thinking">
-          <div class="yoyo-bounce">🐯</div>
+          <div class="yoyo-bounce">{{ store.currentPetType.emoji }}</div>
           <div class="thought-bubble">
             <span class="thought-dot" v-for="i in 3" :key="i" :style="{ animationDelay: `${i * 0.3}s` }">.</span>
           </div>
@@ -24,6 +24,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useLearningStore } from '@/stores/learning'
+
+const store = useLearningStore()
 
 const props = defineProps({
   visible: {

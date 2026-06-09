@@ -76,6 +76,26 @@ img {
   }
 }
 
+/* 超宽屏适配 (≥1600px) — 华为 MatePad 11.5S (2800×1840) 等 */
+@media (min-width: 1600px) {
+  html {
+    font-size: 18px;
+  }
+  #app {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  /* 核心容器 max-width 限制，防止 2800px 宽度下内容拉伸 */
+  .home-page,
+  .learning-steps-view,
+  .playground-view,
+  .adventure-map-view {
+    max-width: 1440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 /* 滚动条美化 */
 ::-webkit-scrollbar {
   width: 4px;

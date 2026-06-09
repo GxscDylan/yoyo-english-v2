@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 const emit = defineEmits(['click'])
 const showBack = ref(false)
@@ -110,11 +110,36 @@ const props = defineProps({
 })
 
 function handleClick() {
+  console.log('[AVATAR][HomeAvatar] handleClick - showBack before:', showBack.value)
   showBack.value = !showBack.value
+  console.log('[AVATAR][HomeAvatar] handleClick - showBack after:', showBack.value)
   if (!showBack.value) {
+    console.log('[AVATAR][HomeAvatar] handleClick - emitting click event')
     emit('click')
   }
 }
+
+onMounted(() => {
+  console.log('[AVATAR][HomeAvatar] onMounted - component initialized')
+  console.log('[AVATAR][HomeAvatar] onMounted - initial props:', {
+    mood: props.mood,
+    bubbleText: props.bubbleText,
+    showStars: props.showStars,
+    showHat: props.showHat,
+    showGlasses: props.showGlasses,
+    showCrown: props.showCrown,
+    showHalo: props.showHalo,
+    showWings: props.showWings
+  })
+})
+
+watch(() => props.mood, (newMood, oldMood) => {
+  console.log('[AVATAR][HomeAvatar] mood changed:', { from: oldMood, to: newMood })
+})
+
+watch(() => props.bubbleText, (newText, oldText) => {
+  console.log('[AVATAR][HomeAvatar] bubbleText changed:', { from: oldText, to: newText })
+})
 
 const moodStateIcon = computed(() => {
   const icons = {

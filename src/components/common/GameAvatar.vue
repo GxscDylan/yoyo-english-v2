@@ -1,43 +1,44 @@
 <template>
   <div class="game-avatar">
-    <!-- 老虎头像 -->
-    <div class="game-tiger" :class="`game-mood-${mood}`">
-      <div class="game-tiger-body">
-        <!-- 表情图标（游戏专属） -->
-        <span v-if="gameIcon" class="game-icon">{{ gameIcon }}</span>
-        
-        <!-- 老虎脸部 -->
-        <div class="game-face">
-          <!-- 条纹 -->
-          <span class="game-stripe game-stripe-l1"></span>
-          <span class="game-stripe game-stripe-l2"></span>
-          <span class="game-stripe game-stripe-r1"></span>
-          <span class="game-stripe game-stripe-r2"></span>
-          
-          <!-- 耳朵 -->
-          <span class="game-ear game-ear-left"></span>
-          <span class="game-ear game-ear-right"></span>
-          
-          <!-- 眼睛 -->
-          <span class="game-eye game-eye-left">
-            <span class="game-pupil"></span>
-            <span class="game-shine"></span>
-          </span>
-          <span class="game-eye game-eye-right">
-            <span class="game-pupil"></span>
-            <span class="game-shine"></span>
-          </span>
-          
-          <!-- 鼻子 -->
-          <span class="game-nose"></span>
-          
-          <!-- 嘴巴 -->
-          <span class="game-mouth"></span>
-          
-          <!-- 腮红 -->
-          <span class="game-blush game-blush-left"></span>
-          <span class="game-blush game-blush-right"></span>
-        </div>
+    <!-- 动态宠物头像 -->
+    <div class="game-pet" :class="`game-mood-${mood}`">
+      <div class="game-pet-body" :style="{ background: petBackground }">
+        <!-- 宠物显示：使用 emoji 或自定义脸部 -->
+        <div v-if="useEmojiPet" class="game-emoji-pet">{{ store.currentPetType.emoji }}</div>
+        <template v-else>
+          <!-- 老虎脸部 -->
+          <div class="game-face">
+            <!-- 条纹 -->
+            <span class="game-stripe game-stripe-l1"></span>
+            <span class="game-stripe game-stripe-l2"></span>
+            <span class="game-stripe game-stripe-r1"></span>
+            <span class="game-stripe game-stripe-r2"></span>
+            
+            <!-- 耳朵 -->
+            <span class="game-ear game-ear-left"></span>
+            <span class="game-ear game-ear-right"></span>
+            
+            <!-- 眼睛 -->
+            <span class="game-eye game-eye-left">
+              <span class="game-pupil"></span>
+              <span class="game-shine"></span>
+            </span>
+            <span class="game-eye game-eye-right">
+              <span class="game-pupil"></span>
+              <span class="game-shine"></span>
+            </span>
+            
+            <!-- 鼻子 -->
+            <span class="game-nose"></span>
+            
+            <!-- 嘴巴 -->
+            <span class="game-mouth"></span>
+            
+            <!-- 腮红 -->
+            <span class="game-blush game-blush-left"></span>
+            <span class="game-blush game-blush-right"></span>
+          </div>
+        </template>
       </div>
       
       <!-- 游戏进度徽章 -->
@@ -68,7 +69,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { useLearningStore } from '@/stores/learning'
+
+const store = useLearningStore()
 
 const props = defineProps({
   mood: {
@@ -83,19 +87,37 @@ const props = defineProps({
   showCombo: { type: Boolean, default: false }
 })
 
-const gameIcon = computed(() => {
-  const icons = {
-    idle: '',
-    thinking: '🎯',
-    happy: '😄',
-    encourage: '💪',
-    celebrate: '🎉',
-    sleepy: '😴',
-    excited: '🔥',
-    win: '🏆',
-    lose: '😢'
-  }
-  return icons[props.mood] || ''
+const useEmojiPet = computed(() => {
+  const tigerTypes = ['tiger']
+  return !tigerTypes.includes(store.settings.petType)
+})
+
+const petBackground = computed(() => {
+  return store.currentPetType.color || '#FFB74D'
+})
+
+onMounted(() => {
+  console.log('[AVATAR][GameAvatar] onMounted - component initialized')
+  console.log('[AVATAR][GameAvatar] onMounted - initial props:', {
+    mood: props.mood,
+    bubbleText: props.bubbleText,
+    showStars: props.showStars,
+    showScore: props.showScore,
+    score: props.score,
+    showCombo: props.showCombo
+  })
+})
+
+watch(() => props.mood, (newMood, oldMood) => {
+  console.log('[AVATAR][GameAvatar] mood changed:', { from: oldMood, to: newMood })
+})
+
+watch(() => props.score, (newScore, oldScore) => {
+  console.log('[AVATAR][GameAvatar] score changed:', { from: oldScore, to: newScore })
+})
+
+watch(() => props.showCombo, (newVal, oldVal) => {
+  console.log('[AVATAR][GameAvatar] showCombo changed:', { from: oldVal, to: newVal })
 })
 </script>
 
@@ -109,15 +131,15 @@ const gameIcon = computed(() => {
   width: 80px;
 }
 
-/* ===== 老虎身体 ===== */
-.game-tiger {
+/* ===== 宠物身体 ===== */
+.game-pet {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.game-tiger-body {
+.game-pet-body {
   width: 60px;
   height: 60px;
   display: flex;
@@ -133,28 +155,13 @@ const gameIcon = computed(() => {
   transition: transform 0.3s ease;
 }
 
-.game-mood-idle .game-tiger-body {
+.game-mood-idle .game-pet-body {
   animation: gameBreathe 2.8s ease-in-out infinite;
 }
 
 @keyframes gameBreathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.03); }
-}
-
-/* ===== 游戏图标 ===== */
-.game-icon {
-  position: absolute;
-  top: -16px;
-  font-size: 1.2rem;
-  animation: gameIconPop 0.5s ease-out;
-  z-index: 10;
-}
-
-@keyframes gameIconPop {
-  0% { transform: scale(0); opacity: 0; }
-  60% { transform: scale(1.3); }
-  100% { transform: scale(1); opacity: 1; }
 }
 
 /* ===== 老虎脸部 ===== */
@@ -302,8 +309,36 @@ const gameIcon = computed(() => {
   color: rgba(255,255,255,0.9);
 }
 
+/* ===== emoji 宠物显示 ===== */
+.game-emoji-pet {
+  font-size: 2.5rem;
+  animation: gameBreathe 2.8s ease-in-out infinite;
+}
+
+.game-mood-happy .game-emoji-pet,
+.game-mood-celebrate .game-emoji-pet,
+.game-mood-excited .game-emoji-pet {
+  animation: gameHappyBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.game-mood-thinking .game-emoji-pet {
+  animation: gameTilt 2s ease-in-out infinite;
+}
+
+.game-mood-encourage .game-emoji-pet {
+  animation: gameNod 1.2s ease-in-out infinite;
+}
+
+.game-mood-sleepy .game-emoji-pet {
+  animation: gameSleepy 3s ease-in-out infinite;
+}
+
+.game-mood-lose .game-emoji-pet {
+  animation: gameLoseSwing 0.5s ease-out;
+}
+
 /* ===== 情绪状态 ===== */
-.game-mood-happy .game-tiger-body {
+.game-mood-happy .game-pet-body {
   animation: gameHappyBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -330,7 +365,7 @@ const gameIcon = computed(() => {
 }
 .game-mood-happy .game-blush { opacity: 1; }
 
-.game-mood-celebrate .game-tiger-body {
+.game-mood-celebrate .game-pet-body {
   animation: gameCelebrate 0.6s ease-in-out infinite;
 }
 
@@ -354,7 +389,7 @@ const gameIcon = computed(() => {
 }
 .game-mood-celebrate .game-blush { opacity: 1; }
 
-.game-mood-encourage .game-tiger-body {
+.game-mood-encourage .game-pet-body {
   animation: gameNod 1.2s ease-in-out infinite;
 }
 
@@ -364,7 +399,7 @@ const gameIcon = computed(() => {
   60% { transform: translateY(0) rotate(2deg); }
 }
 
-.game-mood-thinking .game-tiger-body {
+.game-mood-thinking .game-pet-body {
   animation: gameTilt 2s ease-in-out infinite;
 }
 
@@ -374,7 +409,7 @@ const gameIcon = computed(() => {
 }
 .game-mood-thinking .game-pupil { top: 0.5px; left: 3px; }
 
-.game-mood-sleepy .game-tiger-body {
+.game-mood-sleepy .game-pet-body {
   animation: gameSleepy 3s ease-in-out infinite;
 }
 
@@ -394,7 +429,7 @@ const gameIcon = computed(() => {
   border-bottom-width: 1.2px;
 }
 
-.game-mood-excited .game-tiger-body {
+.game-mood-excited .game-pet-body {
   animation: gameExcitedJump 0.4s ease-out infinite alternate;
 }
 
@@ -417,7 +452,7 @@ const gameIcon = computed(() => {
 }
 .game-mood-excited .game-blush { opacity: 1; }
 
-.game-mood-win .game-tiger-body {
+.game-mood-win .game-pet-body {
   animation: gameWinBounce 0.5s ease-out;
 }
 
@@ -443,7 +478,7 @@ const gameIcon = computed(() => {
 }
 .game-mood-win .game-blush { opacity: 1; }
 
-.game-mood-lose .game-tiger-body {
+.game-mood-lose .game-pet-body {
   animation: gameLoseSwing 0.5s ease-out;
 }
 
@@ -476,45 +511,47 @@ const gameIcon = computed(() => {
   transform: translateX(-50%);
   background: linear-gradient(180deg, #FFFFFF 0%, #FFF9E6 100%);
   border: 1.5px solid #FFD93D;
-  border-radius: 14px 14px 4px 14px;
-  padding: 7px 12px 8px;
-  max-width: 200px;
-  min-width: 60px;
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 16px 12px;
+  max-width: 360px;
+  min-width: 80px;
+  width: fit-content;
+  white-space: nowrap;
   box-shadow:
-    0 3px 12px rgba(255, 217, 61, 0.25),
-    0 1px 3px rgba(0, 0, 0, 0.08);
-  animation: gameBubblePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    0 4px 16px rgba(255, 217, 61, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  animation: gameBubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   text-align: center;
   z-index: 100;
 }
 
 @keyframes gameBubblePop {
-  0% { transform: translateX(-50%) scale(0.6); opacity: 0; }
-  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  0% { transform: translateX(-50%) scale(0.7) translateY(10px); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
 }
 
 .game-bubble::before {
   content: '';
   position: absolute;
-  bottom: -7px;
-  left: 16px;
-  transform: rotate(180deg);
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   width: 0; height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 7px solid #FFD93D;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #FFD93D;
 }
 
 .game-bubble::after {
   content: '';
   position: absolute;
-  bottom: -5px;
-  left: 16px;
-  transform: rotate(180deg);
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   width: 0; height: 0;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-bottom: 5.5px solid #FFF9E6;
+  border-top: 6px solid #FFF9E6;
 }
 
 .game-bubble-shine {

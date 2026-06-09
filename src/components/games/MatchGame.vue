@@ -48,8 +48,8 @@
       <!-- 准备阶段 -->
       <div v-if="phase === 'ready'" class="phase-ready anim-fade-up">
         <span class="ready-icon">🔍</span>
-        <h2>Find It</h2>
-        <p>Listen and find the right picture!</p>
+        <h1>找一找</h1>
+        <p>听发音，找出正确的图片！</p>
         <button class="btn-play" @click="startCountdown">Start! 🎮</button>
       </div>
 
@@ -496,7 +496,7 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer); clearAutoReplay() })
   45% { transform: rotate(-5deg); }
   60% { transform: rotate(3deg); }
 }
-.phase-ready h2 { font-size: var(--font-size-2xl); color: #7C5CFC; margin-bottom: var(--space-sm); }
+.phase-ready h1 { font-size: 2.5rem; color: #7C5CFC; margin-bottom: var(--space-sm); }
 .phase-ready p { color: var(--text-secondary); margin-bottom: var(--space-xl); font-size: var(--font-size-lg); }
 .btn-play {
   padding: var(--space-md) var(--space-2xl);
@@ -742,7 +742,7 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer); clearAutoReplay() })
 .game-footer {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   padding: 8px var(--space-xl) 60px;
   background: transparent;
   overflow: visible;

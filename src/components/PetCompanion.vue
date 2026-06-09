@@ -1,6 +1,6 @@
 <template>
   <Transition name="companion-bubble">
-    <div v-if="showBubble && reaction" class="pet-companion">
+    <div v-if="showBubble && reaction && reaction.emoji && reaction.text" class="pet-companion">
       <div class="companion-bubble">
         <span class="companion-emoji">{{ reaction.emoji }}</span>
         <span class="companion-text">{{ reaction.text }}</span>

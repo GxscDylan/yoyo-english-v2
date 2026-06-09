@@ -136,6 +136,22 @@
         </div>
       </section>
 
+      <!-- 宠物类型选择 -->
+      <section class="section-card">
+        <h3>🐾 宠物伙伴</h3>
+        <p class="pet-hint">选择宝贝喜欢的宠物伙伴，游戏中会陪伴学习</p>
+        <div class="pet-grid">
+          <button v-for="pet in store.availablePetTypes" :key="pet.key" 
+            class="pet-option"
+            :class="{ active: store.settings.petType === pet.key }"
+            @click="store.setPetType(pet.key)">
+            <span class="pet-emoji">{{ pet.emoji }}</span>
+            <span class="pet-name">{{ pet.name }}</span>
+            <span v-if="store.settings.petType === pet.key" class="pet-check">✓</span>
+          </button>
+        </div>
+      </section>
+
       <!-- v6.0: 萌宠养成控制 -->
       <section class="section-card" v-if="petStore.petState.value">
         <h3>🐾 萌宠养成</h3>

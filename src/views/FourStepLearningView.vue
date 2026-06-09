@@ -131,8 +131,7 @@ import StepIndicator from '@/components/common/StepIndicator.vue'
 import LearningStepButton from '@/components/common/LearningStepButton.vue'
 import YoyoBubble from '@/components/common/YoyoBubble.vue'
 import GameProgress from '@/components/common/GameProgress.vue'
-// WordCard 根据实际项目路径调整
-// import WordCard from '@/components/common/WordCard.vue'
+import WordCard from '@/components/common/WordCard.vue'
 
 const props = defineProps({
   // 当前单词
@@ -349,7 +348,7 @@ defineExpose({
 .learning-steps-view {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-main, #FFF8F0);
 }
 

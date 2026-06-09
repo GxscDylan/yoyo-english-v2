@@ -1,13 +1,15 @@
 <template>
-  <component :is="gameComponent" @game-complete="onGameComplete" />
+  <div class="game-view">
+    <component :is="gameComponent" @game-complete="onGameComplete" />
 
-  <!-- Catch Stars 奖励游戏覆盖层 -->
-  <CatchStars
-    v-if="showCatchStars"
-    :category-index="catchCategoryIndex"
-    :trigger-label="catchTriggerLabel"
-    @done="closeCatchStars"
-  />
+    <!-- Catch Stars 奖励游戏覆盖层 -->
+    <CatchStars
+      v-if="showCatchStars"
+      :category-index="catchCategoryIndex"
+      :trigger-label="catchTriggerLabel"
+      @done="closeCatchStars"
+    />
+  </div>
 </template>
 
 <script setup>
@@ -63,3 +65,10 @@ function closeCatchStars() {
   showCatchStars.value = false
 }
 </script>
+
+<style scoped>
+.game-view {
+  position: relative;
+  min-height: 100dvh;
+}
+</style>

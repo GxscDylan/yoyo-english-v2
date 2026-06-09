@@ -1,7 +1,12 @@
 <template>
   <div class="page">
     <div class="not-found">
-      <span class="icon">🔍</span>
+      <HomeAvatar 
+        mood="thinking" 
+        bubble-text="咦？这里什么都没有~ 跟我回家吧！🏠"
+        :show-stars="false"
+        class="not-found-avatar"
+      />
       <h2>找不到页面</h2>
       <p>呦呦也不知道在哪里...</p>
       <router-link to="/" class="btn-home">回到首页</router-link>
@@ -10,6 +15,7 @@
 </template>
 
 <script setup>
+import HomeAvatar from '@/components/common/HomeAvatar.vue'
 </script>
 
 <style scoped>
@@ -19,7 +25,15 @@
   background: var(--bg-main);
 }
 .not-found { text-align: center; }
-.icon { font-size: 5rem; display: block; margin-bottom: var(--space-lg); }
+.not-found-avatar {
+  margin-bottom: var(--space-lg);
+  animation: avatarWiggle 2s ease-in-out infinite;
+}
+@keyframes avatarWiggle {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
 h2 { font-size: var(--font-size-2xl); color: var(--text-secondary); margin-bottom: var(--space-md); }
 p { color: var(--text-hint); margin-bottom: var(--space-xl); }
 .btn-home {

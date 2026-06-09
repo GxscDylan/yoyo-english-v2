@@ -129,7 +129,7 @@
           <p class="intro-subtitle">{{ category?.nameEn }}</p>
         </div>
         <button class="btn-start" @click="startLearning">
-          🐯 开始探险！
+          {{ store.currentPetType.emoji }} 开始探险！
         </button>
       </div>
 
@@ -1728,12 +1728,16 @@ watch(speakRoundDone, (done) => {
 
 /* ===== 底部呦呦 ===== */
 .learn-footer {
-  display: flex; align-items: flex-start; justify-content: center;
-  padding: var(--space-md) var(--space-xl) 100px;
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(8px);
+  position: fixed;
+  bottom: var(--space-lg);
+  right: var(--space-lg);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0;
+  background: transparent;
   overflow: visible;
-  min-height: 280px; /* 增大以容纳 mascot + 气泡 + 按钮间距 */
+  z-index: 50;
 }
 
 /* ===== P1: 场景动态插图 ===== */

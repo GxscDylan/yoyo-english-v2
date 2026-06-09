@@ -115,7 +115,7 @@ function playGame(id) {
 
 <style scoped>
 .playground-view {
-  width: 100%; min-height: 100vh; display: flex; flex-direction: column;
+  width: 100%; min-height: 100dvh; display: flex; flex-direction: column;
   background: linear-gradient(180deg, #FFF8E1 0%, var(--bg-main) 60%);
   overflow-x: hidden;
 }
@@ -150,8 +150,7 @@ function playGame(id) {
 /* ===== 主内容 ===== */
 .pg-main {
   flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding: var(--space-xl); display: flex; align-items: center; justify-content: center;
-  padding-bottom: 140px;
+  padding: var(--space-xl); display: flex; align-items: flex-start; justify-content: center;
 }
 .pg-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);

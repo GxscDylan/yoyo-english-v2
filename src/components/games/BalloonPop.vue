@@ -46,8 +46,8 @@
       <!-- 准备阶段 -->
       <div v-if="phase === 'ready'" class="phase-ready anim-fade-up">
         <span class="ready-icon">🎈</span>
-        <h2>Balloon Pop</h2>
-        <p>Listen and pop the right balloon!</p>
+        <h1>气球爆破</h1>
+        <p>听发音，戳破正确的气球！</p>
         <button class="btn-play" @click="startCountdown">Start! 🎮</button>
       </div>
 
@@ -533,7 +533,7 @@ onUnmounted(() => {
   25% { transform: translateY(-10px) rotate(-5deg); }
   75% { transform: translateY(-6px) rotate(5deg); }
 }
-.phase-ready h2 { font-size: var(--font-size-2xl); color: #FF6B6B; margin-bottom: var(--space-sm); }
+.phase-ready h1 { font-size: 2.5rem; color: #FF6B6B; margin-bottom: var(--space-sm); }
 .phase-ready p { color: var(--text-secondary); margin-bottom: var(--space-xl); font-size: var(--font-size-lg); }
 .btn-play {
   padding: var(--space-md) var(--space-2xl);
@@ -826,7 +826,7 @@ onUnmounted(() => {
 .game-footer {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   padding: 8px var(--space-xl) 60px;
   background: transparent;
   overflow: visible;

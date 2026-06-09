@@ -1,14 +1,11 @@
 <template>
   <div class="offline-page">
-    <div class="offline-mascot">
-      <div class="mascot-circle">
-        <span class="mascot-emoji">{{ EMOJI.TIGER }}</span>
-      </div>
-      <div class="mascot-ears">
-        <span class="ear ear-l"></span>
-        <span class="ear ear-r"></span>
-      </div>
-    </div>
+    <HomeAvatar 
+      mood="comfort" 
+      bubble-text="别担心，我们继续复习吧！💪"
+      :show-stars="false"
+      class="offline-avatar"
+    />
 
     <h1 class="offline-title">哎呀，网络跑掉啦！</h1>
     <p class="offline-sub">Oops! The internet ran away~</p>
@@ -41,9 +38,9 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
+import HomeAvatar from '@/components/common/HomeAvatar.vue'
 
 const EMOJI = {
-  TIGER: '\uD83D\uDC2F',
   HOME: '\uD83C\uDFE0',
   BOOK: '\uD83D\uDCDA',
   LIGHTBULB: '\uD83D\uDCA1',
@@ -73,58 +70,14 @@ function goReview() { router.push('/review') }
   overflow: hidden;
 }
 
-.offline-mascot {
-  position: relative;
+.offline-avatar {
   margin-bottom: var(--space-lg, 24px);
-  animation: mascotBounce 2s ease-in-out infinite;
+  animation: avatarFloat 3s ease-in-out infinite;
 }
 
-.mascot-circle {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FF8C42, #FFB380);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 32px rgba(255, 140, 66, 0.35);
-  position: relative;
-}
-
-.mascot-emoji { font-size: 4rem; }
-
-.mascot-ears {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 140px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.ear {
-  width: 30px;
-  height: 30px;
-  border-radius: 50% 50% 0 0;
-  background: #FFB380;
-  position: relative;
-}
-
-.ear::after {
-  content: '';
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50% 50% 0 0;
-  background: #FFD4B0;
-}
-
-@keyframes mascotBounce {
+@keyframes avatarFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+  50% { transform: translateY(-10px); }
 }
 
 .offline-title {

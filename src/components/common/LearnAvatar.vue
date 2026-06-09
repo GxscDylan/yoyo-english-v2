@@ -10,44 +10,45 @@
       <span class="progress-text">{{ progressPercent }}%</span>
     </div>
     
-    <!-- 老虎头像 -->
-    <div class="learn-tiger" :class="`learn-mood-${mood}`">
-      <div class="learn-tiger-body">
-        <!-- 学习状态图标 -->
-        <span v-if="learnIcon" class="learn-status-icon">{{ learnIcon }}</span>
-        
-        <!-- 老虎脸部 -->
-        <div class="learn-face">
-          <!-- 条纹 -->
-          <span class="learn-stripe learn-stripe-l1"></span>
-          <span class="learn-stripe learn-stripe-l2"></span>
-          <span class="learn-stripe learn-stripe-r1"></span>
-          <span class="learn-stripe learn-stripe-r2"></span>
-          
-          <!-- 耳朵 -->
-          <span class="learn-ear learn-ear-left"></span>
-          <span class="learn-ear learn-ear-right"></span>
-          
-          <!-- 眼睛 -->
-          <span class="learn-eye learn-eye-left">
-            <span class="learn-pupil"></span>
-            <span class="learn-shine"></span>
-          </span>
-          <span class="learn-eye learn-eye-right">
-            <span class="learn-pupil"></span>
-            <span class="learn-shine"></span>
-          </span>
-          
-          <!-- 鼻子 -->
-          <span class="learn-nose"></span>
-          
-          <!-- 嘴巴 -->
-          <span class="learn-mouth"></span>
-          
-          <!-- 腮红 -->
-          <span class="learn-blush learn-blush-left"></span>
-          <span class="learn-blush learn-blush-right"></span>
-        </div>
+    <!-- 宠物头像 -->
+    <div class="learn-pet" :class="`learn-mood-${mood}`">
+      <div class="learn-pet-body" :style="{ background: petBackground }">
+        <!-- 宠物显示：使用 emoji 或自定义脸部 -->
+        <div v-if="useEmojiPet" class="learn-emoji-pet">{{ store.currentPetType.emoji }}</div>
+        <template v-else>
+          <!-- 老虎脸部 -->
+          <div class="learn-face">
+            <!-- 条纹 -->
+            <span class="learn-stripe learn-stripe-l1"></span>
+            <span class="learn-stripe learn-stripe-l2"></span>
+            <span class="learn-stripe learn-stripe-r1"></span>
+            <span class="learn-stripe learn-stripe-r2"></span>
+            
+            <!-- 耳朵 -->
+            <span class="learn-ear learn-ear-left"></span>
+            <span class="learn-ear learn-ear-right"></span>
+            
+            <!-- 眼睛 -->
+            <span class="learn-eye learn-eye-left">
+              <span class="learn-pupil"></span>
+              <span class="learn-shine"></span>
+            </span>
+            <span class="learn-eye learn-eye-right">
+              <span class="learn-pupil"></span>
+              <span class="learn-shine"></span>
+            </span>
+            
+            <!-- 鼻子 -->
+            <span class="learn-nose"></span>
+            
+            <!-- 嘴巴 -->
+            <span class="learn-mouth"></span>
+            
+            <!-- 腮红 -->
+            <span class="learn-blush learn-blush-left"></span>
+            <span class="learn-blush learn-blush-right"></span>
+          </div>
+        </template>
         
         <!-- 说话嘴部动画 -->
         <span v-if="isSpeaking" class="learn-mouth-anim"></span>
@@ -88,7 +89,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { useLearningStore } from '@/stores/learning'
+
+const store = useLearningStore()
 
 const props = defineProps({
   mood: {
@@ -108,20 +112,50 @@ const props = defineProps({
   totalSteps: { type: Number, default: 4 }
 })
 
-const learnIcon = computed(() => {
-  const icons = {
-    idle: '',
-    thinking: '🤔',
-    happy: '😊',
-    encourage: '💪',
-    celebrate: '🎉',
-    sleepy: '😴',
-    focused: '🎯',
-    proud: '😎',
-    comfort: '💕',
-    excited: '✨'
-  }
-  return icons[props.mood] || ''
+const useEmojiPet = computed(() => {
+  const tigerTypes = ['tiger']
+  return !tigerTypes.includes(store.settings?.petType)
+})
+
+const petBackground = computed(() => {
+  return store.currentPetType?.color || '#FFB74D'
+})
+
+onMounted(() => {
+  console.log('[AVATAR][LearnAvatar] onMounted - component initialized')
+  console.log('[AVATAR][LearnAvatar] onMounted - initial props:', {
+    mood: props.mood,
+    bubbleText: props.bubbleText,
+    showStars: props.showStars,
+    showSparkle: props.showSparkle,
+    isSpeaking: props.isSpeaking,
+    isRecording: props.isRecording,
+    showProgress: props.showProgress,
+    progressPercent: props.progressPercent,
+    showStep: props.showStep,
+    currentStep: props.currentStep,
+    totalSteps: props.totalSteps
+  })
+})
+
+watch(() => props.mood, (newMood, oldMood) => {
+  console.log('[AVATAR][LearnAvatar] mood changed:', { from: oldMood, to: newMood })
+})
+
+watch(() => props.isSpeaking, (newVal, oldVal) => {
+  console.log('[AVATAR][LearnAvatar] isSpeaking changed:', { from: oldVal, to: newVal })
+})
+
+watch(() => props.isRecording, (newVal, oldVal) => {
+  console.log('[AVATAR][LearnAvatar] isRecording changed:', { from: oldVal, to: newVal })
+})
+
+watch(() => props.progressPercent, (newVal, oldVal) => {
+  console.log('[AVATAR][LearnAvatar] progressPercent changed:', { from: oldVal, to: newVal })
+})
+
+watch(() => props.currentStep, (newVal, oldVal) => {
+  console.log('[AVATAR][LearnAvatar] currentStep changed:', { from: oldVal, to: newVal })
 })
 </script>
 
@@ -131,8 +165,10 @@ const learnIcon = computed(() => {
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
-  padding: 16px 0;
-  width: 90px;
+  padding: 8px 0;
+  width: 80px;
+  background: transparent;
+  border: none;
 }
 
 /* ===== 学习进度环 ===== */
@@ -182,32 +218,31 @@ const learnIcon = computed(() => {
   color: #FF9500;
 }
 
-/* ===== 老虎身体 ===== */
-.learn-tiger {
+/* ===== 宠物身体 ===== */
+.learn-pet {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.learn-tiger-body {
-  width: 72px;
-  height: 72px;
+.learn-pet-body {
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #FFC060 0%, #FF9500 50%, #F57C00 100%);
   border-radius: 50%;
   box-shadow:
-    0 6px 20px rgba(255, 140, 66, 0.35),
-    inset 0 -3px 8px rgba(0, 0, 0, 0.1),
-    inset 0 3px 8px rgba(255, 255, 255, 0.2);
+    0 4px 12px rgba(255, 140, 66, 0.3),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.07),
+    inset 0 2px 5px rgba(255, 255, 255, 0.15);
   position: relative;
   transition: transform 0.3s ease;
 }
 
-.learn-mood-idle .learn-tiger-body {
-  animation: learnBreathe 3s ease-in-out infinite;
+.learn-mood-idle .learn-pet-body {
+  animation: learnBreathe 2.8s ease-in-out infinite;
 }
 
 @keyframes learnBreathe {
@@ -215,19 +250,42 @@ const learnIcon = computed(() => {
   50% { transform: scale(1.03); }
 }
 
-/* ===== 学习状态图标 ===== */
-.learn-status-icon {
-  position: absolute;
-  top: -18px;
-  font-size: 1.4rem;
-  animation: learnIconAppear 0.4s ease-out;
-  z-index: 10;
+/* ===== Emoji 宠物 ===== */
+.learn-emoji-pet {
+  font-size: 2.5rem;
+  line-height: 1;
+  animation: learnBreathe 2.8s ease-in-out infinite;
 }
 
-@keyframes learnIconAppear {
-  0% { transform: scale(0); opacity: 0; }
-  60% { transform: scale(1.3); }
-  100% { transform: scale(1); opacity: 1; }
+.learn-mood-happy .learn-emoji-pet,
+.learn-mood-celebrate .learn-emoji-pet,
+.learn-mood-excited .learn-emoji-pet {
+  animation: learnHappyBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.learn-mood-thinking .learn-emoji-pet {
+  animation: learnTilt 2s ease-in-out infinite;
+}
+
+.learn-mood-encourage .learn-emoji-pet {
+  animation: learnNod 1.2s ease-in-out infinite;
+}
+
+@keyframes learnHappyBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.09); }
+  100% { transform: scale(1); }
+}
+
+@keyframes learnTilt {
+  0%, 100% { transform: rotate(0); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes learnNod {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  30% { transform: translateY(-3px) rotate(-2deg); }
+  60% { transform: translateY(0) rotate(2deg); }
 }
 
 /* ===== 老虎脸部 ===== */
@@ -420,7 +478,7 @@ const learnIcon = computed(() => {
 }
 
 /* ===== 情绪状态 ===== */
-.learn-mood-happy .learn-tiger-body {
+.learn-mood-happy .learn-pet-body {
   animation: learnHappyBounce 0.4s ease-out;
 }
 
@@ -445,7 +503,7 @@ const learnIcon = computed(() => {
 }
 .learn-mood-happy .learn-blush { opacity: 1; }
 
-.learn-mood-celebrate .learn-tiger-body {
+.learn-mood-celebrate .learn-pet-body {
   animation: learnCelebrate 0.5s ease-in-out infinite;
 }
 
@@ -469,7 +527,7 @@ const learnIcon = computed(() => {
 }
 .learn-mood-celebrate .learn-blush { opacity: 1; }
 
-.learn-mood-focus .learn-tiger-body {
+.learn-mood-focus .learn-pet-body {
   animation: learnFocus 2s ease-in-out infinite;
 }
 
@@ -479,7 +537,7 @@ const learnIcon = computed(() => {
 }
 .learn-mood-focus .learn-pupil { top: 3px; left: 4px; }
 
-.learn-mood-thinking .learn-tiger-body {
+.learn-mood-thinking .learn-pet-body {
   animation: learnTilt 2.5s ease-in-out infinite;
 }
 
@@ -495,7 +553,7 @@ const learnIcon = computed(() => {
 .learn-mood-thinking .learn-eye-right .learn-pupil,
 .learn-mood-thinking .learn-eye-right .learn-shine { display: none; }
 
-.learn-mood-encourage .learn-tiger-body {
+.learn-mood-encourage .learn-pet-body {
   animation: learnNod 1.5s ease-in-out infinite;
 }
 
@@ -525,7 +583,7 @@ const learnIcon = computed(() => {
   border-bottom: 2.5px solid #333;
   border-radius: 0 0 16px 16px;
 }
-.learn-mood-proud .learn-tiger-body {
+.learn-mood-proud .learn-pet-body {
   animation: learnProudGlow 2s ease-in-out infinite alternate;
 }
 
@@ -544,7 +602,7 @@ const learnIcon = computed(() => {
   opacity: 1;
   background: rgba(255, 183, 197, 0.35);
 }
-.learn-mood-comfort .learn-tiger-body {
+.learn-mood-comfort .learn-pet-body {
   animation: learnComfortTilt 2s ease-in-out infinite alternate;
 }
 
@@ -567,7 +625,7 @@ const learnIcon = computed(() => {
   border-radius: 0 0 10px 10px;
 }
 .learn-mood-excited .learn-blush { opacity: 1; }
-.learn-mood-excited .learn-tiger-body {
+.learn-mood-excited .learn-pet-body {
   animation: learnExcitedBounce 0.4s ease-in-out infinite alternate;
 }
 
@@ -594,69 +652,64 @@ const learnIcon = computed(() => {
 /* ===== 气泡 ===== */
 .learn-bubble {
   position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 50%;
+  right: calc(100% + 12px);
+  transform: translateY(50%);
   background: linear-gradient(180deg, #FFFFFF 0%, #FFF9E6 100%);
-  border: 2px solid #FFD93D;
-  border-radius: 16px 16px 4px 16px;
-  padding: 8px 14px 11px;
-  max-width: 180px;
-  min-width: 70px;
-  box-shadow:
-    0 4px 14px rgba(255, 217, 61, 0.25),
-    0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1.5px solid #FFD93D;
+  border-radius: 16px 16px 16px 4px;
+  padding: 10px 16px 12px;
+  max-width: 220px;
+  min-width: 80px;
   animation: learnBubblePop 0.35s ease-out;
-  text-align: center;
+  text-align: left;
   z-index: 100;
 }
 
 @keyframes learnBubblePop {
-  0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.8); }
-  60% { transform: translateX(-50%) translateY(-2px) scale(1.05); }
-  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  0% { opacity: 0; transform: translateY(50%) translateX(10px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(50%) translateX(0) scale(1); }
 }
 
 .learn-bubble::before {
   content: '';
   position: absolute;
-  bottom: -9px;
-  left: 20px;
-  transform: rotate(180deg);
+  top: 50%;
+  right: -8px;
+  transform: translateY(-50%);
   width: 0; height: 0;
-  border-left: 9px solid transparent;
-  border-right: 9px solid transparent;
-  border-bottom: 9px solid #FFD93D;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 8px solid #FFD93D;
 }
 
 .learn-bubble::after {
   content: '';
   position: absolute;
-  bottom: -6px;
-  left: 20px;
-  transform: rotate(180deg);
+  top: 50%;
+  right: -6px;
+  transform: translateY(-50%);
   width: 0; height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid #FFF9E6;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid #FFF9E6;
 }
 
 .learn-bubble-shine {
   position: absolute;
-  top: 4px;
-  left: 8px;
-  width: 25px;
-  height: 7px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.7), rgba(255,255,255,0));
-  border-radius: 50%;
-  transform: rotate(-12deg);
+  top: 3px;
+  left: 4px;
+  width: 11px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 5px;
   pointer-events: none;
 }
 
 .learn-bubble p {
-  font-size: 12px;
+  font-size: 11px;
   color: #5D4E37;
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 0;
   font-weight: 600;
   word-break: break-word;

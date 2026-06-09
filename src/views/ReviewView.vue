@@ -414,10 +414,7 @@ onUnmounted(() => {
   if (reviewWords.value.length > 0 && currentIndex.value < reviewWords.value.length) {
     const currentWordId = word.value?.id
     if (currentWordId) {
-      // 使用 setTimeout 确保在组件卸载完成后执行
-      setTimeout(() => {
-        handleReviewComplete(currentWordId, false)
-      }, 0)
+      handleReviewComplete(currentWordId, false)
     }
   }
 })

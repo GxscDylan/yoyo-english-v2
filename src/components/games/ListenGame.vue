@@ -43,9 +43,8 @@
 
       <div v-if="phase === 'ready'" class="phase-ready anim-fade-up">
         <span class="ready-icon">👂</span>
-        <h2>Listen & Choose</h2>
-        <p>Listen carefully, then pick the right word!</p>
-        <p class="ready-tip">This time you'll see the text~</p>
+        <h1>听音选择</h1>
+        <p>仔细听，然后选出正确的单词！</p>
         <button class="btn-play" @click="startCountdown">Start! 🎮</button>
       </div>
 
@@ -451,9 +450,8 @@ onUnmounted(() => { stop(); clearAutoReplay(); clearTimeout(countdownTimer) })
   45% { transform: rotate(-5deg); }
   60% { transform: rotate(3deg); }
 }
-.phase-ready h2 { font-size: var(--font-size-2xl); color: #7C5CFC; margin-bottom: var(--space-sm); }
-.phase-ready p { color: var(--text-secondary); margin-bottom: var(--space-sm); }
-.ready-tip { font-size: var(--font-size-sm); color: var(--text-hint); }
+.phase-ready h1 { font-size: 2.5rem; color: #7C5CFC; margin-bottom: var(--space-sm); }
+.phase-ready p { color: var(--text-secondary); margin-bottom: var(--space-xl); font-size: var(--font-size-lg); }
 .btn-play { padding: var(--space-md) var(--space-2xl); background: linear-gradient(135deg, #7C5CFC, #A78BFA); color: #fff; font-size: var(--font-size-xl); font-weight: 700; border-radius: var(--radius-full); margin-top: var(--space-lg); box-shadow: 0 4px 16px rgba(124,92,252,0.3); transition: transform 0.2s; position: relative; overflow: hidden; }
 .btn-play::after {
   content: ''; position: absolute; inset: 0;
@@ -676,5 +674,5 @@ onUnmounted(() => { stop(); clearAutoReplay(); clearTimeout(countdownTimer) })
 .pop-leave-active { animation: pop 0.2s ease reverse; }
 @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-.game-footer { display: flex; align-items: center; justify-content: center; padding: 8px var(--space-xl) 60px; background: transparent; overflow: visible; position: relative; }
+.game-footer { display: flex; align-items: center; justify-content: flex-end; padding: 8px var(--space-xl) 60px; background: transparent; overflow: visible; position: relative; }
 </style>

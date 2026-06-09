@@ -17,6 +17,13 @@ export function useSpeech() {
   const isSupported = ref(true) // 始终为 true，至少有 audio 回退
   const lastError = ref(null)
 
+  /** 检测是否为 HarmonyOS 浏览器（华为平板内置浏览器） */
+  const isHarmonyOS = typeof navigator !== 'undefined' &&
+    /HarmonyOS|HuaweiBrowser/i.test(navigator.userAgent)
+
+  /** HarmonyOS 上跳过无效 TTS 回退，直接使用预录 MP3 */
+  const shouldSkipFallbackTTS = isHarmonyOS
+
   /** 标准化文件名（与生成脚本的 sanitizeFilename 保持一致） */
   function sanitizeFilename(text) {
     return text
@@ -106,6 +113,12 @@ export function useSpeech() {
 
   /** TTS 回退（将文件名还原为可读文本） */
   function fallbackTTS(path, onEnd) {
+    // HarmonyOS 浏览器 TTS 通常无声，跳过无效回退
+    if (shouldSkipFallbackTTS) {
+      isSpeaking.value = false
+      if (onEnd) onEnd()
+      return
+    }
     const word = path.split('/').pop()?.replace('.mp3', '').replace(/-/g, ' ') || ''
     _speakTTS(word, 0.7, onEnd)
   }
@@ -153,6 +166,11 @@ export function useSpeech() {
       if (timeoutId) clearTimeout(timeoutId)
       audio.oncanplaythrough = null
       audio.onerror = null
+      if (shouldSkipFallbackTTS) {
+        isSpeaking.value = false
+        if (onError) onError()
+        return
+      }
       _speakTTS(text, rate, onEnd, onError)
     }
 
@@ -162,6 +180,11 @@ export function useSpeech() {
         resolved = true
         audio.oncanplaythrough = null
         audio.onerror = null
+        if (shouldSkipFallbackTTS) {
+          isSpeaking.value = false
+          if (onError) onError()
+          return
+        }
         _speakTTS(text, rate, onEnd, onError)
       }
     }, 500)

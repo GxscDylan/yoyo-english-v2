@@ -291,7 +291,7 @@
     <Transition name="fade">
       <div v-if="showStarGuide" class="star-guide-overlay" @click.self="showStarGuide = false">
         <div class="star-guide-card">
-          <div class="guide-yoyo">🐯</div>
+          <div class="guide-yoyo">{{ learningStore.currentPetType.emoji }}</div>
           <div class="guide-title">星星不够啦~</div>
           <div class="guide-desc">去学习赚更多星星吧！</div>
           <div class="guide-actions">
@@ -373,7 +373,7 @@ const petDisplayName = computed(() => {
 // ===== 操作反馈 =====
 const showFeedback = ref(false)
 const feedbackText = ref('')
-const feedbackEmoji = ref('🐯')
+const feedbackEmoji = ref(learningStore.currentPetType.emoji)
 let feedbackTimer = null
 
 // 操作成功后的个性化鼓励语
@@ -400,7 +400,7 @@ function showActionFeedback(actionKey) {
   const msgs = ENCOURAGEMENTS[actionKey]
   if (!msgs) return
   feedbackText.value = msgs[Math.floor(Math.random() * msgs.length)]
-  feedbackEmoji.value = '🐯'
+  feedbackEmoji.value = learningStore.currentPetType.emoji
   showFeedback.value = true
   if (feedbackTimer) clearTimeout(feedbackTimer)
   feedbackTimer = setTimeout(() => { showFeedback.value = false }, 2500)
@@ -599,7 +599,7 @@ function handleAccel() {
     playActionAnim('feed')
     triggerConfetti(10)
     feedbackText.value = '加速成长！冲鸭~ ⚡'
-    feedbackEmoji.value = '🐯'
+    feedbackEmoji.value = learningStore.currentPetType.emoji
     showFeedback.value = true
     if (feedbackTimer) clearTimeout(feedbackTimer)
     feedbackTimer = setTimeout(() => { showFeedback.value = false }, 2500)
@@ -613,7 +613,7 @@ function handleDress(dressId) {
     setDress(null)
     playActionAnim('dress')
     feedbackText.value = '恢复自然美~ ✨'
-    feedbackEmoji.value = '🐯'
+    feedbackEmoji.value = learningStore.currentPetType.emoji
     showFeedback.value = true
     if (feedbackTimer) clearTimeout(feedbackTimer)
     feedbackTimer = setTimeout(() => { showFeedback.value = false }, 2000)
@@ -634,7 +634,7 @@ function handleDress(dressId) {
     triggerConfetti(5)
     const item = DRESS_ITEMS.find(d => d.id === dressId)
     feedbackText.value = `穿上${item?.label || '新衣服'}啦~ 👗`
-    feedbackEmoji.value = '🐯'
+    feedbackEmoji.value = learningStore.currentPetType.emoji
     showFeedback.value = true
     if (feedbackTimer) clearTimeout(feedbackTimer)
     feedbackTimer = setTimeout(() => { showFeedback.value = false }, 2000)

@@ -88,6 +88,18 @@ async function dbDelete(storeName, key) {
   })
 }
 
+/** 可用宠物类型列表 */
+const PET_TYPES = {
+  tiger: { name: '小老虎', emoji: '🐯', color: '#FFB74D' },
+  unicorn: { name: '独角兽', emoji: '🦄', color: '#E1BEE7' },
+  cat: { name: '小猫咪', emoji: '🐱', color: '#FFCCBC' },
+  dog: { name: '小狗狗', emoji: '🐶', color: '#BCAAA4' },
+  rabbit: { name: '小兔子', emoji: '🐰', color: '#F8BBD9' },
+  bear: { name: '小熊熊', emoji: '🐻', color: '#D7CCC8' },
+  fox: { name: '小狐狸', emoji: '🦊', color: '#FFAB91' },
+  panda: { name: '大熊猫', emoji: '🐼', color: '#ECEFF1' }
+}
+
 /** 默认父级设置 */
 const DEFAULT_SETTINGS = {
   pin: '1234',
@@ -98,7 +110,8 @@ const DEFAULT_SETTINGS = {
   learningMode: 'fourStep', // 'fourStep' | 'card'
   reviewCount: 0, // P2-2: 复习次数统计
   nurseryListened: 0, // P2-2: 童谣听过数统计
-  catchStarsCooldownEnabled: true // 接星星冷却开关（默认开启）
+  catchStarsCooldownEnabled: true, // 接星星冷却开关（默认开启）
+  petType: 'tiger' // 当前使用的宠物类型
 }
 
 export const useLearningStore = defineStore('learning', () => {
@@ -415,6 +428,27 @@ export const useLearningStore = defineStore('learning', () => {
     { id: 'streak-30', name: '月度达人', nameEn: 'Monthly Star', icon: '💎', condition: '连续学习 30 天', unlocked: consecutiveDays.value >= 30, progress: Math.min(consecutiveDays.value, 30), max: 30 },
     { id: 'perfect-game', name: '完美游戏', nameEn: 'Perfect Game', icon: '💯', condition: '游戏满分一次', unlocked: Object.values(gameScores.value).some(s => s >= 100), progress: Object.values(gameScores.value).some(s => s >= 100) ? 1 : 0, max: 1 }
   ])
+
+  /** 当前宠物类型配置 */
+  const currentPetType = computed(() => {
+    return PET_TYPES[settings.value.petType] || PET_TYPES.tiger
+  })
+
+  /** 可用宠物类型列表 */
+  const availablePetTypes = computed(() => {
+    return Object.entries(PET_TYPES).map(([key, value]) => ({
+      key,
+      ...value
+    }))
+  })
+
+  /** 设置宠物类型 */
+  function setPetType(petType) {
+    if (PET_TYPES[petType]) {
+      settings.value.petType = petType
+      persistSettings()
+    }
+  }
 
   /** 时间段锁检测 */
   const isInLockPeriod = computed(() => {
@@ -849,6 +883,8 @@ export const useLearningStore = defineStore('learning', () => {
     showComboBadge, showStarBadge, showReviewBadge, showMusicNote, showExplorerBadge,
     achievements,
     growthMilestones,
+    // 宠物类型系统
+    currentPetType, availablePetTypes, setPetType,
     // 限制检查
     resetSessionTimer, isSessionTimeExceeded, checkAllLimits,
     // 单词

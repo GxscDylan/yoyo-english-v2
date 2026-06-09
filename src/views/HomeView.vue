@@ -5,7 +5,7 @@
       <div v-if="showIntro" class="intro-overlay" @click="dismissIntro">
         <div class="intro-content">
           <div class="intro-yoyo" :class="{ 'intro-bounce': introPhase >= 1 }">
-            <span class="intro-yoyo-face">🐯</span>
+            <span class="intro-yoyo-face">{{ store.currentPetType.emoji }}</span>
           </div>
           <Transition name="pop">
             <div v-if="introPhase >= 2" class="intro-bubble intro-title">
@@ -180,7 +180,7 @@
         </div>
         <!-- 全部完成时的呦呦提示 -->
         <div v-if="allMastered" class="all-done-tip anim-fade-up">
-          <span class="tip-emoji">🐯💤</span>
+          <span class="tip-emoji">{{ store.currentPetType.emoji }}💤</span>
           <p>今天好棒！所有分类都掌握啦！</p>
           <p class="tip-sub">明天再来冒险吧~ 或者去🎮 玩个小游戏？</p>
         </div>

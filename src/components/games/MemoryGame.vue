@@ -29,9 +29,8 @@
 
       <div v-if="phase === 'ready'" class="phase-ready anim-fade-up">
         <span class="ready-icon">🃏</span>
-        <h2>Memory Match</h2>
-        <p>Flip the cards, match the emoji with its English word!</p>
-        <p class="ready-tip">Let's test your memory!</p>
+        <h1>记忆配对</h1>
+        <p>翻开卡片，找出配对的图片和单词！</p>
         <button class="btn-play" @click="prepareGame">Start! 🎮</button>
       </div>
 
@@ -341,8 +340,8 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer) })
   45% { transform: rotate(-5deg) scale(1.03); }
   60% { transform: rotate(3deg) scale(1); }
 }
-.phase-ready h2 { font-size: var(--font-size-2xl); color: #7C5CFC; margin-bottom: var(--space-sm); }
-.phase-ready p { color: var(--text-secondary); margin-bottom: var(--space-sm); }
+.phase-ready h1 { font-size: 2.5rem; color: #7C5CFC; margin-bottom: var(--space-sm); }
+.phase-ready p { color: var(--text-secondary); margin-bottom: var(--space-xl); font-size: var(--font-size-lg); }
 .ready-tip { font-size: var(--font-size-sm); color: var(--text-hint); }
 .btn-play {
   padding: var(--space-md) var(--space-2xl); background: linear-gradient(135deg, #7C5CFC, #A78BFA);
@@ -458,7 +457,7 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer) })
 .btn-retry:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 20px rgba(124,92,252,0.4); }
 .btn-home:hover { transform: translateY(-2px); }
 
-.game-footer { display: flex; align-items: center; justify-content: center; padding: 8px var(--space-xl) 60px; background: transparent; overflow: visible; position: relative; }
+.game-footer { display: flex; align-items: center; justify-content: flex-end; padding: 8px var(--space-xl) 60px; background: transparent; overflow: visible; position: relative; }
 
 .feedback-bar {
   font-size: var(--font-size-xl); font-weight: 700; padding: var(--space-sm) var(--space-xl);

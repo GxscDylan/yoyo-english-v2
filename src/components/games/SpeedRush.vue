@@ -16,8 +16,9 @@
     <div v-if="phase === 'ready'" class="phase-ready anim-fade-up">
       <h1>⚡ 速度大挑战</h1>
       <p class="desc">听音选图，越快越好！答对能加时间哦~</p>
-      <GameAvatar :mood="'idle'" :bubble-text="'Ready to race?'" :show-stars="false" />
       <button class="btn-start" @click="startCountdown">🚀 Start!</button>
+      <!-- 头像放在右下角 -->
+      <GameAvatar :mood="'idle'" :bubble-text="'Ready to race?'" :show-stars="false" class="avatar-floating" />
     </div>
 
     <!-- 倒计时 -->
@@ -585,6 +586,12 @@ onUnmounted(() => {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; height: 100%; text-align: center;
   gap: var(--space-lg);
+  position: relative;
+}
+.avatar-floating {
+  position: absolute;
+  bottom: 60px;
+  right: var(--space-xl);
 }
 .phase-ready h1 { font-size: 2.5rem; margin-bottom: 0; }
 .phase-ready .desc { font-size: 1.1rem; color: var(--text-secondary); margin: 0; }
@@ -601,7 +608,7 @@ onUnmounted(() => {
 .game-footer {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   padding: 8px var(--space-xl) 60px;
   background: transparent;
   overflow: visible;

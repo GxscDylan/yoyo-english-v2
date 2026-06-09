@@ -170,7 +170,7 @@
     </main>
 
     <!-- 呦呦吉祥物 -->
-    <LearnAvatar
+    <GameAvatar
       :mood="yoyoMood"
       :bubble-text="yoyoBubble"
       class="sentence-yoyo"
@@ -187,7 +187,7 @@ import { L2_SENTENCES } from '@/data/words'
 import { useSpeech } from '@/composables/useSpeech'
 import { sfxCorrect, sfxComplete, sfxStar } from '@/composables/useSfx'
 import { triggerConfetti } from '@/composables/useConfetti'
-import LearnAvatar from '@/components/common/LearnAvatar.vue'
+import GameAvatar from '@/components/common/GameAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -634,6 +634,7 @@ onUnmounted(() => {
 
 .practice-area {
   flex: 1; display: flex; flex-direction: column; gap: 20px;
+  width: 100%; max-width: 800px; margin: 0 auto;
 }
 
 /* 步骤指示器 */
@@ -665,10 +666,11 @@ onUnmounted(() => {
    ============================================================ */
 .sentence-card {
   background: white; border-radius: 24px;
-  padding: 24px 20px;
+  padding: 28px 32px;
   box-shadow: 0 4px 24px rgba(139, 92, 246, 0.12);
   display: flex; flex-direction: column; align-items: center;
-  gap: 16px;
+  gap: 20px;
+  width: 100%;
 }
 
 /* Step 1: 听 */
@@ -680,10 +682,11 @@ onUnmounted(() => {
 
 .sentence-display {
   display: flex; align-items: center; gap: 16px;
-  padding: 20px 28px; background: linear-gradient(135deg, #F5F3FF, #EDE9FE);
+  padding: 24px 36px; background: linear-gradient(135deg, #F5F3FF, #EDE9FE);
   border-radius: 20px; cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
-  min-height: 70px;
+  min-height: 74px;
+  width: 100%; max-width: 640px;
 }
 .sentence-display:active { transform: scale(0.98); }
 .sentence-en {
@@ -761,8 +764,9 @@ onUnmounted(() => {
 /* Step 3: 跟读 */
 .speak-sentence {
   display: flex; align-items: center; gap: 12px;
-  padding: 16px 24px; background: linear-gradient(135deg, #F5F3FF, #EDE9FE);
+  padding: 20px 32px; background: linear-gradient(135deg, #F5F3FF, #EDE9FE);
   border-radius: 20px; cursor: pointer;
+  width: 100%; max-width: 640px;
 }
 .speak-en {
   font-size: 1.4rem; font-weight: 700; color: #4C1D95;
@@ -931,4 +935,82 @@ onUnmounted(() => {
 .chip-pop-leave-active { transition: all 0.2s ease; }
 .chip-pop-enter-from { opacity: 0; transform: translateX(-50%) translateY(8px); }
 .chip-pop-leave-to { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+
+/* ===== 平板横屏适配（≥900px） ===== */
+@media (min-width: 900px) {
+  .practice-area {
+    max-width: 900px;
+  }
+  .sentence-card {
+    padding: 32px 40px;
+  }
+  .sentence-display {
+    max-width: 720px;
+    padding: 28px 40px;
+  }
+  .speak-sentence {
+    max-width: 720px;
+    padding: 24px 36px;
+  }
+  .sentence-en {
+    font-size: 1.7rem;
+  }
+  .speak-en {
+    font-size: 1.6rem;
+  }
+  .word-chip {
+    padding: 12px 18px;
+  }
+  .chip-en {
+    font-size: 1.25rem;
+  }
+}
+
+/* ===== 华为 MatePad 11.5S 超宽屏适配（≥1600px） ===== */
+@media (min-width: 1600px) {
+  .practice-area {
+    max-width: 1100px;
+  }
+  .sentence-card {
+    padding: 36px 48px;
+  }
+  .sentence-display {
+    max-width: 860px;
+    padding: 32px 48px;
+  }
+  .speak-sentence {
+    max-width: 860px;
+    padding: 28px 44px;
+  }
+  .sentence-en {
+    font-size: 1.9rem;
+  }
+  .speak-en {
+    font-size: 1.8rem;
+  }
+}
+
+/* ===== 小屏幕回退（≤480px） ===== */
+@media (max-width: 480px) {
+  .practice-area {
+    max-width: 100%;
+  }
+  .sentence-card {
+    padding: 20px 16px;
+  }
+  .sentence-display {
+    padding: 16px 20px;
+    max-width: 100%;
+  }
+  .speak-sentence {
+    padding: 14px 18px;
+    max-width: 100%;
+  }
+  .sentence-en {
+    font-size: 1.2rem;
+  }
+  .speak-en {
+    font-size: 1.1rem;
+  }
+}
 </style>

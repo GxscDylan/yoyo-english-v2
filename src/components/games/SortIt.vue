@@ -12,7 +12,12 @@
           Word {{ currentIdx + 1 }}/{{ totalWords }}
         </span>
       </div>
-      <div class="header-spacer"></div>
+      <!-- 倒计时 -->
+      <div v-if="(phase === 'playing' || phase === 'feedback') && store.gameDifficulty !== 'simple'" class="header-timer">
+        <span class="timer-icon">⏱️</span>
+        <span class="timer-num">{{ Math.ceil(timeLeft) }}</span>
+        <span class="timer-unit">s</span>
+      </div>
     </header>
 
     <!-- Combo 连击显示 -->
@@ -41,9 +46,9 @@
       <!-- 准备 -->
       <div v-else-if="phase === 'ready'" class="phase-ready anim-fade-up">
         <span class="ready-icon">🗂️</span>
-        <h2>Sort It</h2>
+        <h1>分类小能手</h1>
         <p>把单词放到正确的分类篮子里！</p>
-        <button class="btn-play" @click="startCountdown">🚀 Start!</button>
+        <button class="btn-play" @click="startCountdown">Start! 🎮</button>
       </div>
 
       <!-- 倒计时 -->
@@ -52,7 +57,7 @@
       </div>
 
       <!-- 游戏进行中 -->
-      <div v-if="phase === 'playing' || phase === 'feedback'" class="phase-playing anim-fade-up">
+      <div v-if="phase === 'playing' || phase === 'feedback'" class="phase-playing">
         <!-- 进度条 -->
         <div class="progress-bar">
           <div class="progress-track">
@@ -68,12 +73,7 @@
           </span>
         </div>
 
-        <!-- 计时器（Medium/Hard 模式） - 移到左侧避免和Combo冲突 -->
-        <div v-if="store.gameDifficulty !== 'simple'" class="timer-text">
-          ⏱️ {{ Math.ceil(timeLeft) }}s
-        </div>
-
-        <!-- 得分 - 游戏化计分板 -->
+        <!-- 计分板（居中显示） -->
         <div class="score-display">
           <div class="score-badge">
             <span class="score-star">⭐</span>
@@ -81,36 +81,50 @@
           </div>
         </div>
 
-        <!-- 当前单词 -->
-        <div class="word-display" v-if="currentWord">
-          <div class="word-card-inner">
-            <span class="word-emoji">{{ currentWord.emoji }}</span>
-            <span class="word-en">{{ currentWord.en }}</span>
-            <span class="word-zh">{{ currentWord.zh }}</span>
-          </div>
-          <!-- 发光边框效果 -->
-          <div class="word-glow"></div>
-        </div>
+        <!-- 游戏主区域 -->
+        <div class="game-play-area">
+          <!-- 单词卡片区域 -->
+          <div class="word-section">
+            <div class="word-display" v-if="currentWord">
+              <div class="word-card-inner">
+                <span class="word-emoji">{{ currentWord.emoji }}</span>
+                <span class="word-en">{{ currentWord.en }}</span>
+                <span class="word-zh">{{ currentWord.zh }}</span>
+              </div>
+              <div class="word-glow"></div>
+            </div>
 
-        <!-- 分类篮子 -->
-        <div class="baskets-grid" :class="`baskets-${baskets.length}`">
-          <button v-for="basket in baskets" :key="basket.id" class="basket-card"
-            @click="handleSort(basket)"
-            :class="{ 'basket-correct': feedbackResult === 'correct' && feedbackBasket === basket.id,
-                       'basket-wrong': feedbackResult === 'wrong' && feedbackBasket === basket.id,
-                       'basket-shake': feedbackResult === 'wrong' && feedbackBasket === basket.id }">
-            <!-- 篮子开口装饰 - 让篮子更像容器 -->
-            <div class="basket-rim"></div>
-            <div class="basket-inner">
-              <span class="basket-emoji">{{ basket.emoji }}</span>
-              <span class="basket-label">{{ basket.label }}</span>
+            <!-- 进度提示 -->
+            <div class="word-progress-hint">
+              <span class="hint-label">Word</span>
+              <span class="hint-num">{{ currentIdx + 1 }}</span>
+              <span class="hint-total">/ {{ totalWords }}</span>
             </div>
-            <!-- 反馈动画层 -->
-            <div v-if="feedbackResult && feedbackBasket === basket.id" class="basket-feedback">
-              <span v-if="feedbackResult === 'correct'" class="feedback-icon">✅</span>
-              <span v-else class="feedback-icon">❌</span>
+          </div>
+
+          <!-- 右侧：分类篮子区域 -->
+          <div class="baskets-section">
+            <div class="baskets-grid" :class="`baskets-${baskets.length}`">
+              <button v-for="basket in baskets" :key="basket.id" class="basket-card"
+                :class="[
+                  `basket-theme-${basket.id}`,
+                  { 'basket-correct': feedbackResult === 'correct' && feedbackBasket === basket.id,
+                    'basket-wrong': feedbackResult === 'wrong' && feedbackBasket === basket.id,
+                    'basket-shake': feedbackResult === 'wrong' && feedbackBasket === basket.id }
+                ]"
+                @click="handleSort(basket)">
+                <div class="basket-rim"></div>
+                <div class="basket-inner">
+                  <span class="basket-emoji">{{ basket.emoji }}</span>
+                  <span class="basket-label">{{ basket.label }}</span>
+                </div>
+                <div v-if="feedbackResult && feedbackBasket === basket.id" class="basket-feedback">
+                  <span v-if="feedbackResult === 'correct'" class="feedback-icon">🎉</span>
+                  <span v-else class="feedback-icon">😅</span>
+                </div>
+              </button>
             </div>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -179,7 +193,7 @@ const difficultyLabel = computed(() => {
 const THEME_GROUPS = [
   { id: 'animal-fruit', categories: ['animal', 'fruit'], baskets: [
     { id: 'animal', emoji: '🐾', label: '动物' },
-    { id: 'fruit', emoji: '', label: '水果' }
+    { id: 'fruit', emoji: '🍎', label: '水果' }
   ]},
   { id: 'color-body', categories: ['color', 'body'], baskets: [
     { id: 'color', emoji: '🎨', label: '颜色' },
@@ -187,11 +201,11 @@ const THEME_GROUPS = [
   ]},
   { id: 'number-food', categories: ['number', 'food'], baskets: [
     { id: 'number', emoji: '🔢', label: '数字' },
-    { id: 'food', emoji: '️', label: '食物' }
+    { id: 'food', emoji: '🍔', label: '食物' }
   ]},
   { id: 'transport-clothes', categories: ['transport', 'clothes'], baskets: [
     { id: 'transport', emoji: '🚗', label: '交通工具' },
-    { id: 'clothes', emoji: '', label: '衣服' }
+    { id: 'clothes', emoji: '👕', label: '衣服' }
   ]},
 ]
 
@@ -256,11 +270,27 @@ function prepareBaskets() {
       id: c.id, emoji: c.emoji, label: c.name
     }))
   } else if (diff === 'medium') {
-    // 中等模式：优先用主题组，不够就用前 3 个
-    if (matchingGroups.length > 0) {
-      const group = matchingGroups[0]
-      baskets.value = group.baskets
+    // 中等模式：取前 N 个主题组，组合成 3-4 个篮子
+    const needed = config.value.groups || 2
+    const groupsToUse = matchingGroups.slice(0, needed)
+    if (groupsToUse.length >= needed) {
+      const allBaskets = groupsToUse.flatMap(g => g.baskets)
+      // 去重（防止不同组有相同分类）
+      const unique = [...new Map(allBaskets.map(b => [b.id, b])).values()]
+      baskets.value = unique.slice(0, 4) // 最多 4 个篮子
+    } else if (matchingGroups.length > 0) {
+      // 主题组不够，用已有的 + 补充已解锁分类
+      const allBaskets = matchingGroups.flatMap(g => g.baskets)
+      const existingIds = new Set(allBaskets.map(b => b.id))
+      const extra = store.unlockedCategoryList
+        .filter(c => !existingIds.has(c.id))
+        .slice(0, 3 - allBaskets.length)
+      baskets.value = [
+        ...allBaskets,
+        ...extra.map(c => ({ id: c.id, emoji: c.emoji, label: c.name }))
+      ]
     } else {
+      // 无主题组匹配，直接用前 3 个已解锁分类
       baskets.value = store.unlockedCategoryList.slice(0, 3).map(c => ({
         id: c.id, emoji: c.emoji, label: c.name
       }))
@@ -495,7 +525,21 @@ onUnmounted(() => {
 .game-difficulty.diff-medium { background: #FFF9C4; color: #F57F17; }
 .game-difficulty.diff-hard { background: #FFCDD2; color: #C62828; }
 .round-info { font-size: var(--font-size-sm); color: var(--text-hint); }
-.header-spacer { width: 60px; }
+
+/* 顶部计时器 */
+.header-timer {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+  border-radius: var(--radius-full);
+  border: 1.5px solid #90CAF9;
+}
+.header-timer .timer-icon { font-size: 0.9rem; }
+.header-timer .timer-num { 
+  font-size: 1.1rem; font-weight: 700; color: #1976D2;
+  font-variant-numeric: tabular-nums;
+}
+.header-timer .timer-unit { font-size: 0.75rem; color: #64B5F6; }
 
 /* ===== 进度条 ===== */
 .progress-bar {
@@ -539,8 +583,10 @@ onUnmounted(() => {
 
 /* ===== 主内容 ===== */
 .game-main {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   padding: var(--space-xl); position: relative;
+  max-width: 1200px; margin: 0 auto; width: 100%;
+  padding-bottom: 60px;
 }
 
 /* 背景装饰元素 */
@@ -566,14 +612,49 @@ onUnmounted(() => {
   75% { transform: translateY(-18px) rotate(2deg); }
 }
 
-/* 计时器 - 移到左侧，避免和右上角 Combo 冲突 */
-.timer-text {
-  position: absolute; top: 16px; left: 16px;
-  font-size: 1.1rem; font-weight: 700; color: #333;
-  background: rgba(255,255,255,0.9); padding: 6px 14px;
-  border-radius: 20px; z-index: 10;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  border: 2px solid rgba(0,0,0,0.06);
+/* 计时器徽章 */
+.timer-badge {
+  display: inline-flex; align-items: baseline; gap: 2px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #fff 0%, #f0f7ff 100%);
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border: 2px solid rgba(33,150,243,0.2);
+  margin-bottom: 16px;
+}
+.timer-icon { font-size: 1.2rem; }
+.timer-num {
+  font-size: 1.8rem; font-weight: 900; color: #2196F3;
+  font-variant-numeric: tabular-nums;
+}
+.timer-unit { font-size: 0.9rem; color: #666; font-weight: 600; }
+
+/* 单词进度提示 */
+.word-progress-hint {
+  display: flex; align-items: baseline; justify-content: center; gap: 4px;
+  margin-top: 12px;
+}
+.hint-label { font-size: 0.85rem; color: var(--text-hint); text-transform: uppercase; letter-spacing: 1px; }
+.hint-num { font-size: 1.4rem; font-weight: 900; color: #4CAF50; }
+.hint-total { font-size: 0.9rem; color: var(--text-secondary); }
+
+/* ===== 游戏主区域 ===== */
+.game-play-area {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: 24px; width: 100%; max-width: 900px;
+  margin-top: 8px;
+}
+
+/* 单词卡片区域 */
+.word-section {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: 0 0 auto; width: 100%; max-width: 320px;
+}
+
+/* 分类篮子区域 */
+.baskets-section {
+  flex: 0 0 auto; width: 100%;
+  display: flex; align-items: center; justify-content: center;
 }
 
 /* 得分 - 游戏化计分板 */
@@ -611,8 +692,8 @@ onUnmounted(() => {
   padding: 8px;
   background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
   border-radius: 24px;
-  margin: 16px auto;
-  max-width: 320px;
+  margin: 0 auto;
+  width: 280px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06);
   overflow: hidden;
 }
@@ -657,24 +738,29 @@ onUnmounted(() => {
 
 /* 篮子网格 */
 .baskets-grid {
-  display: grid; gap: 16px; padding: 16px; max-width: 600px; margin: 0 auto;
+  display: flex; flex-wrap: nowrap; justify-content: center; gap: 16px; padding: 8px;
+  max-width: 100%; width: 100%; overflow-x: auto;
+  scrollbar-width: none;
 }
-.baskets-2 { grid-template-columns: repeat(2, 1fr); }
-.baskets-3 { grid-template-columns: repeat(3, 1fr); }
-.baskets-4 { grid-template-columns: repeat(2, 1fr); }
+.baskets-grid::-webkit-scrollbar {
+  display: none;
+}
 
 .basket-card {
   position: relative; overflow: visible;
-  border-radius: 24px;
+  border-radius: 20px;
   background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(245,245,245,0.9) 100%);
   border: none;
   text-align: center;
   transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 6px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.06);
   cursor: pointer;
-  min-height: 160px;
+  min-height: 120px;
+  min-width: 100px;
+  max-width: 120px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding-top: 20px;
+  padding: 16px 12px;
+  flex: 1 0 auto;
 }
 /* 篮子开口 - 顶部弧形装饰，让篮子像真正的容器 */
 .basket-rim {
@@ -712,6 +798,56 @@ onUnmounted(() => {
   box-shadow: 0 6px 24px rgba(255,82,82,0.2);
   animation: basketShake 0.5s ease;
 }
+/* ===== 分类篮子主题背景水印 ===== */
+.basket-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 80px 80px;
+}
+/* 动物 */
+.basket-theme-animal::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='60'%3E🐾%3C/text%3E%3C/svg%3E");
+}
+/* 水果 */
+.basket-theme-fruit::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='60'%3E🍎%3C/text%3E%3C/svg%3E");
+}
+/* 颜色 */
+.basket-theme-color::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='60'%3E🎨%3C/text%3E%3C/svg%3E");
+}
+/* 身体 */
+.basket-theme-body::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='60'%3E🦶%3C/text%3E%3C/svg%3E");
+}
+/* 数字 */
+.basket-theme-number::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='60'%3E🔢%3C/text%3E%3C/svg%3E");
+}
+/* 食物 */
+.basket-theme-food::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='60'%3E🍔%3C/text%3E%3C/svg%3E");
+}
+/* 交通工具 */
+.basket-theme-transport::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='60'%3E🚗%3C/text%3E%3C/svg%3E");
+}
+/* 衣服 */
+.basket-theme-clothes::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='60'%3E%3C/text%3E%3C/svg%3E");
+}
+/* 确保内部内容在背景之上 */
+.basket-rim, .basket-inner, .basket-feedback {
+  position: relative;
+  z-index: 1;
+}
 @keyframes basketPop {
   0% { transform: scale(1); }
   50% { transform: scale(1.08); }
@@ -726,14 +862,14 @@ onUnmounted(() => {
   75% { transform: translateX(-2px); }
 }
 .basket-emoji {
-  font-size: 3.2rem;
+  font-size: 2.2rem;
   display: block;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 .basket-card:hover .basket-emoji { transform: scale(1.1); }
 .basket-label {
-  font-size: 1.2rem; font-weight: 700; color: var(--text-primary);
+  font-size: 0.9rem; font-weight: 700; color: var(--text-primary);
   margin-top: 4px;
   transition: color 0.25s;
 }
@@ -742,25 +878,36 @@ onUnmounted(() => {
 .basket-feedback {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.5);
   backdrop-filter: blur(4px);
   border-radius: 24px;
-  animation: feedbackFade 0.6s ease-out forwards;
+  animation: feedbackFade 0.8s ease-out forwards;
+}
+.basket-feedback.feedback-correct {
+  background: rgba(255,255,255,0.3);
+  border: 2px solid rgba(255,200,0,0.4);
 }
 .feedback-icon {
   font-size: 3.5rem;
-  animation: feedbackPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: feedbackPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes feedbackFade {
   0% { opacity: 0; }
-  20% { opacity: 1; }
-  80% { opacity: 1; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
   100% { opacity: 0; }
 }
 @keyframes feedbackPop {
-  0% { transform: scale(0.5); opacity: 0; }
-  60% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
+  0% { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+  50% { transform: scale(1.3) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes feedbackStarGlow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(255,200,0,0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(255,200,0,0.8)); }
+}
+.feedback-correct .feedback-icon {
+  animation: feedbackPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), feedbackStarGlow 1s ease-in-out infinite;
 }
 /* ===== 准备/倒计时/锁定 ===== */
 .phase-ready, .phase-countdown, .phase-locked {
@@ -771,7 +918,7 @@ onUnmounted(() => {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
-.phase-ready h2 { font-size: var(--font-size-2xl); color: #4CAF50; margin-bottom: var(--space-sm); }
+.phase-ready h1 { font-size: 2.5rem; color: #4CAF50; margin-bottom: var(--space-sm); }
 .phase-ready p { color: var(--text-secondary); margin-bottom: var(--space-xl); font-size: var(--font-size-lg); }
 .phase-locked .lock-icon { font-size: 5rem; display: block; margin-bottom: 16px; }
 .phase-locked h1 { font-size: 2rem; margin-bottom: 12px; }
@@ -844,8 +991,8 @@ onUnmounted(() => {
 .game-footer {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px var(--space-xl) 60px;
+  justify-content: flex-end;
+  padding: 8px var(--space-xl) 20px;
   background: transparent;
   overflow: visible;
   position: relative;
@@ -854,4 +1001,23 @@ onUnmounted(() => {
 .pop-enter-active, .pop-leave-active { transition: all 0.3s ease; }
 .pop-enter-from { opacity: 0; transform: scale(0.8); }
 .pop-leave-to { opacity: 0; transform: scale(0.8); }
+
+/* ===== 响应式：小屏幕/竖屏回退为上下布局 ===== */
+@media (max-width: 900px) {
+  .game-play-area {
+    flex-direction: column; gap: 16px; max-width: 500px;
+  }
+  .word-section { flex: none; }
+  .baskets-section { width: 100%; }
+  .baskets-grid { max-width: 500px; }
+  .timer-badge { margin-bottom: 8px; }
+}
+
+/* 华为 MatePad 11.5S 超宽屏适配 */
+@media (min-width: 1600px) {
+  .game-main { max-width: 1440px; }
+  .game-play-area { max-width: 1300px; gap: 48px; }
+  .word-display { width: 320px; }
+  .baskets-grid { max-width: 900px; }
+}
 </style>
