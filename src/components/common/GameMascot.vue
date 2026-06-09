@@ -311,7 +311,7 @@ defineProps({
   border: 1.5px solid #FFD93D;
   border-radius: 14px 14px 4px 14px; /* 左下角为尖角 */
   padding: 7px 12px 8px;
-  max-width: 160px; /* 增大宽度，容纳更长文本 */
+  max-width: 280px; /* 增大宽度，让长文本尽量单行或少换行 */
   min-width: 80px;
   box-shadow:
     0 3px 12px rgba(255, 217, 61, 0.25),
