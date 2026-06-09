@@ -106,6 +106,12 @@ function checkDailyReset() {
 
 /** 增加今日点赞数 */
 function addLikes(count, type = 'auto') {
+  // 防御性检查:确保参数有效
+  if (typeof count !== 'number' || count <= 0 || !isFinite(count)) {
+    console.warn('[ThumbsUp] 无效的点赞数量:', count)
+    return
+  }
+  
   thumbsUpState.value.todayLikes += count
   if (type === 'auto') {
     thumbsUpState.value.todayAutoLikes += count
@@ -118,7 +124,9 @@ function addLikes(count, type = 'auto') {
   // 同步到萌宠系统
   try {
     const petStore = usePetStore()
-    petStore.addLikes(count)
+    if (petStore && typeof petStore.addLikes === 'function') {
+      petStore.addLikes(count)
+    }
   } catch(e) {
     // 萌宠未启用时忽略
   }

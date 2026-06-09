@@ -12,6 +12,19 @@
 import { ref, computed, watch } from 'vue'
 import { useLearningStore } from '@/stores/learning.js'
 
+// 延迟导入点赞系统,避免循环依赖
+let _thumbsUpModule = null
+function getThumbsUp() {
+  if (!_thumbsUpModule) {
+    try {
+      _thumbsUpModule = require('./useThumbsUp')
+    } catch (e) {
+      return null
+    }
+  }
+  return _thumbsUpModule
+}
+
 // ============================================================
 // 常量
 // ============================================================
@@ -79,6 +92,24 @@ const BASE_SPECIES = ['cat', 'dog', 'rabbit', 'dragon']
 /** 全部精灵 */
 const ALL_SPECIES = ['cat', 'dog', 'rabbit', 'dragon', 'unicorn', 'tiger', 'lion', 'sheep']
 
+/** 精灵默认名字 */
+const SPECIES_DEFAULT_NAMES = {
+  cat: '小咪', dog: '旺财', rabbit: '小白', dragon: '小龙',
+  unicorn: '彩虹', tiger: '小虎', lion: '辛巴', sheep: '绵绵',
+}
+
+/** 获取精灵默认名字 */
+function getDefaultSpeciesName(speciesId) {
+  return SPECIES_DEFAULT_NAMES[speciesId] || '蛋蛋'
+}
+
+/** 获取随机精灵（区分首次/后续） */
+function getRandomSpecies(isFirst) {
+  const pool = isFirst ? BASE_SPECIES : ALL_SPECIES
+  const id = pool[Math.floor(Math.random() * pool.length)]
+  return PET_SPECIES.find(s => s.id === id) || PET_SPECIES[0]
+}
+
 // ============================================================
 // 状态（模块级单例）
 // ============================================================
@@ -138,6 +169,7 @@ function createDefaultState() {
     enabled: true,            // 总开关
     showHungerAnim: true,     // 饥饿动画开关
     showHatchAnim: true,      // 破壳动画开关
+    petHatching: false,       // 破壳进行中标志位（P0 Fix #2）
     lastOpenDate: '',         // 上次打开日期（日重置用）
     createdAt: Date.now(),
   }
@@ -346,6 +378,12 @@ function detectMood() {
 function addLikes(count) {
   const s = petState.value
   if (!s || !s.enabled) return
+  
+  // 防御性检查:确保参数有效
+  if (typeof count !== 'number' || count <= 0 || !isFinite(count)) {
+    console.warn('[PetStore] 无效的点赞数量:', count)
+    return
+  }
 
   const oldLevel = petLevel.value
   s.petTotalLikes += count
@@ -396,23 +434,62 @@ function triggerHatch() {
   const s = petState.value
   if (!s) return
 
-  // 确定品种：优先家长指定，否则随机
-  const species = s.petAssignedSpecies
-    || PET_SPECIES[Math.floor(Math.random() * PET_SPECIES.length)].id
-  s.petSpecies = species
+  // 🐣 P0 Fix #1: 首次破壳仅限基础精灵（猫/狗/兔/龙）
+  // 家长指定可绕过首次限制（家长特权），后续破壳无限制
+  const isFirstHatch = (s.petHistory || []).length === 0
+  if (s.petAssignedSpecies) {
+    // 家长指定 — 绕过首次限制
+    s.petSpecies = s.petAssignedSpecies
+    s.petAssignedSpecies = null
+  } else if (isFirstHatch) {
+    // 首次破壳 — 仅从基础4种中随机
+    const baseIds = BASE_SPECIES
+    s.petSpecies = baseIds[Math.floor(Math.random() * baseIds.length)]
+  } else {
+    // 后续破壳 — 全部8种可选
+    s.petSpecies = PET_SPECIES[Math.floor(Math.random() * PET_SPECIES.length)].id
+  }
+
   s.petMood = 'excited'
 
-  // 记录历史
+  // 记录历史（包含名字字段）
   s.petHistory.push({
-    species,
+    species: s.petSpecies,
+    name: s.petName || getDefaultSpeciesName(s.petSpecies),
     hatchedAt: Date.now(),
     totalLikes: s.petTotalLikes,
   })
 
-  // 清除家长指定
-  s.petAssignedSpecies = null
+  // 🎁 P0 Fix #3: 破壳奖励 — 50 星星 + 1款随机装扮
+  try {
+    const learningStore = useLearningStore()
+    learningStore.totalStars += 50
+    learningStore.persistAll()
+    console.log('[PetStore] 🎁 破壳奖励：+50 星星')
 
-  console.log(`[PetStore] 🎊 破壳！精灵: ${species}`)
+    // 随机解锁一款装扮
+    const unlockable = DRESS_ITEMS.filter(d => d.id !== 'remove' && !s.petCosmetics.includes(d.id))
+    if (unlockable.length > 0) {
+      const gift = unlockable[Math.floor(Math.random() * unlockable.length)]
+      s.petCosmetics.push(gift.id)
+      console.log(`[PetStore] 🎁 破壳奖励：解锁装扮 ${gift.emoji} ${gift.label}`)
+    }
+  } catch (e) {
+    console.warn('[PetStore] 破壳奖励同步失败:', e)
+  }
+
+  console.log(`[PetStore] 🎊 破壳！精灵: ${s.petSpecies} (首次: ${isFirstHatch})`)
+
+  // P0 Fix #2: 设置破壳标志位，通知 UI 展示全屏动画
+  s.petHatching = true
+  persist()
+}
+
+/** 完成破壳动画（UI 调用） */
+function dismissHatchAnim() {
+  const s = petState.value
+  if (!s) return
+  s.petHatching = false
   persist()
 }
 
@@ -500,6 +577,16 @@ function doAction(actionKey, currentStars) {
       s.exploreRewards.push(rewards)
       if (rewards.type === 'likes') {
         s.petTotalLikes += rewards.amount
+        s.todayLikeCount += rewards.amount
+        // 同步到点赞系统（作为系统自动点赞）
+        try {
+          const thumbsUp = getThumbsUp()
+          if (thumbsUp) {
+            thumbsUp.addLikes(rewards.amount, 'auto')
+          }
+        } catch (e) {
+          console.warn('[PetStore] 点赞同步失败:', e)
+        }
         // 检查升级
         const newLevel = petLevel.value
         if (newLevel > currentLevelConfig.value.level) {
@@ -707,6 +794,8 @@ export function usePetStore() {
     detectMood,
     resetPet,
     triggerHatch,
+    dismissHatchAnim,
+    getRandomSpecies,
 
     // 持久化
     loadFromDB,

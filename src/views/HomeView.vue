@@ -474,6 +474,9 @@ onMounted(async () => {
   // v5.0: 更新今日点赞数
   updateTodayLikes()
 
+  // 检查并清理过期的解锁标记（防止标记永久保持）
+  store.checkAndClearExpiredUnlock()
+
   // Detect if a new category was just unlocked
   if (store.justUnlockedIndex >= 0) {
     // Trigger a small confetti burst on return to home

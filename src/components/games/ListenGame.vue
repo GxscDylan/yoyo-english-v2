@@ -676,5 +676,5 @@ onUnmounted(() => { stop(); clearAutoReplay(); clearTimeout(countdownTimer) })
 .pop-leave-active { animation: pop 0.2s ease reverse; }
 @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-.game-footer { display: flex; align-items: center; justify-content: center; padding: 8px var(--space-xl) 12px; background: transparent; overflow: visible; position: relative; }
+.game-footer { display: flex; align-items: center; justify-content: center; padding: 8px var(--space-xl) 60px; background: transparent; overflow: visible; position: relative; }
 </style>

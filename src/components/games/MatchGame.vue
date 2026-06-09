@@ -743,7 +743,7 @@ onUnmounted(() => { stop(); clearTimeout(countdownTimer); clearAutoReplay() })
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px var(--space-xl) 12px;
+  padding: 8px var(--space-xl) 60px;
   background: transparent;
   overflow: visible;
   position: relative;

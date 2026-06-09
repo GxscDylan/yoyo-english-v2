@@ -114,6 +114,10 @@ export const useLearningStore = defineStore('learning', () => {
 
   /** 刚刚解锁的分类索引（用于首页入场动画，不持久化） */
   const justUnlockedIndex = ref(-1)
+  
+  /** 解锁时间戳（用于超时自动清理） */
+  let justUnlockedTimestamp = 0
+  const JUST_UNLOCKED_TIMEOUT = 30 * 1000 // 30秒后自动清理
 
   /** 总星星数 */
   const totalStars = ref(0)
@@ -555,8 +559,17 @@ export const useLearningStore = defineStore('learning', () => {
     if (unlockedCategories.value < ALL_CATEGORIES.length) {
       // Record the index of the node that is about to be unlocked
       justUnlockedIndex.value = unlockedCategories.value
+      justUnlockedTimestamp = Date.now()
       unlockedCategories.value++
       persistProgress()
+    }
+  }
+  
+  /** 检查并清理过期标记（防止标记永久保持） */
+  function checkAndClearExpiredUnlock() {
+    if (justUnlockedIndex.value >= 0 && (Date.now() - justUnlockedTimestamp) > JUST_UNLOCKED_TIMEOUT) {
+      justUnlockedIndex.value = -1
+      justUnlockedTimestamp = 0
     }
   }
 
@@ -608,6 +621,12 @@ export const useLearningStore = defineStore('learning', () => {
   const REVIEW_INTERVALS = [1 * 60 * 60 * 1000, 24 * 60 * 60 * 1000, 3 * 24 * 60 * 60 * 1000, 7 * 24 * 60 * 60 * 1000]
 
   function addToReviewQueue(wordId) {
+    // 防御性检查:确保参数有效
+    if (!wordId || typeof wordId !== 'string') {
+      console.warn('[LearningStore] 无效的单词ID:', wordId)
+      return
+    }
+    
     const record = getWordRecord(wordId)
     const reviewCount = record.reviewCount || 0
     const interval = REVIEW_INTERVALS[Math.min(reviewCount, REVIEW_INTERVALS.length - 1)]
@@ -620,9 +639,14 @@ export const useLearningStore = defineStore('learning', () => {
   }
 
   function getDueReviewWords() {
+    // 防御性检查:确保队列存在
+    if (!reviewQueue.value || typeof reviewQueue.value !== 'object') {
+      console.warn('[LearningStore] 复习队列无效')
+      return []
+    }
     const now = Date.now()
     return Object.entries(reviewQueue.value)
-      .filter(([_, nextTime]) => nextTime <= now)
+      .filter(([_, nextTime]) => nextTime && nextTime <= now)
       .map(([wordId]) => ALL_WORDS.find(w => w.id === wordId))
       .filter(Boolean)
   }
@@ -833,7 +857,7 @@ export const useLearningStore = defineStore('learning', () => {
     unlockNextCategory, addStars, spendStars, updateGameScore,
     incrementTodayLearned, resetTodayLearned,
     // just unlocked tracking
-    justUnlockedIndex, consumeJustUnlocked,
+    justUnlockedIndex, consumeJustUnlocked, checkAndClearExpiredUnlock,
     // 复习
     addToReviewQueue, getDueReviewWords,
     // 设置

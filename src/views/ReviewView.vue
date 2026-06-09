@@ -299,10 +299,9 @@ function nextStep() {
     step.value++
     handleStepEntry()
   } else {
-    // 完成当前单词
+    // 完成当前单词复习
     const wordId = word.value.id
-    store.markWordMastered(wordId)
-    store.addToReviewQueue(wordId)
+    handleReviewComplete(wordId, true)
     
     if (currentIndex.value < reviewWords.value.length - 1) {
       currentIndex.value++
@@ -335,6 +334,24 @@ function handleStepEntry() {
   }
 }
 
+/**
+ * 处理复习完成的单词
+ * @param {string} wordId - 单词ID
+ * @param {boolean} completed - 是否完整完成复习
+ */
+function handleReviewComplete(wordId, completed = true) {
+  if (!wordId) return
+  
+  // 如果完整完成复习,标记掌握并重新加入队列
+  if (completed) {
+    store.markWordMastered(wordId)
+    store.addToReviewQueue(wordId)
+  } else {
+    // 如果中断复习,将单词重新加入队列
+    store.addToReviewQueue(wordId)
+  }
+}
+
 function showCompleteScreen() {
   triggerConfetti(50)
   sfxComplete()
@@ -359,11 +376,25 @@ function reviewAgain() {
 
 function goHome() {
   stop()
+  // 如果还有未复习完的单词,将当前单词重新加入队列
+  if (reviewWords.value.length > 0 && currentIndex.value < reviewWords.value.length) {
+    const currentWordId = word.value?.id
+    if (currentWordId) {
+      handleReviewComplete(currentWordId, false)
+    }
+  }
   router.push('/')
 }
 
 function goLearn() {
   stop()
+  // 如果还有未复习完的单词,将当前单词重新加入队列
+  if (reviewWords.value.length > 0 && currentIndex.value < reviewWords.value.length) {
+    const currentWordId = word.value?.id
+    if (currentWordId) {
+      handleReviewComplete(currentWordId, false)
+    }
+  }
   router.push('/learn')
 }
 
@@ -378,6 +409,17 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stop()
+  // 组件卸载时,如果还有未复习完的单词,将当前单词重新加入队列
+  // 这样可以防止单词在复习中途退出时丢失
+  if (reviewWords.value.length > 0 && currentIndex.value < reviewWords.value.length) {
+    const currentWordId = word.value?.id
+    if (currentWordId) {
+      // 使用 setTimeout 确保在组件卸载完成后执行
+      setTimeout(() => {
+        handleReviewComplete(currentWordId, false)
+      }, 0)
+    }
+  }
 })
 </script>
 
