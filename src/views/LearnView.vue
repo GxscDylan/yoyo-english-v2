@@ -1733,7 +1733,7 @@ watch(speakRoundDone, (done) => {
   background: rgba(255,255,255,0.9);
   backdrop-filter: blur(8px);
   overflow: visible;
-  min-height: 180px;
+  min-height: 260px; /* 增大以容纳 mascot + 气泡，防止按钮被遮挡 */
 }
 
 /* ===== P1: 场景动态插图 ===== */

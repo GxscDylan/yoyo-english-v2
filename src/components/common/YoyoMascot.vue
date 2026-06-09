@@ -167,7 +167,7 @@ const moodStateIcon = computed(() => {
   padding: var(--space-md) var(--space-md) 16px;
   position: relative;
   width: 120px;
-  min-height: 220px;
+  min-height: 240px;
   transform-style: preserve-3d;
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible;
