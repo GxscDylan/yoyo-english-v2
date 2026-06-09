@@ -161,10 +161,10 @@ const moodStateIcon = computed(() => {
 }
 .yoyo-mascot {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse; /* 气泡在头像上方，避免底部裁切 */
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-md) var(--space-md) 50px;
+  padding: var(--space-md) var(--space-md) 16px;
   position: relative;
   width: 120px;
   min-height: 220px;
@@ -627,17 +627,17 @@ const moodStateIcon = computed(() => {
   50% { opacity: 1; transform: translateX(-50%) scaleX(1.1); }
 }
 
-/* 气泡 - 紧凑设计，位于头像下方居中 */
+/* 气泡 - 紧凑设计，位于头像上方居中（避免底部裁切） */
 .yoyo-bubble {
   position: absolute;
-  top: calc(100% + 4px);
+  bottom: calc(100% + 8px); /* 气泡在头像上方 */
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(180deg, #FFFFFF 0%, #FFF9E6 100%);
   border: 2px solid #FFD93D;
-  border-radius: 16px 16px 16px 4px;
+  border-radius: 16px 16px 4px 16px; /* 左下角为尖角 */
   padding: 8px 12px 11px;
-  max-width: 130px;
+  max-width: 200px; /* 增大宽度，减少文本换行 */
   box-shadow: 
     0 3px 12px rgba(255, 217, 61, 0.25),
     0 1px 3px rgba(0, 0, 0, 0.08);
@@ -646,13 +646,13 @@ const moodStateIcon = computed(() => {
   z-index: 100;
 }
 
-/* 气泡三角箭头 - 向上指向头像 */
+/* 气泡三角箭头 - 指向下方偏左 */
 .yoyo-bubble::before {
   content: '';
   position: absolute;
-  top: -9px;
-  left: 50%;
-  transform: translateX(-50%) rotate(180deg);
+  bottom: -9px; /* 箭头在底部 */
+  left: 20px; /* 箭头偏左，对应圆角位置 */
+  transform: rotate(180deg);
   width: 0; 
   height: 0; 
   border-left: 9px solid transparent;
@@ -663,9 +663,9 @@ const moodStateIcon = computed(() => {
 .yoyo-bubble::after {
   content: '';
   position: absolute;
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%) rotate(180deg);
+  bottom: -6px;
+  left: 20px;
+  transform: rotate(180deg);
   width: 0; 
   height: 0; 
   border-left: 8px solid transparent;
