@@ -420,9 +420,14 @@ function onLevelUp(from, to) {
     if (rewardStars > 0) {
       try {
         const learningStore = useLearningStore()
-        learningStore.totalStars += rewardStars
-        learningStore.persistAll()
-        console.log(`[PetStore] 🎁 升级奖励：+${rewardStars} 星星`)
+        // 🛡️ P2 修复 #13: 检查 learningStore 是否已初始化
+        if (learningStore && typeof learningStore.totalStars === 'number') {
+          learningStore.totalStars += rewardStars
+          learningStore.persistAll()
+          console.log(`[PetStore] 🎁 升级奖励：+${rewardStars} 星星`)
+        } else {
+          console.warn('[PetStore] learningStore 未就绪，星星奖励延迟发放')
+        }
       } catch (e) {
         console.warn('[PetStore] 星星奖励同步失败:', e)
       }
@@ -582,15 +587,11 @@ function doAction(actionKey, currentStars) {
       if (rewards.type === 'likes') {
         s.petTotalLikes += rewards.amount
         s.todayLikeCount += rewards.amount
-        // 同步到点赞系统（作为系统自动点赞）
-        try {
-          const thumbsUp = getThumbsUp()
-          if (thumbsUp) {
-            thumbsUp.addLikes(rewards.amount, 'auto')
-          }
-        } catch (e) {
-          console.warn('[PetStore] 点赞同步失败:', e)
-        }
+        // 🛡️ P2 修复 #14: 不通过 thumbsUp.addLikes() 回写，避免双向同步循环
+        // 探险奖励直接计入 petTotalLikes，不再同步到外部点赞系统
+        // 如需外部系统感知，应通过事件总线而非直接调用 addLikes
+        console.log(`[PetStore] 🎁 探险带回：+${rewards.amount} 点赞`)
+
         // 检查升级
         const newLevel = petLevel.value
         if (newLevel > currentLevelConfig.value.level) {

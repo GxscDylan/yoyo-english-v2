@@ -309,12 +309,13 @@ defineProps({
   transform: translateX(-50%);
   background: linear-gradient(180deg, #FFFFFF 0%, #FFF9E6 100%);
   border: 1.5px solid #FFD93D;
-  border-radius: 12px 12px 3px 12px; /* 右下角为尖角 */
-  padding: 5px 9px 7px;
-  max-width: 110px;
+  border-radius: 14px 14px 4px 14px; /* 左下角为尖角 */
+  padding: 7px 12px 8px;
+  max-width: 160px; /* 增大宽度，容纳更长文本 */
+  min-width: 80px;
   box-shadow:
-    0 2px 8px rgba(255, 217, 61, 0.2),
-    0 1px 2px rgba(0, 0, 0, 0.05);
+    0 3px 12px rgba(255, 217, 61, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.08);
   animation: gmBubblePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   text-align: center;
   z-index: 100;
@@ -324,12 +325,12 @@ defineProps({
   100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
-/* 气泡三角箭头 - 指向下方 */
+/* 气泡三角箭头 - 指向下方偏左 */
 .gm-bubble::before {
   content: '';
   position: absolute;
   bottom: -7px; /* 箭头在底部 */
-  left: 16px; /* 箭头偏左，对应圆角位置 */
+  left: 20px; /* 箭头偏左，对应圆角位置 */
   transform: rotate(180deg);
   width: 0; height: 0;
   border-left: 7px solid transparent;
@@ -340,7 +341,7 @@ defineProps({
   content: '';
   position: absolute;
   bottom: -5px;
-  left: 16px;
+  left: 20px;
   transform: rotate(180deg);
   width: 0; height: 0;
   border-left: 6px solid transparent;
@@ -362,16 +363,18 @@ defineProps({
 
 /* 气泡文字 */
 .gm-bubble p {
-  font-size: 9.5px;
+  font-size: 11px; /* 增大字号提升可读性 */
   color: #5D4E37;
-  line-height: 1.35;
+  line-height: 1.4;
   margin: 0;
   font-weight: 600;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3; /* 从2增加到3，支持更长文本 */
   -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible; /* 移除 hidden，允许完整显示 */
+  text-overflow: clip; /* 不使用省略号 */
+  word-break: break-word; /* 单词级别断行，避免截断 */
+  min-height: 1em;
 }
 
 /* 气泡心情主题色 */
