@@ -16,7 +16,7 @@
     <div v-if="phase === 'ready'" class="phase-ready anim-fade-up">
       <h1>⚡ 速度大挑战</h1>
       <p class="desc">听音选图，越快越好！答对能加时间哦~</p>
-      <GameMascot :mood="'idle'" :bubble-text="'Ready to race?'" :show-stars="false" />
+      <GameAvatar :mood="'idle'" :bubble-text="'Ready to race?'" :show-stars="false" />
       <button class="btn-start" @click="startCountdown">🚀 Start!</button>
     </div>
 
@@ -112,7 +112,7 @@
 
     <!-- 呦呦（仅游戏中/反馈阶段显示） -->
     <footer class="game-footer" v-if="phase === 'playing' || phase === 'feedback'">
-      <GameMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
+      <GameAvatar :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
     </footer>
   </div>
 </template>
@@ -125,7 +125,7 @@ import { sfxCorrect, sfxWrong, sfxComplete, sfxCheer, sfxApplause, sfxFanfare, s
 import { triggerConfetti } from '@/composables/useConfetti'
 import { triggerPerfectClear } from '@/composables/useFeedback'
 import { ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
-import GameMascot from '@/components/common/GameMascot.vue'
+import GameAvatar from '@/components/common/GameAvatar.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
 import LikeButton from '@/components/common/LikeButton.vue'
 import ComboDisplay from '@/components/common/ComboDisplay.vue'

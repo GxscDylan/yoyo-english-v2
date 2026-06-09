@@ -17,7 +17,7 @@
     <!-- 选择器（未选分类时显示） -->
     <div v-if="!rhyme" class="rhyme-picker anim-fade-up">
       <div class="picker-header">
-        <YoyoMascot :mood="'happy'" bubble-text="想听哪首歌？选一个开始吧！🎵" class="picker-yoyo" />
+        <GameAvatar :mood="'happy'" bubble-text="想听哪首歌？选一个开始吧！🎵" class="picker-yoyo" />
         <h3>🎵 选一首好听的英文童谣~</h3>
       </div>
       <div class="rhyme-list">
@@ -69,7 +69,7 @@
     </main>
 
     <!-- 呦呦 -->
-    <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble"
+    <GameAvatar :mood="yoyoMood" :bubble-text="yoyoBubble"
       class="nursery-yoyo" :show-hat="store.showHat" :show-glasses="store.showGlasses" />
   </div>
 </template>
@@ -81,7 +81,7 @@ import { useLearningStore } from '@/stores/learning'
 import { getCategoryById } from '@/data/words'
 import { NURSERY_RHYMES, getRhymeByCategory } from '@/data/nursery-rhymes'
 import { useSpeech } from '@/composables/useSpeech'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import GameAvatar from '@/components/common/GameAvatar.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -25,7 +25,7 @@
 
     <!-- 空状态 — 呦呦趣味引导 -->
     <div v-if="reviewWords.length === 0" class="review-empty anim-fade-up">
-      <YoyoMascot :mood="'happy'" :bubble-text="emptyBubble" :show-stars="true" class="empty-yoyo" />
+      <LearnAvatar :mood="'happy'" :bubble-text="emptyBubble" :show-stars="true" class="empty-yoyo" />
       <h2>{{ emptyTitle }}</h2>
       <p>{{ emptyMessage }}</p>
       <div class="empty-actions">
@@ -119,7 +119,7 @@
     </Transition>
 
     <!-- 呦呦 -->
-    <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showYoyoStars"
+    <LearnAvatar :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showYoyoStars"
       :is-speaking="isSpeaking"
       class="review-yoyo" :show-hat="store.showHat" :show-glasses="store.showGlasses"
       :show-crown="store.showCrown" />
@@ -142,7 +142,7 @@ import { sfxCorrect, sfxWrong, sfxComplete } from '@/composables/useSfx'
 import { triggerConfetti } from '@/composables/useConfetti'
 import { usePetCompanion } from '@/composables/usePetCompanion.js'
 import PetCompanion from '@/components/PetCompanion.vue'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import LearnAvatar from '@/components/common/LearnAvatar.vue'
 
 const companion = usePetCompanion()
 

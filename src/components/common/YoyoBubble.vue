@@ -6,12 +6,11 @@
   <Transition name="yoyo-bubble-fade" appear>
     <div v-if="text" class="yoyo-bubble-wrapper" :class="`yoyo-bubble--${mood}`">
       <!-- 呦呦小老虎 -->
-      <YoyoMascot
+      <LearnAvatar
         :mood="mood"
         :bubble-text="''"
         :show-stars="showStars"
         :is-speaking="isSpeaking"
-        :show-crown="showCrown"
         @click="handleYoyoClick"
       />
 
@@ -27,7 +26,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import YoyoMascot from './YoyoMascot.vue'
+import LearnAvatar from './LearnAvatar.vue'
 
 const emit = defineEmits(['yoyo-click'])
 

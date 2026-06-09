@@ -67,7 +67,7 @@
       <!-- 顶部区域：呦呦 + 冒险地图 -->
       <header class="home-top">
         <div class="hero-left">
-          <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars"
+          <HomeAvatar :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars"
             :show-hat="store.showHat" :show-glasses="store.showGlasses"
             :show-wings="store.showWings"
             :show-crown="store.showCrown" :show-halo="store.showHalo"
@@ -256,7 +256,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLearningStore } from '@/stores/learning'
 import { ALL_CATEGORIES } from '@/data/words'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import HomeAvatar from '@/components/common/HomeAvatar.vue'
 import { triggerConfetti } from '@/composables/useConfetti'
 import { useSeasonalDecorations } from '@/composables/useSeasonalDecorations'
 import { useSpeech } from '@/composables/useSpeech'

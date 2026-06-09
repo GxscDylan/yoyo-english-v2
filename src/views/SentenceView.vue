@@ -170,7 +170,7 @@
     </main>
 
     <!-- 呦呦吉祥物 -->
-    <YoyoMascot
+    <LearnAvatar
       :mood="yoyoMood"
       :bubble-text="yoyoBubble"
       class="sentence-yoyo"
@@ -187,7 +187,7 @@ import { L2_SENTENCES } from '@/data/words'
 import { useSpeech } from '@/composables/useSpeech'
 import { sfxCorrect, sfxComplete, sfxStar } from '@/composables/useSfx'
 import { triggerConfetti } from '@/composables/useConfetti'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import LearnAvatar from '@/components/common/LearnAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()

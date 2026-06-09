@@ -300,7 +300,7 @@
 
     <!-- 呦呦吉祥物 -->
     <footer class="learn-footer">
-      <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showYoyoStars" :is-speaking="isRecording" />
+      <LearnAvatar :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showYoyoStars" :is-speaking="isRecording" />
     </footer>
   </div>
 </template>
@@ -314,7 +314,7 @@ import { sfxCorrect, sfxWrong, sfxComplete, sfxFavorite } from '@/composables/us
 import { triggerConfetti } from '@/composables/useConfetti'
 import { playFeedback, triggerPerfectClear, triggerMilestone } from '@/composables/useFeedback'
 import { getCategoryById, ALL_WORDS, ALL_L1_WORDS, ALL_L2_WORDS } from '@/data/words'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import LearnAvatar from '@/components/common/LearnAvatar.vue'
 import { useYoyoCopy } from '@/composables/useYoyoCopy'
 import { generateAIBubble, getDynamicTone, generateReviewFeedback } from '@/composables/useYoyoAI'
 import { useThumbsUp } from '@/composables/useThumbsUp'

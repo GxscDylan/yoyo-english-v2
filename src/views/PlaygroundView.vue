@@ -40,7 +40,7 @@
     </main>
 
     <!-- 呦呦 -->
-    <YoyoMascot :mood="yoyoMood" :bubble-text="yoyoBubble"
+    <GameAvatar :mood="yoyoMood" :bubble-text="yoyoBubble"
       class="pg-yoyo" :show-hat="store.showHat" :show-glasses="store.showGlasses"
       :show-crown="store.showCrown" />
   </div>
@@ -50,7 +50,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLearningStore } from '@/stores/learning'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import GameAvatar from '@/components/common/GameAvatar.vue'
 
 const router = useRouter()
 const store = useLearningStore()

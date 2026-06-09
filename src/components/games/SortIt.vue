@@ -145,7 +145,7 @@
 
     <!-- 底部吉祥物 -->
     <footer class="game-footer" v-if="phase !== 'complete'">
-      <GameMascot :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
+      <GameAvatar :mood="yoyoMood" :bubble-text="yoyoBubble" :show-stars="showStars" />
     </footer>
   </div>
 </template>
@@ -158,7 +158,7 @@ import { sfxCorrect, sfxWrong, sfxComplete, sfxCheer, sfxApplause, sfxFanfare } 
 import { triggerConfetti } from '@/composables/useConfetti'
 import { triggerPerfectClear } from '@/composables/useFeedback'
 import { ALL_CATEGORIES } from '@/data/words'
-import GameMascot from '@/components/common/GameMascot.vue'
+import GameAvatar from '@/components/common/GameAvatar.vue'
 import ResultAvatar from '@/components/common/ResultAvatar.vue'
 import LikeButton from '@/components/common/LikeButton.vue'
 import ComboDisplay from '@/components/common/ComboDisplay.vue'

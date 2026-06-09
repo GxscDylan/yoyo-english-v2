@@ -268,7 +268,7 @@
         <h3>📊 学习报告</h3>
         <!-- 空状态：呦呦趣味引导 -->
         <div v-if="isReportEmpty" class="report-empty anim-fade-up">
-          <YoyoMascot :mood="'happy'" :bubble-text="reportBubble" class="empty-yoyo" />
+          <HomeAvatar :mood="'happy'" :bubble-text="reportBubble" class="empty-yoyo" />
           <p>宝贝还没有开始学习呢~ 选个分类开始吧！</p>
         </div>
         <!-- 有数据：显示统计 -->
@@ -333,7 +333,7 @@
         </div>
         <!-- 空状态：呦呦趣味引导 -->
         <div v-if="isWeekEmpty" class="week-empty anim-fade-up">
-          <YoyoMascot :mood="'happy'" :bubble-text="weekBubble" class="empty-yoyo" />
+          <HomeAvatar :mood="'happy'" :bubble-text="weekBubble" class="empty-yoyo" />
           <p>这周还没有学习记录哦，快去学几个单词吧！</p>
         </div>
         <!-- 有数据：显示图表 -->
@@ -564,7 +564,7 @@
         <p class="medal-hint">孩子通过持续学习解锁的成就</p>
         <!-- 空状态：全部未解锁 -->
         <div v-if="isAllMedalsLocked" class="medals-empty anim-fade-up">
-          <YoyoMascot :mood="'excited'" bubble-text="快去解锁你的第一枚勋章吧！" class="empty-yoyo" />
+          <HomeAvatar :mood="'excited'" bubble-text="快去解锁你的第一枚勋章吧！" class="empty-yoyo" />
           <p>完成学习任务，收集属于你的成就勋章吧~</p>
         </div>
         <div v-else class="medal-grid">
@@ -645,7 +645,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import { ALL_CATEGORIES, L1_WORDS, L2_WORDS } from '@/data/words'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
-import YoyoMascot from '@/components/common/YoyoMascot.vue'
+import HomeAvatar from '@/components/common/HomeAvatar.vue'
 import AchievementCard from '@/components/common/AchievementCard.vue'
 import { playBGM, stopBGM, muteBGM, unmuteBGM, setBGMVolume as _setBGMVolume, isBGMEnabled, isBGMPlaying, getBGMScenes, getCurrentBGMScene } from '@/composables/useBGM'
 import { useThumbsUp } from '@/composables/useThumbsUp'
