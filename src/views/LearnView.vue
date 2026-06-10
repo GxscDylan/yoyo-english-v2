@@ -201,7 +201,7 @@
       </div>
 
       <!-- ===== L2 only: Round 2 集体跟读 ===== -->
-      <div v-else-if="currentRound === 2 && !isL1" class="step-speak-phase anim-fade-up">
+      <div v-else-if="currentRound === 2" class="step-speak-phase anim-fade-up">
         <div class="step-badge">第 3 步 · 跟我读</div>
         <div class="speak-carousel">
           <Transition name="card-slide" mode="out-in">
@@ -236,7 +236,7 @@
       </div>
 
       <!-- ===== L2 only: Round 3 独立回忆（抽测） ===== -->
-      <div v-else-if="currentRound === 3 && !isL1" class="step-recall-phase anim-fade-up">
+      <div v-else-if="currentRound === 3" class="step-recall-phase anim-fade-up">
         <div class="step-badge">第 4 步 · 自己说</div>
         <div class="recall-card">
           <span class="recall-emoji">{{ recallTarget?.emoji }}</span>
@@ -442,10 +442,7 @@ const progressLabel = computed(() => {
 })
 
 const showSkipBtn = computed(() => {
-  if (!isL1.value) {
-    return currentRound.value === 2 || currentRound.value === 3
-  }
-  return false
+  return currentRound.value === 2 || currentRound.value === 3
 })
 
 // L1 前2轮用 1x2 网格，之后 2x2
@@ -560,8 +557,6 @@ function startLearning() {
 
 // 下一轮
 function nextRound() {
-  const maxRound = isL1.value ? 1 : 3
-
   previousRound.value = currentRound.value
 
   if (currentRound.value === 0) {
@@ -573,18 +568,13 @@ function nextRound() {
     testFeedbackClass.value = ''
     handleRoundEntry()
   } else if (currentRound.value === 1) {
-    if (isL1.value) {
-      // L1: 测试完 → 下一组或完成
-      completeGroup()
-    } else {
-      // L2: 测试 → 跟读
-      currentRound.value = 2
-      speakWordIndex.value = 0
-      speakRoundDone.value = false
-      speakFeedback.value = ''
-      speakFeedbackClass.value = ''
-      handleRoundEntry()
-    }
+    // 测试 → 跟读
+    currentRound.value = 2
+    speakWordIndex.value = 0
+    speakRoundDone.value = false
+    speakFeedback.value = ''
+    speakFeedbackClass.value = ''
+    handleRoundEntry()
   } else if (currentRound.value === 2) {
     // L2: 跟读 → 回忆
     currentRound.value = 3
